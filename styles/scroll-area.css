@@ -1,0 +1,38 @@
+.scroll-area-container {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .scroll-area-viewport {
+    display: inline-flex;
+    min-height: min-content;
+  }
+  
+  /* Customizing the scrollbar */
+  .scroll-area-container::-webkit-scrollbar {
+    height: 10px;
+  }
+  
+  .scroll-area-container::-webkit-scrollbar-track {
+    background: #F3E5AB;
+    border-radius: 5px;
+  }
+  
+  .scroll-area-container::-webkit-scrollbar-thumb {
+    background: #8B4513;
+    border-radius: 5px;
+  }
+  
+  .scroll-area-container::-webkit-scrollbar-thumb:hover {
+    background: #A0522D;
+  }
+  
+  /* For Firefox */
+  .scroll-area-container {
+    scrollbar-width: thin;
+    scrollbar-color: #8B4513 #F3E5AB;
+  }
+  
+  

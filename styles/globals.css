@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 243, 229, 171;
+  --background-end-rgb: 255, 255, 255;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    rgb(var(--background-end-rgb))
+  )
+  rgb(var(--background-start-rgb));
+}
+
+@font-face {
+  font-family: 'UMWEROalpha';
+  src: url('/UMWEROPUAnumbers.otf') format('opentype');
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8B4513 #F3E5AB;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #F3E5AB;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #8B4513;
+  border-radius: 20px;
+  border: 2px solid #F3E5AB;
+}
+
