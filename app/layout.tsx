@@ -4,7 +4,8 @@ import { SiteHeader } from "../components/site-header"
 import { SiteFooter } from "../components/site-footer"
 import { AuthProvider } from "./contexts/AuthContext"
 import { LanguageProvider } from "./contexts/LanguageContext"
-import { LayoutContent } from "../components/LayoutContent"
+import { CartProvider } from "./contexts/CartContext"
+import { SettingsSidebar } from "../components/SettingsSidebar"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,11 +24,18 @@ export default function RootLayout({
       <body className={`${inter.className} bg-[#FFFFFF]`}>
         <AuthProvider>
           <LanguageProvider>
-            <div className="flex flex-col min-h-screen">
-              <SiteHeader />
-              <LayoutContent>{children}</LayoutContent>
-              <SiteFooter />
-            </div>
+            <CartProvider>
+              <div className="flex flex-col min-h-screen">
+                <SiteHeader />
+                <div className="flex flex-grow">
+                  <SettingsSidebar />
+                  <main className="flex-grow overflow-auto w-full pl-12 sm:pl-16 md:pl-20 pb-16 sm:pb-0">
+                    {children}
+                  </main>
+                </div>
+                <SiteFooter />
+              </div>
+            </CartProvider>
           </LanguageProvider>
         </AuthProvider>
       </body>

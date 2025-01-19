@@ -1,13 +1,16 @@
 "use client"
 
 import { useState, useMemo } from 'react'
-import { Button } from "../../components/ui/button"
-import { Input } from "../../components/ui/input"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
-import { Download, Search, ShoppingCart } from 'lucide-react'
+import { useTranslation } from '../../hooks/useTranslation'
+import { useCart } from '../contexts/CartContext'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Download, Search, ShoppingCart, X } from 'lucide-react'
 import Image from 'next/image'
-import { ScrollArea } from "../../components/ui/scroll-area"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import "../../styles/scroll-area.css"
 
 // Updated product data with only local images
@@ -15,21 +18,23 @@ const products = [
   { id: 1, name: "Inyambo Cow Painting", price: 200, category: "paintings", image: "/pictures/forsale-inyambo-cow.jpg" },
   { id: 2, name: "Nyabisabo Artwork", price: 180, category: "paintings", image: "/pictures/forsale-nyabisabo.jpg" },
   { id: 3, name: "Nyabisabo mu Bijabo", price: 220, category: "paintings", image: "/pictures/forsale-nyabisabo-mu-bijabo.jpg" },
-  { id: 4, name: "Abstract Landscape", price: 230, category: "paintings", image: "/pictures/forsale-real-cow1.jpg" },
-  { id: 5, name: "Traditional Dance Scene", price: 190, category: "paintings", image: "/pictures/best.jpg" },
-  { id: 6, name: "Umwero T-Shirt Design 1", price: 35, category: "fashion", image: "/pictures/umwero-tshirt1.PNG" },
-  { id: 7, name: "Umwero T-Shirt Design 2", price: 35, category: "fashion", image: "/pictures/umwero-tshirt2.PNG" },
-  { id: 8, name: "Traditional Umushanana", price: 250, category: "fashion", image: "/pictures/forsale-inyambo-cow.jpg" },
-  { id: 9, name: "Modern Kitenge Dress", price: 180, category: "fashion", image: "/pictures/forsale-real-cow1.jpg" },
-  { id: 10, name: "Umwero Necklace", price: 85, category: "decoration", image: "/pictures/umwero-necklace.PNG" },
+  { id: 4, name: "Imbyeyi Maama", price: 230, category: "paintings", image: "/pictures/forsale-real-cow1.jpg" },
+  { id: 5, name: "Inyambo Maraba", price: 190, category: "paintings", image: "/pictures/best.jpg" },
+  { id: 6, name: "Umwero Hoodie Numerals", price: 35, category: "fashion", image: "/pictures/umweroNumeralsHoddie.PNG" },
+  { id: 7, name: "Umwero Shanawakanda 2", price: 35, category: "fashion", image: "/pictures/UmweroKanda.PNG" },
+  { id: 8, name: "Umwero Upper package", price: 250, category: "fashion", image: "/pictures/hoodies.jpg" },
+  { id: 9, name: "Urunigi", price: 15, category: "fashion", image: "/pictures/urunigi.JPG" },
+  { id: 10, name: "Umwero Necklace", price: 85, category: "decoration", image: "/pictures/urunigi.JPG" },
   { id: 11, name: "Decorative Wall Hanging", price: 120, category: "decoration", image: "/pictures/forsale-nyabisabo.jpg" },
   { id: 12, name: "Handcrafted Wooden Box", price: 75, category: "decoration", image: "/pictures/best.jpg" },
-  { id: 13, name: "Ingoma Drum", price: 150, category: "cultural", image: "/pictures/forsale-ingoma.jpg" },
-  { id: 14, name: "Agaseke Basket", price: 80, category: "cultural", image: "/pictures/forsale-nyabisabo.jpg" },
-  { id: 15, name: "Intore Dancer Figurine", price: 130, category: "cultural", image: "/pictures/best.jpg" },
-  { id: 16, name: "Rwandan Coffee Set", price: 140, category: "cultural", image: "/pictures/forsale-real-cow1.jpg" },
-  { id: 17, name: "Traditional Earrings", price: 45, category: "fashion", image: "/pictures/forsale-nyabisabo-mu-bijabo.jpg" },
-  { id: 18, name: "Umwero-inspired Wall Clock", price: 65, category: "decoration", image: "/pictures/forsale-inyambo-cow.jpg" },
+  { id: 13, name: "Agaseke", price: 23, category: "cultural", image: "/pictures/agatukura.jpg" },
+  { id: 14, name: "Agaseke Basket", price: 20, category: "cultural", image: "/pictures/agaseke.jpg" },
+  { id: 15, name: "Igisabo", price: 130, category: "cultural", image: "/pictures/igisabo.jpg" },
+  { id: 16, name: "Inkangara", price: 140, category: "cultural", image: "/pictures/inkangara.jpg" },
+  { id: 17, name: "Agakomo", price: 5, category: "fashion", image: "/pictures/Agakomo.JPG" },
+  { id: 18, name: "Jumper itukura", price: 20, category: "fashion", image: "/pictures/jumperItukura.JPG" },
+  { id: 19, name: "Agenda", price: 10, category: "fashion", image: "/pictures/agenda.JPG" },
+  { id: 20, name: "Inyambo itakwa", price: 65, category: "decoration", image: "/pictures/forsale-inyambo-cow.jpg" },
 ]
 
 // Free resources data (unchanged)
@@ -55,8 +60,11 @@ const freeResources = [
 ]
 
 export default function GalleryPage() {
+  const { t } = useTranslation()
+  const { addToCart } = useCart()
   const [searchQuery, setSearchQuery] = useState("")
   const [activeCategory, setActiveCategory] = useState("all")
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => 
@@ -73,10 +81,17 @@ export default function GalleryPage() {
     )
   }, [searchQuery])
 
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      title: product.name,
+      price: product.price,
+    })
+  }
+
   return (
-    <div className="min-h-screen bg-[#FFFFFF] py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-full mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8 text-[#8B4513]">Umwero Gallery</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-[#8B4513]">{t('umweroGallery')}</h1>
 
         {/* Search Bar */}
         <div className="mb-8 max-w-md mx-auto">
@@ -84,7 +99,7 @@ export default function GalleryPage() {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#8B4513]" />
             <Input
               type="search"
-              placeholder="Search by name, category, or price..."
+              placeholder={t('searchPlaceholder')}
               className="pl-10 bg-[#F3E5AB] text-[#8B4513] border-[#8B4513] focus:ring-2 focus:ring-[#8B4513] focus:border-[#8B4513] transition-all duration-300"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -94,16 +109,16 @@ export default function GalleryPage() {
 
         {/* Free Resources Section */}
         <section className="mb-12">
-          <h2 className="text-2xl font-semibold mb-4 text-[#8B4513]">Free Educational Resources</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-[#8B4513]">{t('freeEducationalResources')}</h2>
           {filteredFreeResources.length > 0 ? (
-            <ScrollArea className="w-full rounded-md border border-[#8B4513]">
-              <div className="flex space-x-4 p-4">
+            <ScrollArea className="w-full h-[300px] rounded-md border border-[#8B4513]">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 p-4">
                 {filteredFreeResources.map((resource) => (
-                  <Card key={resource.id} className="w-[200px] flex-shrink-0 bg-[#F3E5AB] border-[#8B4513]">
+                  <Card key={resource.id} className="w-full bg-[#F3E5AB] border-[#8B4513]">
                     <CardHeader className="p-3">
                       <div className="aspect-square w-full relative overflow-hidden rounded-md">
                         <Image 
-                          src={resource.image} 
+                          src={resource.image || "/placeholder.svg"} 
                           alt={resource.name} 
                           layout="fill"
                           objectFit="cover"
@@ -117,7 +132,7 @@ export default function GalleryPage() {
                     <CardFooter className="p-3">
                       <Button asChild className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] text-xs">
                         <a href={resource.downloadLink} download>
-                          <Download className="mr-1 h-3 w-3" /> Download
+                          <Download className="mr-1 h-3 w-3" /> {t('download')}
                         </a>
                       </Button>
                     </CardFooter>
@@ -126,54 +141,92 @@ export default function GalleryPage() {
               </div>
             </ScrollArea>
           ) : (
-            <p className="text-center text-[#8B4513]">No free resources match your search.</p>
+            <p className="text-center text-[#8B4513]">{t('noFreeResourcesFound')}</p>
           )}
         </section>
 
         {/* Products Section */}
         <section>
-          <h2 className="text-2xl font-semibold mb-4 text-[#8B4513]">Umwero Products</h2>
+          <h2 className="text-2xl font-semibold mb-4 text-[#8B4513]">{t('umweroProducts')}</h2>
           <Tabs defaultValue="all" className="mb-6">
-            <TabsList>
-              <TabsTrigger value="all" onClick={() => setActiveCategory("all")}>All</TabsTrigger>
-              <TabsTrigger value="paintings" onClick={() => setActiveCategory("paintings")}>Paintings</TabsTrigger>
-              <TabsTrigger value="cultural" onClick={() => setActiveCategory("cultural")}>Cultural</TabsTrigger>
-              <TabsTrigger value="fashion" onClick={() => setActiveCategory("fashion")}>Fashion</TabsTrigger>
-              <TabsTrigger value="decoration" onClick={() => setActiveCategory("decoration")}>Decoration</TabsTrigger>
+            <TabsList className="mb-4 flex flex-wrap justify-center">
+              <TabsTrigger value="all" onClick={() => setActiveCategory("all")}>{t('all')}</TabsTrigger>
+              <TabsTrigger value="paintings" onClick={() => setActiveCategory("paintings")}>{t('paintings')}</TabsTrigger>
+              <TabsTrigger value="cultural" onClick={() => setActiveCategory("cultural")}>{t('cultural')}</TabsTrigger>
+              <TabsTrigger value="fashion" onClick={() => setActiveCategory("fashion")}>{t('fashion')}</TabsTrigger>
+              <TabsTrigger value="decoration" onClick={() => setActiveCategory("decoration")}>{t('decoration')}</TabsTrigger>
             </TabsList>
           </Tabs>
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
-                <Card key={product.id} className="bg-[#F3E5AB] border-[#8B4513]">
-                  <CardHeader>
+                <Card key={product.id} className="bg-[#F3E5AB] border-[#8B4513] hover:shadow-lg transition-shadow duration-300">
+                  <CardHeader className="p-3 cursor-pointer" onClick={() => setSelectedProduct(product)}>
                     <div className="aspect-square w-full relative overflow-hidden rounded-md">
                       <Image 
-                        src={product.image} 
+                        src={product.image || "/placeholder.svg"} 
                         alt={product.name} 
                         layout="fill"
                         objectFit="cover"
-                        className="rounded-md"
+                        className="rounded-md transition-transform duration-300 hover:scale-105"
                       />
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <CardTitle className="text-[#8B4513]">{product.name}</CardTitle>
-                    <CardDescription className="text-[#D2691E]">${product.price}</CardDescription>
+                    <CardTitle className="text-[#8B4513] text-lg mb-2">{product.name}</CardTitle>
+                    <CardDescription className="text-[#D2691E] text-base">${product.price.toFixed(2)}</CardDescription>
                   </CardContent>
                   <CardFooter>
-                    <Button className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]">
-                      <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+                    <Button 
+                      className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] transition-colors duration-300"
+                      onClick={() => handleAddToCart(product)}
+                    >
+                      <ShoppingCart className="mr-2 h-4 w-4" /> {t('addToCart')}
                     </Button>
                   </CardFooter>
                 </Card>
               ))}
             </div>
           ) : (
-            <p className="text-center text-[#8B4513]">No products match your search.</p>
+            <p className="text-center text-[#8B4513]">{t('noProductsFound')}</p>
           )}
         </section>
-      </div>
+
+        {/* Product Detail Dialog */}
+        <Dialog open={!!selectedProduct} onOpenChange={(open) => !open && setSelectedProduct(null)}>
+          <DialogContent className="bg-[#F3E5AB] border-[#8B4513]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-[#8B4513]">{selectedProduct?.name}</DialogTitle>
+              <DialogClose onClick={() => setSelectedProduct(null)} />
+            </DialogHeader>
+            <div className="mt-4">
+              <div className="aspect-square w-full relative overflow-hidden rounded-md mb-4">
+                <Image 
+                  src={selectedProduct?.image || "/placeholder.svg"} 
+                  alt={selectedProduct?.name} 
+                  layout="fill"
+                  objectFit="cover"
+                  className="rounded-md"
+                />
+              </div>
+              <DialogDescription className="text-[#D2691E] text-lg mb-4">
+                ${selectedProduct?.price.toFixed(2)}
+              </DialogDescription>
+              <p className="text-[#8B4513] mb-4">
+                {t('productDescription')}
+              </p>
+              <Button 
+                className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] transition-colors duration-300"
+                onClick={() => {
+                  handleAddToCart(selectedProduct)
+                  setSelectedProduct(null)
+                }}
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" /> {t('addToCart')}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }

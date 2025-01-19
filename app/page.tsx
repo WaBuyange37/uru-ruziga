@@ -2,12 +2,14 @@
 
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
-import { CircleIcon, BookOpen, Calendar, Calculator, GamepadIcon } from 'lucide-react'
+import { CircleIcon, BookOpen, Calendar, Calculator, GamepadIcon, LogIn } from 'lucide-react'
 import Link from 'next/link'
 import { useTranslation } from '../hooks/useTranslation'
+import { useAuth } from './contexts/AuthContext'
 
 export default function Home() {
   const { t } = useTranslation()
+  const { isAuthenticated, user } = useAuth()
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -16,21 +18,29 @@ export default function Home() {
         <div className="container mx-auto text-center">
           <CircleIcon className="mx-auto h-24 w-24 mb-8 text-[#8B4513]" />
           <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-[#8B4513]">
-            {t('enterCircleOfKnowledge')}
+            {isAuthenticated ? t('welcomeBack', { name: user?.fullName }) : t('enterCircleOfKnowledge')}
           </h1>
           <p className="text-xl text-[#D2691E] mb-8">
             {t('whereEveryLetterTellsStory')}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
-            <Button size="lg" asChild>
-              <Link href="/learn">{t('startLearning')}</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/fund">{t('fundUs')}</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="/calendar">{t('exploreCalendar')}</Link>
-            </Button>
+            {isAuthenticated ? (
+              <Button size="lg" asChild>
+                <Link href="/dashboard">{t('continueLearning')}</Link>
+              </Button>
+            ) : (
+              <>
+                <Button size="lg" asChild>
+                  <Link href="/learn">{t('startLearning')}</Link>
+                </Button>
+                <Button size="lg" variant="outline" asChild>
+                  <Link href="/login">
+                    <LogIn className="mr-2 h-5 w-5" />
+                    {t('logIn')}
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </section>
