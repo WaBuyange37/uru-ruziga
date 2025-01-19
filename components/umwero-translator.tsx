@@ -9,18 +9,20 @@ import { Input } from "./ui/input"
 import { Label } from "./ui/label"
 import { Switch } from "./ui/switch"
 import { Slider } from "./ui/slider"
+import { ArrowRightLeft } from 'lucide-react'
 import mammoth from "mammoth"
 import { usePdfGenerator } from '../hooks/use-pdf-generator'
 
 export function UmweroTranslator() {
   const [input, setInput] = useState('')
   const [translated, setTranslated] = useState('')
-  const [showReference, setShowReference] = useState(false)
+  const [showReference, setShowReference] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { translate } = useUmweroTranslation()
+  const { latinToUmwero, umweroToLatin, charMap, consonantMap } = useUmweroTranslation()
   const [fontLoaded, setFontLoaded] = useState(false)
   const [fontSize, setFontSize] = useState(16)
   const { generatePdf, isGenerating } = usePdfGenerator()
+  const [translationDirection, setTranslationDirection] = useState<'latinToUmwero' | 'umweroToLatin'>('umweroToLatin')
 
   useEffect(() => {
     // Load the Umwero font
@@ -41,7 +43,17 @@ export function UmweroTranslator() {
   }, []);
 
   const handleTranslate = () => {
-    setTranslated(translate(input))
+    if (translationDirection === 'latinToUmwero') {
+      setTranslated(latinToUmwero(input))
+    } else {
+      setTranslated(umweroToLatin(input))
+    }
+  }
+
+  const handleSwap = () => {
+    setTranslationDirection(prev => prev === 'latinToUmwero' ? 'umweroToLatin' : 'latinToUmwero')
+    setInput(translated)
+    setTranslated(input)
   }
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,6 +93,14 @@ export function UmweroTranslator() {
     }
   }
 
+  const vowelMap = {
+    'A': '"',
+    'E': '|',
+    'I': '}',
+    'O': '{',
+    'U': ':'
+  }
+
   return (
     <Card className="w-full max-w-6xl mx-auto bg-[#F3E5AB] border-[#8B4513]">
       <CardHeader>
@@ -89,6 +109,26 @@ export function UmweroTranslator() {
       </CardHeader>
       <CardContent>
         <div className="grid w-full gap-4">
+          <div className="flex items-center justify-between">
+            <div className="relative w-[200px]">
+              <select
+                value={translationDirection}
+                onChange={(e) => setTranslationDirection(e.target.value as 'latinToUmwero' | 'umweroToLatin')}
+                className="w-full p-2 bg-white border border-[#8B4513] rounded text-[#8B4513] appearance-none cursor-pointer"
+              >
+                <option value="umweroToLatin">Umwero to Latin</option>
+                <option value="latinToUmwero">Latin to Umwero</option>
+              </select>
+              <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                <svg className="w-4 h-4 fill-current text-[#8B4513]" viewBox="0 0 20 20">
+                  <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" fillRule="evenodd"></path>
+                </svg>
+              </div>
+            </div>
+            <Button onClick={handleSwap} variant="outline" size="icon">
+              <ArrowRightLeft className="h-4 w-4" />
+            </Button>
+          </div>
           <div>
             <Label htmlFor="file-upload" className="text-[#8B4513]">Upload .txt or .docx file</Label>
             <Input
@@ -121,7 +161,7 @@ export function UmweroTranslator() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 style={{ fontSize: `${fontSize}px`, height: '300px' }}
-                className="resize-none bg-white border-[#8B4513] text-[#8B4513]"
+                className={`resize-none bg-white border-[#8B4513] text-[#8B4513] ${translationDirection === 'umweroToLatin' && fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
               />
             </div>
             <div>
@@ -131,7 +171,7 @@ export function UmweroTranslator() {
                 placeholder="Translated text will appear here..."
                 value={translated}
                 readOnly
-                className={`resize-none bg-white border-[#8B4513] ${fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
+                className={`resize-none bg-white border-[#8B4513] text-[#8B4513] ${translationDirection === 'latinToUmwero' && fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
                 style={{ fontSize: `${fontSize}px`, height: '300px' }}
               />
             </div>
@@ -155,48 +195,38 @@ export function UmweroTranslator() {
             />
             <Label htmlFor="show-reference" className="text-[#8B4513]">Show Reference Table</Label>
           </div>
+          {showReference && (
+            <div className="mt-8">
+              <h2 className="text-2xl font-bold mb-4 text-[#8B4513]">Reference Table</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border border-[#8B4513] p-2 text-[#8B4513]">Latin</th>
+                      <th className="border border-[#8B4513] p-2 text-[#8B4513]">Umwero</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(vowelMap).map(([latin, umwero]) => (
+                      <tr key={latin}>
+                        <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin}</td>
+                        <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
+                      </tr>
+                    ))}
+                    {Object.entries(consonantMap).map(([latin, umwero]) => (
+                      <tr key={latin}>
+                        <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin}</td>
+                        <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
-        {showReference && <ReferenceTable />}
       </CardContent>
     </Card>
-  )
-}
-
-function ReferenceTable() {
-  const { charMap, consonantMap } = useUmweroTranslation()
-
-  return (
-    <div className="mt-8">
-      <h2 className="text-2xl font-bold mb-4 text-[#8B4513]">Reference Table</h2>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="border border-[#8B4513] p-2 text-[#8B4513]">Latin</th>
-              <th className="border border-[#8B4513] p-2 text-[#8B4513]">Umwero</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(charMap).map(([latin, umwero]) => (
-              latin.length === 1 && (
-                <tr key={latin}>
-                  <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin.toUpperCase()}</td>
-                  <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
-                </tr>
-              )
-            ))}
-            {Object.entries(consonantMap).map(([latin, umwero]) => (
-              latin.length <= 2 && (
-                <tr key={latin}>
-                  <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin}</td>
-                  <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
-                </tr>
-              )
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   )
 }
 

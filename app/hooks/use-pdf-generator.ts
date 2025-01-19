@@ -9,8 +9,13 @@ export const usePdfGenerator = () => {
     try {
       const doc = new jsPDF();
 
+      // Fetch the font file
+      const fontResponse = await fetch('/UMWEROPUAnumbers.otf');
+      const fontArrayBuffer = await fontResponse.arrayBuffer();
+      const fontBase64 = btoa(String.fromCharCode(...new Uint8Array(fontArrayBuffer)));
+
       // Add the UMWEROalpha font to the PDF
-      doc.addFileToVFS('UMWEROPUAnumbers.otf', '/UMWEROPUAnumbers.otf');
+      doc.addFileToVFS('UMWEROPUAnumbers.otf', fontBase64);
       doc.addFont('UMWEROPUAnumbers.otf', 'UMWEROalpha', 'normal');
 
       // Set the font and ensure it's loaded before using it
