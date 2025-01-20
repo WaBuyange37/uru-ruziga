@@ -1,6 +1,7 @@
 "use client"
 
-import React, { createContext, useState, useContext, useEffect } from 'react'
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
 interface User {
   id: string
@@ -12,54 +13,49 @@ interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
-  register: (username: string, email: string, password: string) => Promise<void>
+  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
 
   useEffect(() => {
-    // Check if user is stored in localStorage
-    const storedUser = localStorage.getItem('user')
+    // Check for existing session on initial load
+    const storedUser = localStorage.getItem("uruzigaUser")
     if (storedUser) {
       setUser(JSON.parse(storedUser))
     }
   }, [])
 
   const login = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const newUser = { id: '1', username: 'testuser', email }
-    setUser(newUser)
-    localStorage.setItem('user', JSON.stringify(newUser))
+    // Implement your login logic here
+    // For demonstration, we'll just set a mock user
+    const mockUser: User = { id: "1", username: "testuser", email: email }
+    setUser(mockUser)
+    localStorage.setItem("uruzigaUser", JSON.stringify(mockUser))
   }
 
   const logout = () => {
     setUser(null)
-    localStorage.removeItem('user')
+    localStorage.removeItem("uruzigaUser")
   }
 
-  const register = async (username: string, email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    const newUser = { id: '1', username, email }
-    setUser(newUser)
-    localStorage.setItem('user', JSON.stringify(newUser))
+  const value = {
+    user,
+    login,
+    logout,
+    isAuthenticated: !!user,
   }
 
-  return (
-    <AuthContext.Provider value={{ user, login, logout, register }}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
 }

@@ -5,6 +5,18 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+@font-face {
+  font-family: "UMWEROalpha";
+  src: url("/fonts/UMWEROPUAnumbers.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+.font-umwero {
+  font-family: "UmweroPUAnumbers", sans-serif;
+}
 
 @layer base {
   :root {
