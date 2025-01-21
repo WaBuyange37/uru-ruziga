@@ -1,28 +1,28 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '../contexts/AuthContext'
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "../contexts/AuthContext"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import Link from 'next/link'
+import Link from "next/link"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
   const router = useRouter()
   const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError('')
+    setError("")
     try {
       await login(email, password)
-      router.push('/')
+      router.push("/")
     } catch (err) {
-      setError('Failed to log in')
+      setError("Failed to log in")
     }
   }
 
@@ -61,7 +61,7 @@ export default function LoginPage() {
             </Button>
           </form>
           <p className="mt-4 text-center text-[#8B4513]">
-            Don't have an account?{' '}
+            Don't have an account?{" "}
             <Link href="/register" className="text-[#D2691E] hover:underline">
               Register here
             </Link>

@@ -7,16 +7,16 @@ body {
 }
 @font-face {
   font-family: "UMWEROalpha";
-  src: url("/fonts/UMWEROPUAnumbers.otf") format("opentype");
+  src: url("/UMWEROPUAnumbers.otf") format("opentype");
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
 }
-
 
 .font-umwero {
-  font-family: "UmweroPUAnumbers", sans-serif;
+  font-family: "UMWEROalpha", sans-serif;
 }
+
+
 
 @layer base {
   :root {

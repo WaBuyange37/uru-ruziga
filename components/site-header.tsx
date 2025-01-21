@@ -67,7 +67,7 @@ export function SiteHeader() {
       <header className="sticky top-0 z-50 w-full border-b bg-[#F3E5AB]">
         <div className="container flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 px-2">
-            <CircleIcon className="h-6 w-6 text-[#8B4513]" />
+            <CircleIcon className="h-12 w-12 text-[#8B4513]" />
             <span className="text-2xl font-bold sm:inline-block">Uruziga</span>
           </Link>
           <nav>
@@ -86,7 +86,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b bg-[#F3E5AB]">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center space-x-2 px-2">
-          <CircleIcon className="h-6 w-6 text-[#8B4513]" />
+          <CircleIcon className="h-12 w-12 text-[#8B4513]" />
           <span className="text-2xl font-bold sm:inline-block">Uruziga</span>
         </Link>
         <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center">

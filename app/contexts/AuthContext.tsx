@@ -1,58 +1,78 @@
 "use client"
 
-import type React from "react"
-import { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, type ReactNode } from "react"
 
 interface User {
-  id: string
-  username: string
+  _id: string
   email: string
+  name: string
 }
 
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string) => Promise<void>
   logout: () => void
-  isAuthenticated: boolean
+  register: (email: string, password: string, name: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
 
-  useEffect(() => {
-    // Check for existing session on initial load
-    const storedUser = localStorage.getItem("uruzigaUser")
-    if (storedUser) {
-      setUser(JSON.parse(storedUser))
+  async function login(email: string, password: string) {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Login failed")
+      }
+
+      const { user } = await response.json()
+      setUser(user)
+    } catch (error: any) {
+      console.error("Login error:", error.message)
+      throw error
     }
-  }, [])
-
-  const login = async (email: string, password: string) => {
-    // Implement your login logic here
-    // For demonstration, we'll just set a mock user
-    const mockUser: User = { id: "1", username: "testuser", email: email }
-    setUser(mockUser)
-    localStorage.setItem("uruzigaUser", JSON.stringify(mockUser))
   }
 
-  const logout = () => {
+  function logout() {
     setUser(null)
-    localStorage.removeItem("uruzigaUser")
   }
 
-  const value = {
-    user,
-    login,
-    logout,
-    isAuthenticated: !!user,
+  async function register(email: string, password: string, name: string) {
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password, name }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Registration failed")
+      }
+
+      await login(email, password)
+    } catch (error: any) {
+      console.error("Registration error:", error.message)
+      throw error
+    }
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, logout, register }}>{children}</AuthContext.Provider>
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error("useAuth must be used within an AuthProvider")
