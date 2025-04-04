@@ -6,10 +6,9 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 @font-face {
-  font-family: "UMWEROalpha";
-  src: url("/UMWEROPUAnumbers.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
+  font-family: 'UMWEROalpha';
+  src: url('/UMWEROalpha.ttf') format('truetype');
+  font-feature-settings: "liga", "rlig", "calt";
 }
 
 .font-umwero {
