@@ -14,6 +14,34 @@ body {
 .font-umwero {
   font-family: "UMWEROalpha", sans-serif;
 }
+.umwero-mode,
+.umwero-mode * {
+  font-family: 'UMWEROalpha', serif !important;
+}
+
+.umwero-mode {
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+/* Smooth transition */
+* {
+  transition: font-family 0.3s ease;
+}
+
+/* umweero page */
+[data-language="um"] {
+  font-family: 'UMWEROalpha', serif !important;
+}
+
+[data-language="um"] * {
+  font-family: 'UMWEROalpha', serif !important;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+html, body, * {
+  transition: font-family 0.3s ease;
+}
 
 
 

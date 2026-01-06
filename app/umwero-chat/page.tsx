@@ -1,303 +1,472 @@
-'use client'
+"use client"
+import { useState, useEffect, useRef } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { Button } from "../../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Input } from "../../components/ui/input"
+import { Badge } from "../../components/ui/badge"
+import { useTranslation } from "../../hooks/useTranslation"
+import { 
+  Send, 
+  Download, 
+  Share2, 
+  Camera, 
+  Twitter, 
+  Facebook, 
+  Copy,
+  Check,
+  MessageCircle,
+  Sparkles
+} from 'lucide-react'
 
-import { useState, useRef, useEffect } from 'react'
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Slider } from "@/components/ui/slider"
-import { Switch } from "@/components/ui/switch"
-import { Camera, Share2 } from 'lucide-react'
-import { useTranslation } from '../../hooks/useTranslation'
-import html2canvas from 'html2canvas'
-import { useUmweroTranslation } from '@/hooks/use-umwero-translation'
-import { usePdfGenerator } from '@/hooks/use-pdf-generator'
+// Import the real Umwero translation system
+import { useUmweroTranslation } from '../../hooks/use-umwero-translation'
 
-export default function UmweroChat() {
-  const [inputText, setInputText] = useState('')
-  const [umweroText, setUmweroText] = useState('')
-  const [screenshot, setScreenshot] = useState<string | null>(null)
+interface ChatMessage {
+  id: string
+  latinText: string
+  umweroText: string
+  timestamp: Date
+  user: string
+}
+
+export default function UmweroChatPage() {
   const { t } = useTranslation()
-  const umweroTextRef = useRef<HTMLDivElement>(null)
-  const { latinToUmwero, charMap, consonantMap } = useUmweroTranslation()
-  const [fontLoaded, setFontLoaded] = useState(false)
-  const [fontSize, setFontSize] = useState(16)
-  const { generatePdf, isGenerating } = usePdfGenerator()
-  const [showReference, setShowReference] = useState(false)
+  const { user } = useAuth()
+  const { latinToUmwero, umweroToLatin } = useUmweroTranslation() // Use real translation
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [inputText, setInputText] = useState('')
+  const [umweroPreview, setUmweroPreview] = useState('')
+  const [fontSize, setFontSize] = useState(24)
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const umweroPreviewRef = useRef<HTMLDivElement>(null)
+  const chatRef = useRef<HTMLDivElement>(null)
 
+  // Auto-translate text as user types using real Umwero translation
   useEffect(() => {
-    // Load the Umwero font
-    const loadFont = async () => {
-      try {
-        const font = new FontFace('UMWEROalpha', 'url(/fonts/UMWEROPUAnumbers.otf)');
-        await font.load();
-        document.fonts.add(font);
-        setFontLoaded(true);
-        console.log('Umwero font loaded successfully');
-      } catch (error) {
-        console.error('Error loading Umwero font:', error);
-        alert('Failed to load the Umwero font. Some features may not work correctly.');
-      }
-    };
-
-    loadFont();
-  }, []);
-
-  // Automatically translate input text to Umwero
-  useEffect(() => {
-    if (inputText) {
-      const translated = latinToUmwero(inputText)
-      setUmweroText(translated)
-    } else {
-      setUmweroText('')
-    }
+    const translated = latinToUmwero(inputText)
+    setUmweroPreview(translated)
   }, [inputText, latinToUmwero])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputText(e.target.value)
+  // Load saved messages from localStorage
+  useEffect(() => {
+    const savedMessages = localStorage.getItem('umwero-chat-messages')
+    if (savedMessages) {
+      const parsed = JSON.parse(savedMessages).map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }))
+      setMessages(parsed)
+    }
+  }, [])
+
+  // Save messages to localStorage
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('umwero-chat-messages', JSON.stringify(messages))
+    }
+  }, [messages])
+
+  const sendMessage = () => {
+    if (!inputText.trim()) return
+    
+    const newMessage: ChatMessage = {
+      id: Date.now().toString(),
+      latinText: inputText,
+      umweroText: umweroPreview,
+      timestamp: new Date(),
+      user: user?.fullName || user?.email || 'Anonymous'
+    }
+
+    setMessages(prev => [newMessage, ...prev])
+    setInputText('')
+    setUmweroPreview('')
   }
 
-  const handleFontSizeChange = (value: number[]) => {
-    setFontSize(value[0])
-  }
-
-  const takeScreenshot = async () => {
-    if (umweroTextRef.current) {
-      const canvas = await html2canvas(umweroTextRef.current)
-      const image = canvas.toDataURL("image/png")
-      setScreenshot(image)
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      sendMessage()
     }
   }
 
-  const shareScreenshot = async (platform: 'twitter' | 'facebook' | 'whatsapp') => {
-    if (!screenshot) {
-      alert(t('takeScreenshotFirst'))
-      return
-    }
-
+  const generateSocialImage = async (message: ChatMessage) => {
+    setIsGeneratingImage(true)
+    
     try {
-      // Convert base64 to blob
-      const response = await fetch(screenshot)
-      const blob = await response.blob()
-      
-      // Create file from blob
-      const file = new File([blob], 'umwero-text.png', { type: 'image/png' })
+      // Create a canvas for the image
+      const canvas = document.createElement('canvas')
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
 
-      if (navigator.share && platform === 'whatsapp') {
-        try {
-          await navigator.share({
-            files: [file],
-            title: t('umweroText'),
-            text: t('checkOutMyUmweroText')
-          })
-          return
-        } catch (error) {
-          console.error('Error sharing:', error)
+      // Set canvas size
+      canvas.width = 800
+      canvas.height = 600
+
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+      gradient.addColorStop(0, '#F3E5AB')
+      gradient.addColorStop(1, '#D2691E')
+      ctx.fillStyle = gradient
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+      // Add decorative border
+      ctx.strokeStyle = '#8B4513'
+      ctx.lineWidth = 8
+      ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40)
+
+      // Title
+      ctx.fillStyle = '#8B4513'
+      ctx.font = 'bold 36px Arial'
+      ctx.textAlign = 'center'
+      ctx.fillText('Umwero Message', canvas.width / 2, 100)
+
+      // Latin text
+      ctx.font = '24px Arial'
+      ctx.fillStyle = '#654321'
+      ctx.fillText('Latin: ' + message.latinText, canvas.width / 2, 180)
+
+      // Umwero text (larger and centered)
+      ctx.font = `${fontSize + 20}px UMWEROalpha, serif`
+      ctx.fillStyle = '#8B4513'
+      ctx.textAlign = 'center'
+      
+      // Word wrap for long text
+      const words = message.umweroText.split(' ')
+      let line = ''
+      let y = 280
+      const maxWidth = canvas.width - 100
+      const lineHeight = fontSize + 30
+
+      for (let i = 0; i < words.length; i++) {
+        const testLine = line + words[i] + ' '
+        const metrics = ctx.measureText(testLine)
+        const testWidth = metrics.width
+        
+        if (testWidth > maxWidth && i > 0) {
+          ctx.fillText(line, canvas.width / 2, y)
+          line = words[i] + ' '
+          y += lineHeight
+        } else {
+          line = testLine
         }
       }
+      ctx.fillText(line, canvas.width / 2, y)
 
-      // Fallback for platforms without native sharing
-      const blobUrl = URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      
-      switch (platform) {
-        case 'twitter':
-          link.href = blobUrl
-          link.download = 'umwero-text.png'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.open('https://twitter.com/compose/tweet', '_blank')
-          break
-          
-        case 'facebook':
-          const form = document.createElement('form')
-          form.method = 'post'
-          form.target = '_blank'
-          form.action = 'https://www.facebook.com/share.php'
-          
-          const input = document.createElement('input')
-          input.type = 'file'
-          input.style.display = 'none'
-          input.files = new FileList([file])
-          
-          form.appendChild(input)
-          document.body.appendChild(form)
-          form.submit()
-          document.body.removeChild(form)
-          break
-          
-        case 'whatsapp':
-          link.href = blobUrl
-          link.download = 'umwero-text.png'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
-          window.open('https://web.whatsapp.com', '_blank')
-          break
-      }
-      
-      URL.revokeObjectURL(blobUrl)
+      // Footer
+      ctx.font = '18px Arial'
+      ctx.fillStyle = '#8B4513'
+      ctx.fillText('Created with Uruziga - Umwero Learning Platform', canvas.width / 2, canvas.height - 80)
+      ctx.fillText(`By: ${message.user}`, canvas.width / 2, canvas.height - 50)
+
+      // Convert to blob and download
+      canvas.toBlob((blob) => {
+        if (!blob) return
+        
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `umwero-message-${Date.now()}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+      })
+
     } catch (error) {
-      console.error('Error processing screenshot:', error)
-      alert(t('errorSharingScreenshot'))
+      console.error('Error generating image:', error)
+      alert('Failed to generate image. Please try again.')
+    } finally {
+      setIsGeneratingImage(false)
     }
   }
 
-  const handleDownloadPDF = async () => {
+  const copyToClipboard = async (text: string) => {
     try {
-      await generatePdf(umweroText, fontSize);
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('An error occurred while generating the PDF. Please try again.');
+      console.error('Failed to copy:', error)
     }
   }
 
-  const vowelMap = {
-    'A': '"',
-    'E': '|',
-    'I': '}',
-    'O': '{',
-    'U': ':'
+  const shareToSocial = (platform: string, message: ChatMessage) => {
+    const text = `Check out this Umwero message: "${message.latinText}" ✨ Learn more about Umwero alphabet at`
+    const url = window.location.origin
+    
+    const shareUrls = {
+      twitter: `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
+      facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`
+    }
+    
+    window.open(shareUrls[platform as keyof typeof shareUrls], '_blank')
+  }
+
+  const clearChat = () => {
+    setMessages([])
+    localStorage.removeItem('umwero-chat-messages')
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto bg-[#F3E5AB] border-[#8B4513]">
-      <CardHeader>
-        <CardTitle className="text-[#8B4513]">{t('umweroChat')}</CardTitle>
-        <CardDescription className="text-[#D2691E]">{t('umweroChatDescription')}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="input-text" className="text-[#8B4513]">{t('enterLatinText')}</Label>
-            <Textarea
-              id="input-text"
-              placeholder={t('typeLatinMessage')}
-              value={inputText}
-              onChange={handleInputChange}
-              className="w-full h-40 p-2 border border-[#8B4513] rounded-md focus:ring-2 focus:ring-[#8B4513] focus:border-transparent bg-white"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-[#8B4513]">{t('umweroTranslation')}</Label>
-            <div 
-              ref={umweroTextRef} 
-              className="text-[#8B4513] text-left p-4 min-h-[100px] border border-[#8B4513] rounded-md bg-white"
-              style={{ 
-                fontFamily: fontLoaded ? 'UMWEROalpha, sans-serif' : 'sans-serif',
-                fontSize: `${fontSize}px`
-              }}
-            >
-              {umweroText}
+    <div className="container mx-auto px-4 py-8 bg-[#FFFFFF]">
+      <h1 className="text-4xl font-bold mb-6 text-center text-[#8B4513]">
+        {t("umweroChat")}
+      </h1>
+      
+      <p className="text-xl text-center mb-8 text-[#D2691E]">
+        Type in Latin and see it transform into beautiful Umwero script ✨
+      </p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Input Section */}
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader>
+            <CardTitle className="text-[#8B4513] flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Compose Message
+            </CardTitle>
+            <CardDescription className="text-[#D2691E]">
+              Type your message and watch it transform to Umwero
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Input Field */}
+            <div>
+              <label className="block text-sm font-medium text-[#8B4513] mb-2">
+                Latin Text
+              </label>
+              <Input
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message here..."
+                className="border-[#8B4513] text-lg"
+              />
             </div>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <Label htmlFor="font-size" className="text-[#8B4513]">{t('fontSize')}: {fontSize}px</Label>
-            <Slider
-              id="font-size"
-              min={12}
-              max={32}
-              step={1}
-              value={[fontSize]}
-              onValueChange={handleFontSizeChange}
-              className="w-[200px]"
-            />
-          </div>
-
-          <div className="flex flex-wrap justify-start gap-2">
-            <Button 
-              onClick={takeScreenshot} 
-              className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
-              disabled={!umweroText}
-            >
-              <Camera className="h-4 w-4 mr-2" />
-              {t('takeScreenshot')}
-            </Button>
-            <Button 
-              onClick={() => shareScreenshot('twitter')} 
-              className="bg-[#1DA1F2] text-white hover:bg-[#1a90da]" 
-              disabled={!screenshot}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Twitter
-            </Button>
-            <Button 
-              onClick={() => shareScreenshot('facebook')} 
-              className="bg-[#4267B2] text-white hover:bg-[#365899]" 
-              disabled={!screenshot}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              Facebook
-            </Button>
-            <Button 
-              onClick={() => shareScreenshot('whatsapp')} 
-              className="bg-[#25D366] text-white hover:bg-[#128C7E]" 
-              disabled={!screenshot}
-            >
-              <Share2 className="h-4 w-4 mr-2" />
-              WhatsApp
-            </Button>
-            <Button 
-              onClick={handleDownloadPDF} 
-              disabled={!umweroText || isGenerating}
-              className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] disabled:bg-gray-400"
-            >
-              {isGenerating ? t('generatingPDF') : t('downloadAsPDF')}
-            </Button>
-          </div>
-
-          {screenshot && (
-            <div className="mt-4">
-              <h2 className="text-xl font-semibold mb-2 text-[#8B4513]">{t('screenshot')}</h2>
-              <img src={screenshot || "/placeholder.svg"} alt="Umwero text screenshot" className="border border-[#8B4513] rounded-md" />
+            {/* Font Size Control */}
+            <div>
+              <label className="block text-sm font-medium text-[#8B4513] mb-2">
+                Font Size: {fontSize}px
+              </label>
+              <input
+                type="range"
+                min="16"
+                max="48"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+                className="w-full"
+              />
             </div>
-          )}
 
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="show-reference"
-              checked={showReference}
-              onCheckedChange={setShowReference}
-              className="bg-[#8B4513]"
-            />
-            <Label htmlFor="show-reference" className="text-[#8B4513]">{t('showReferenceTable')}</Label>
-          </div>
-
-          {showReference && (
-            <div className="mt-8">
-              <h2 className="text-2xl font-bold mb-4 text-[#8B4513]">{t('referenceTable')}</h2>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr>
-                      <th className="border border-[#8B4513] p-2 text-[#8B4513]">{t('latin')}</th>
-                      <th className="border border-[#8B4513] p-2 text-[#8B4513]">{t('umwero')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.entries(vowelMap).map(([latin, umwero]) => (
-                      <tr key={latin}>
-                        <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin}</td>
-                        <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
-                      </tr>
-                    ))}
-                    {Object.entries(consonantMap).map(([latin, umwero]) => (
-                      <tr key={latin}>
-                        <td className="border border-[#8B4513] p-2 font-serif text-[#8B4513]">{latin}</td>
-                        <td className="border border-[#8B4513] p-2 font-['UMWEROalpha'] text-[#8B4513]">{umwero}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Live Umwero Preview */}
+            <div>
+              <label className="block text-sm font-medium text-[#8B4513] mb-2">
+                Umwero Preview
+              </label>
+              <div 
+                ref={umweroPreviewRef}
+                className="min-h-[120px] p-4 bg-white border-2 border-[#8B4513] rounded-lg"
+                style={{ 
+                  fontFamily: "'UMWEROalpha', serif",
+                  fontSize: `${fontSize}px`,
+                  lineHeight: '1.5',
+                  color: '#8B4513'
+                }}
+              >
+                {umweroPreview || (
+                  <span className="text-gray-400 italic" style={{ fontFamily: 'Arial, sans-serif', fontSize: '16px' }}>
+                    Your Umwero text will appear here as you type...
+                  </span>
+                )}
               </div>
             </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                onClick={sendMessage}
+                disabled={!inputText.trim()}
+                className="flex-1 bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Send Message
+              </Button>
+              
+              {umweroPreview && (
+                <Button
+                  onClick={() => copyToClipboard(umweroPreview)}
+                  variant="outline"
+                  className="border-[#8B4513] text-[#8B4513]"
+                >
+                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Chat Messages */}
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader>
+            <div className="flex justify-between items-center">
+              <CardTitle className="text-[#8B4513] flex items-center gap-2">
+                <Sparkles className="h-5 w-5" />
+                Messages ({messages.length})
+              </CardTitle>
+              {messages.length > 0 && (
+                <Button
+                  onClick={clearChat}
+                  variant="outline"
+                  size="sm"
+                  className="border-[#8B4513] text-[#8B4513]"
+                >
+                  Clear All
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div 
+              ref={chatRef}
+              className="space-y-4 max-h-[600px] overflow-y-auto"
+            >
+              {messages.length === 0 ? (
+                <div className="text-center py-8 text-[#D2691E]">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 text-[#D2691E]" />
+                  <p>No messages yet. Send your first Umwero message!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <Card key={message.id} className="bg-white border-[#8B4513]">
+                    <CardContent className="p-4">
+                      {/* Message Header */}
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-[#8B4513] text-[#F3E5AB]">
+                            {message.user}
+                          </Badge>
+                          <span className="text-sm text-[#D2691E]">
+                            {message.timestamp.toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Latin Text */}
+                      <div className="mb-3">
+                        <p className="text-sm text-[#D2691E] mb-1">Latin:</p>
+                        <p className="text-[#8B4513]">{message.latinText}</p>
+                      </div>
+
+                      {/* Umwero Text - Using Real Translation */}
+                      <div className="mb-4">
+                        <p className="text-sm text-[#D2691E] mb-1">Umwero:</p>
+                        <div 
+                          className="p-3 bg-[#F3E5AB] rounded-lg border border-[#D2691E]"
+                          style={{ 
+                            fontFamily: "'UMWEROalpha', serif",
+                            fontSize: `${fontSize}px`,
+                            lineHeight: '1.5',
+                            color: '#8B4513'
+                          }}
+                        >
+                          {message.umweroText}
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => generateSocialImage(message)}
+                          disabled={isGeneratingImage}
+                          size="sm"
+                          className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                        >
+                          <Camera className="h-3 w-3 mr-1" />
+                          {isGeneratingImage ? 'Creating...' : 'PNG'}
+                        </Button>
+                        
+                        <Button
+                          onClick={() => copyToClipboard(message.umweroText)}
+                          size="sm"
+                          variant="outline"
+                          className="border-[#8B4513] text-[#8B4513]"
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copy
+                        </Button>
+
+                        <Button
+                          onClick={() => shareToSocial('twitter', message)}
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-500 text-blue-500"
+                        >
+                          <Twitter className="h-3 w-3 mr-1" />
+                          Tweet
+                        </Button>
+
+                        <Button
+                          onClick={() => shareToSocial('facebook', message)}
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-600 text-blue-600"
+                        >
+                          <Facebook className="h-3 w-3 mr-1" />
+                          Share
+                        </Button>
+
+                        <Button
+                          onClick={() => shareToSocial('whatsapp', message)}
+                          size="sm"
+                          variant="outline"
+                          className="border-green-500 text-green-500"
+                        >
+                          <Share2 className="h-3 w-3 mr-1" />
+                          WhatsApp
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Features Info */}
+      <Card className="mt-8 bg-[#F3E5AB] border-[#8B4513]">
+        <CardHeader>
+          <CardTitle className="text-[#8B4513] text-center">✨ Features</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div>
+              <Sparkles className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2">Auto Translation</h3>
+              <p className="text-sm text-[#D2691E]">
+                Text automatically converts to Umwero as you type
+              </p>
+            </div>
+            <div>
+              <Camera className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2">Social Sharing</h3>
+              <p className="text-sm text-[#D2691E]">
+                Generate beautiful PNG images for social media
+              </p>
+            </div>
+            <div>
+              <Share2 className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2">Easy Sharing</h3>
+              <p className="text-sm text-[#D2691E]">
+                One-click sharing to Twitter, Facebook, WhatsApp
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
-

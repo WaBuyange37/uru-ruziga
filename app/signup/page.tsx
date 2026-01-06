@@ -42,6 +42,14 @@ export default function SignupPage() {
       return
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setError("Invalid email format")
+      setLoading(false)
+      return
+    }
+
     if (password.length < 6) {
       setError("Password must be at least 6 characters")
       setLoading(false)
@@ -61,7 +69,8 @@ export default function SignupPage() {
     }
 
     try {
-      await register(email, password, fullName)
+      // Fix: Pass parameters in correct order: (username, email, password)
+      await register(fullName, email, password)
       router.push("/dashboard")
     } catch (err: any) {
       setError(err.message || "Signup failed")

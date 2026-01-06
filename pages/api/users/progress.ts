@@ -20,7 +20,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   if (req.method !== "GET") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
@@ -39,6 +39,9 @@ export default async function handler(
           },
         },
       },
+      orderBy: {
+        createdAt: 'desc'
+      }
     });
 
     // Calculate statistics
@@ -47,7 +50,15 @@ export default async function handler(
       where: { isPublished: true },
     });
 
-    // Calculate current streak (simplified - days with completed lessons)
+    // Calculate average score
+    const scores = lessonProgress
+      .filter((p) => p.score !== null && p.score !== undefined)
+      .map((p) => p.score!);
+    const averageScore = scores.length > 0
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
+
+    // Calculate current streak (consecutive days with completed lessons)
     const recentCompletions = lessonProgress.filter(
       (p) =>
         p.completed &&
@@ -55,9 +66,9 @@ export default async function handler(
         new Date(p.completedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     );
 
-    // Calculate quizzes passed (for now, we'll use completed lessons as proxy)
+    // Calculate quizzes passed (lessons with score >= 70)
     const quizzesPassed = lessonProgress.filter(
-      (p) => p.completed && p.score && p.score >= 70
+      (p) => p.completed && p.score !== null && p.score !== undefined && p.score >= 70
     ).length;
 
     // Get recent activity for last week
@@ -67,7 +78,7 @@ export default async function handler(
         new Date(p.completedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     ).length;
 
-    // Get next lesson to study
+    // Get next lesson to study (first incomplete lesson)
     const nextLesson = await prisma.lesson.findFirst({
       where: {
         isPublished: true,
@@ -82,7 +93,7 @@ export default async function handler(
       orderBy: [{ module: "asc" }, { order: "asc" }],
     });
 
-    // Get a random practice quiz lesson
+    // Get a practice lesson (completed lesson for review)
     const practiceLesson = await prisma.lesson.findFirst({
       where: {
         isPublished: true,
@@ -95,19 +106,42 @@ export default async function handler(
       },
     });
 
+    // Calculate progress by module
+    const moduleProgress = await prisma.lesson.groupBy({
+      by: ['module'],
+      where: { isPublished: true },
+      _count: { id: true }
+    });
+
+    const progressByModule = moduleProgress.map(module => {
+      const moduleLessons = lessonProgress.filter(
+        p => p.lesson.module === module.module
+      );
+      const completed = moduleLessons.filter(p => p.completed).length;
+      return {
+        module: module.module,
+        completed,
+        total: module._count.id,
+        progress: module._count.id > 0 ? Math.round((completed / module._count.id) * 100) : 0
+      };
+    });
+
     const progressData = {
       lessonsCompleted: completedLessons,
       totalLessons,
+      averageScore,
       currentStreak: Math.min(recentCompletions.length, 7), // Max 7 days
       quizzesPassed,
       achievementsEarned: Math.floor(completedLessons / 5), // 1 achievement per 5 lessons
       progressFromLastWeek: lastWeekProgress,
+      progressByModule,
       nextLesson: nextLesson
         ? {
             id: nextLesson.id,
             title: nextLesson.title,
             description: nextLesson.description,
             module: nextLesson.module,
+            order: nextLesson.order,
           }
         : null,
       practiceLesson: practiceLesson
@@ -115,6 +149,7 @@ export default async function handler(
             id: practiceLesson.id,
             title: practiceLesson.title,
             description: practiceLesson.description,
+            module: practiceLesson.module,
           }
         : null,
       recentProgress: lessonProgress
@@ -126,6 +161,7 @@ export default async function handler(
         )
         .slice(0, 5)
         .map((p) => ({
+          lessonId: p.lessonId,
           lessonTitle: p.lesson.title,
           completedAt: p.completedAt,
           score: p.score,
@@ -133,12 +169,15 @@ export default async function handler(
     };
 
     res.status(200).json({ progress: progressData });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching user progress:", error);
-    if (error.message === "No token provided") {
-      res.status(401).json({ message: "Authentication required" });
+    if (error.message === "No token provided" || error.name === "JsonWebTokenError") {
+      res.status(401).json({ error: "Authentication required" });
     } else {
-      res.status(500).json({ message: "Error fetching progress data" });
+      const errorMessage = process.env.NODE_ENV === 'development' 
+        ? (error.message || 'Error fetching progress data')
+        : 'Error fetching progress data'
+      res.status(500).json({ error: errorMessage });
     }
   }
 }
