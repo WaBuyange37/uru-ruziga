@@ -1,4 +1,3 @@
-// app/contexts/AuthContext.tsx
 "use client"
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
@@ -62,6 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('token', token)
       localStorage.setItem('user', JSON.stringify(user))
       
+      // Set cookie for middleware
+      document.cookie = `token=${token}; path=/; max-age=${7 * 24 * 60 * 60}` // 7 days
+      
       setUser(user)
     } catch (error: any) {
       console.error('Login error:', error.message)
@@ -95,6 +97,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    // Clear cookie
+    document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
     setUser(null)
   }
 
