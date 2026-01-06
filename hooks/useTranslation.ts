@@ -10,6 +10,11 @@ export function useTranslation() {
     return translations[language][key] || key
   }
 
-  return { t, language }
-}
+  const isUmwero = language === 'um'
+  
+  const getLanguageStyle = () => {
+    return isUmwero ? 'umwero-font' : ''
+  }
 
+  return { t, language, isUmwero, getLanguageStyle }
+}
