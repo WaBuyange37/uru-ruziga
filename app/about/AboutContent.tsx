@@ -6,8 +6,9 @@ import { useTranslation } from "../../hooks/useTranslation"
 import { UmweroText, UmweroHeading, UmweroParagraph } from "../../components/UmweroText"
 
 export default function AboutContent() {
-  const { t, isUmwero, getLanguageStyle } = useTranslation()
-
+  // const { t, isUmwero, getLanguageStyle } = useTranslation()
+// Line 9 - Remove isUmwero from destructuring
+const { t, getLanguageStyle } = useTranslation()
   return (
     <div className="container mx-auto px-4 py-8 bg-[#FFFFFF]">
       <UmweroHeading level={1} className="text-4xl font-bold mb-6 text-center text-[#8B4513]">
