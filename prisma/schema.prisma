@@ -1,5 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// prisma/schema.prisma
+// Complete schema for Supabase (PostgreSQL)
+// Optimized for educational apps with Umwero learning
 
 generator client {
   provider = "prisma-client-js"
@@ -10,219 +11,341 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// ENUMS
+// ============================================
 
-// User Management
+enum UserRole {
+  USER
+  ADMIN
+  TEACHER
+}
+
+enum LessonModule {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LessonType {
+  VOWEL
+  CONSONANT
+  WORD
+  SENTENCE
+  GRAMMAR
+  CULTURE
+}
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  fullName  String
-  password  String
-  role      UserRole @default(STUDENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String    @id @default(cuid())
+  email       String    @unique
+  password    String
+  fullName    String?
+  phoneNumber String?
+  role        UserRole  @default(USER)
+  avatar      String?
+  bio         String?   @db.Text
+  country     String?
+  language    String    @default("en")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
 
   // Relations
-  progress        LessonProgress[]
-  discussions     Discussion[]
-  comments        Comment[]
-  donations       Donation[]
-  orders          Order[]
-  certificates    Certificate[]
-  workshopSuggestions WorkshopSuggestion[]
+  orders         Order[]
+  discussions    Discussion[]
+  comments       Comment[]
+  donations      Donation[]
+  lessonProgress LessonProgress[]
+  drawings       UserDrawing[] // Canvas practice drawings
+  achievements   UserAchievement[] // Gamification
+  certificates   Certificate[] // Course completion
 
+  @@index([email])
+  @@index([role])
   @@map("users")
 }
 
-enum UserRole {
-  STUDENT
-  ADMIN
-}
+// ============================================
+// LEARNING SYSTEM
+// ============================================
 
-// Learning System
 model Lesson {
-  id          String      @id @default(cuid())
-  title       String
-  description String?
-  content     String
-  module      String      // beginner, intermediate, advanced
-  order       Int
-  duration    String?
-  images      String[]    // Array of image URLs
-  videoUrl    String?
-  isPublished Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String       @id @default(cuid())
+  title         String
+  description   String?      @db.Text
+  content       String?      @db.Text // JSON content
+  module        LessonModule @default(BEGINNER)
+  type          LessonType   @default(VOWEL)
+  order         Int
+  duration      Int // in minutes
+  videoUrl      String?
+  thumbnailUrl  String?
+  prerequisites String[] // Array of lesson IDs
+  isPublished   Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   // Relations
-  progress    LessonProgress[]
+  progress     LessonProgress[]
+  userDrawings UserDrawing[]
+  quizzes      Quiz[]
 
+  @@index([module, order])
+  @@index([type])
   @@map("lessons")
 }
 
 model LessonProgress {
-  id         String   @id @default(cuid())
-  userId     String
-  lessonId   String
-  completed  Boolean  @default(false)
-  score      Int?
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  score       Int? // Percentage (0-100)
+  timeSpent   Int       @default(0) // in seconds
+  attempts    Int       @default(0)
   completedAt DateTime?
-  createdAt  DateTime @default(now())
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson     Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([completed])
   @@map("lesson_progress")
 }
 
-// Community Features
+// ============================================
+// CANVAS PRACTICE & DRAWINGS
+// ============================================
+
+model UserDrawing {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String?
+  vowel       String // e.g., "a", "e", "i", "o", "u"
+  umweroChar  String // e.g., '"', '|', '}', '{', ':'
+  drawingData String   @db.Text // Base64 image OR Supabase storage URL
+  aiScore     Int? // AI validation score (0-100)
+  feedback    String?  @db.Text // AI feedback
+  isCorrect   Boolean  @default(false)
+  timeSpent   Int      @default(0) // in seconds
+  createdAt   DateTime @default(now())
+
+  // Relations
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([lessonId])
+  @@index([vowel])
+  @@index([createdAt])
+  @@map("user_drawings")
+}
+
+// ============================================
+// QUIZZES & ASSESSMENTS
+// ============================================
+
+model Quiz {
+  id           String   @id @default(cuid())
+  lessonId     String
+  title        String
+  description  String?  @db.Text
+  questions    String   @db.Text // JSON array of questions
+  passingScore Int      @default(70)
+  timeLimit    Int? // in minutes
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  lesson   Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  attempts QuizAttempt[]
+
+  @@index([lessonId])
+  @@map("quizzes")
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  answers   String   @db.Text // JSON
+  score     Int
+  passed    Boolean
+  timeSpent Int // in seconds
+  createdAt DateTime @default(now())
+
+  // Relations
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+// ============================================
+// GAMIFICATION
+// ============================================
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String   @db.Text
+  icon        String?
+  category    String // e.g., "completion", "streak", "mastery"
+  requirement String   @db.Text // JSON criteria
+  points      Int      @default(0)
+  isSecret    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model Certificate {
+  id               String   @id @default(cuid())
+  userId           String
+  courseName       String
+  level            String // BEGINNER, INTERMEDIATE, ADVANCED
+  issueDate        DateTime @default(now())
+  certificateUrl   String? // PDF URL in Supabase storage
+  verificationCode String   @unique
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([verificationCode])
+  @@map("certificates")
+}
+
+// ============================================
+// COMMUNITY
+// ============================================
+
 model Discussion {
   id        String   @id @default(cuid())
+  userId    String
   title     String
-  content   String
-  authorId  String
+  content   String   @db.Text
+  category  String?
+  isPinned  Boolean  @default(false)
+  views     Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  comments  Comment[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comments Comment[]
 
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
   @@map("discussions")
 }
 
 model Comment {
   id           String   @id @default(cuid())
-  content      String
-  authorId     String
+  userId       String
   discussionId String
+  content      String   @db.Text
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   // Relations
-  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([discussionId])
   @@map("comments")
 }
 
-model WorkshopSuggestion {
-  id          String   @id @default(cuid())
-  title       String
-  description String
-  suggestedBy String
-  createdAt   DateTime @default(now())
-
-  // Relations
-  user        User     @relation(fields: [suggestedBy], references: [id], onDelete: Cascade)
-
-  @@map("workshop_suggestions")
-}
-
-// E-commerce & Funding
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Float
-  category    String   // paintings, cultural, fashion, decoration
-  imageUrl    String
-  inStock     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  orderItems  OrderItem[]
-
-  @@map("products")
-}
+// ============================================
+// COMMERCE
+// ============================================
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  total       Float
-  status      OrderStatus @default(PENDING)
+  id            String   @id @default(cuid())
+  userId        String
+  status        String // pending, completed, cancelled
+  total         Float
+  items         String   @db.Text // JSON
   paymentMethod String?
-  shippingAddress String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  transactionId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items       OrderItem[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([status])
   @@map("orders")
 }
 
-model OrderItem {
-  id        String @id @default(cuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Float
-
-  // Relations
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  @@map("order_items")
-}
-
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-}
-
 model Donation {
-  id          String   @id @default(cuid())
-  userId      String?
-  amount      Float
-  currency    String   @default("RWF")
-  donorName   String
-  donorEmail  String
-  message     String?
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String   @default("USD")
+  message       String?  @db.Text
+  isAnonymous   Boolean  @default(false)
   paymentMethod String?
-  status      DonationStatus @default(PENDING)
-  createdAt   DateTime @default(now())
+  transactionId String?
+  createdAt     DateTime @default(now())
 
   // Relations
-  user        User?    @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([createdAt])
   @@map("donations")
 }
 
-enum DonationStatus {
-  PENDING
-  COMPLETED
-  FAILED
-}
+// ============================================
+// ANALYTICS (Optional - for future)
+// ============================================
 
-// Certification System
-model Certificate {
-  id          String   @id @default(cuid())
-  userId      String
-  courseName  String
-  issuedAt    DateTime @default(now())
-  certificateId String @unique
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String // e.g., "lesson_started", "drawing_saved"
+  entityType String? // e.g., "lesson", "drawing"
+  entityId   String?
+  metadata   String?  @db.Text // JSON
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
-  // Relations
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("certificates")
-}
-
-// Translation Resources
-model Translation {
-  id          String   @id @default(cuid())
-  originalText String
-  translatedText String
-  fromLanguage String  // latin, kinyarwanda
-  toLanguage   String  // umwero
-  createdAt   DateTime @default(now())
-
-  @@map("translations")
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
 }

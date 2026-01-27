@@ -1,0 +1,196 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  fullName            String
+  password            String
+  role                UserRole             @default(STUDENT)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  certificates        Certificate[]
+  comments            Comment[]
+  discussions         Discussion[]
+  donations           Donation[]
+  progress            LessonProgress[]
+  orders              Order[]
+  workshopSuggestions WorkshopSuggestion[]
+
+  @@map("users")
+}
+
+model Lesson {
+  id          String           @id @default(cuid())
+  title       String
+  description String?
+  content     String
+  module      String
+  order       Int
+  duration    String?
+  images      String[]
+  videoUrl    String?
+  isPublished Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  progress    LessonProgress[]
+
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  score       Int?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@map("lesson_progress")
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  userId        String
+  courseName    String
+  issuedAt      DateTime @default(now())
+  certificateId String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+model Discussion {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  authorId  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  comments  Comment[]
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@map("discussions")
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  content      String
+  authorId     String
+  discussionId String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  author       User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+model WorkshopSuggestion {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  suggestedBy String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [suggestedBy], references: [id], onDelete: Cascade)
+
+  @@map("workshop_suggestions")
+}
+
+model Product {
+  id          String      @id @default(cuid())
+  name        String
+  description String?
+  price       Float
+  category    String
+  imageUrl    String
+  inStock     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  total           Float
+  status          OrderStatus @default(PENDING)
+  paymentMethod   String?
+  shippingAddress String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  items           OrderItem[]
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model Donation {
+  id            String         @id @default(cuid())
+  userId        String?
+  amount        Float
+  currency      String         @default("RWF")
+  donorName     String
+  donorEmail    String
+  message       String?
+  paymentMethod String?
+  status        DonationStatus @default(PENDING)
+  createdAt     DateTime       @default(now())
+  user          User?          @relation(fields: [userId], references: [id])
+
+  @@map("donations")
+}
+
+model Translation {
+  id             String   @id @default(cuid())
+  originalText   String
+  translatedText String
+  fromLanguage   String
+  toLanguage     String
+  createdAt      DateTime @default(now())
+
+  @@map("translations")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum DonationStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}

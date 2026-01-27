@@ -1,5 +1,5 @@
 "use client"
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/conexts/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react'
 
 interface User {

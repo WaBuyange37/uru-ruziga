@@ -1,5 +1,5 @@
 "use client";
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/app/page.tsx
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import {

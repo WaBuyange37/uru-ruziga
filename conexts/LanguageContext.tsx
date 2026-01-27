@@ -1,7 +1,7 @@
 "use client"
 // /home/nzela37/Kwizera/Projects/uru-ruziga/conexts/LanguageContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react'
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/conexts/LanguageContext.tsx
 type Language = 'en' | 'rw' | 'um'
 
 interface LanguageContextType {

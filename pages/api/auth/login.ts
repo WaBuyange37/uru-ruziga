@@ -1,8 +1,10 @@
-// / pages/api/auth/login.ts
+// pages/api/auth/login.ts
+// Login API route for Neon database
+
 import { NextApiRequest, NextApiResponse } from 'next'
+import { prisma } from '../../../lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { prisma } from '../../../lib/prisma'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -12,56 +14,62 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { email, password } = req.body
 
-    // Validate input
+    // Validation
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' })
     }
 
-    // Find user
+    // Find user by email
     const user = await prisma.user.findUnique({
-      where: { email }
+      where: { email: email.toLowerCase() },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        fullName: true,
+        role: true,
+        avatar: true,
+      }
     })
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid credentials' })
+      return res.status(401).json({ error: 'Invalid email or password' })
     }
 
-    // Check password
+    // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.password)
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Invalid credentials' })
+      return res.status(401).json({ error: 'Invalid email or password' })
     }
 
-    // Create JWT token
+    // Update last login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() }
+    })
+
+    // Generate JWT token
     const token = jwt.sign(
       { 
-        userId: user.id, 
+        userId: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
     )
 
-    // Return user data in format expected by frontend (with username field)
-    const userData = {
-      id: user.id,
-      username: user.fullName, // Map fullName to username for frontend
-      email: user.email
-    }
+    // Return user data (without password) and token
+    const { password: _, ...userWithoutPassword } = user
 
     res.status(200).json({
-      message: 'Login successful',
-      user: userData,
-      token
+      user: userWithoutPassword,
+      token,
+      message: 'Login successful'
     })
-
-  } catch (error: any) {
+  } catch (error) {
     console.error('Login error:', error)
-    const errorMessage = process.env.NODE_ENV === 'development' 
-      ? (error.message || 'Internal server error')
-      : 'Internal server error'
-    res.status(500).json({ error: errorMessage })
+    res.status(500).json({ error: 'Internal server error' })
   }
 }

@@ -1,5 +1,5 @@
 "use client"
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/app/signup/page.tsx
 import { useState } from "react"
 import { useTranslation } from "../../hooks/useTranslation"
 import { Button } from "../../components/ui/button"
