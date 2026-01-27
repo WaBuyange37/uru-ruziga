@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/components/auth/RegisterForm.tsx
 export function RegisterForm() {
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')

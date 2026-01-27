@@ -1,88 +1,55 @@
-// Create this file: components/UmweroText.tsx
+// components/UmweroText.tsx
+'use client'
 
-import React from 'react'
-import { useTranslation } from '../hooks/useTranslation'
+import { useLanguage } from '../app/contexts/LanguageContext'
+import { ReactNode } from 'react'
 
 interface UmweroTextProps {
-  children: React.ReactNode
+  children: ReactNode
   className?: string
-  style?: React.CSSProperties
-  tag?: keyof JSX.IntrinsicElements
+  as?: 'span' | 'div' | 'p' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 }
 
-export function UmweroText({ 
-  children, 
-  className = '', 
-  style = {}, 
-  tag: Tag = 'span' 
-}: UmweroTextProps) {
-  const { getLanguageStyle, isUmwero } = useTranslation()
+/**
+ * Component that automatically applies Umwero font when language is 'um'
+ * Usage: <UmweroText>Your text here</UmweroText>
+ */
+export function UmweroText({ children, className = '', as = 'span' }: UmweroTextProps) {
+  const { language } = useLanguage()
   
-  const combinedStyle = {
-    ...getLanguageStyle(),
-    ...style
-  }
+  const umweroStyle = language === 'um' ? {
+    fontFamily: "'UMWEROalpha', serif"
+  } : {}
+  
+  const Component = as
   
   return (
-    <Tag 
-      className={`${className} ${isUmwero ? 'umwero-font' : ''}`}
-      style={combinedStyle}
+    <Component 
+      className={className} 
+      style={umweroStyle}
     >
       {children}
-    </Tag>
+    </Component>
   )
 }
 
-// Specific components for common elements
-export function UmweroHeading({ 
-  children, 
-  level = 1, 
-  className = '', 
-  style = {} 
-}: {
-  children: React.ReactNode
-  level?: 1 | 2 | 3 | 4 | 5 | 6
-  className?: string
-  style?: React.CSSProperties
-}) {
-  const Tag = `h${level}` as keyof JSX.IntrinsicElements
-  return (
-    <UmweroText tag={Tag} className={className} style={style}>
-      {children}
-    </UmweroText>
-  )
-}
-
-export function UmweroParagraph({ 
-  children, 
-  className = '', 
-  style = {} 
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-}) {
-  return (
-    <UmweroText tag="p" className={className} style={style}>
-      {children}
-    </UmweroText>
-  )
-}
-
-export function UmweroButton({ 
-  children, 
-  className = '', 
-  style = {},
-  ...props 
-}: {
-  children: React.ReactNode
-  className?: string
-  style?: React.CSSProperties
-  [key: string]: any
-}) {
-  return (
-    <UmweroText tag="button" className={className} style={style} {...props}>
-      {children}
-    </UmweroText>
-  )
+/**
+ * HOC version for wrapping components
+ */
+export function withUmweroFont<P extends object>(
+  Component: React.ComponentType<P>
+) {
+  return function UmweroFontWrapper(props: P) {
+    const { language } = useLanguage()
+    
+    if (language === 'um') {
+      return (
+        <div style={{ fontFamily: "'UMWEROalpha', serif" }}>
+          <Component {...props} />
+        </div>
+      )
+    }
+    
+    return <Component {...props} />
+  }
 }

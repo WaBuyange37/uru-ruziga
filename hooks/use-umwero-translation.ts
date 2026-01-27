@@ -1,3 +1,4 @@
+// /home/nzela37/Kwizera/Projects/uru-ruziga/hooks/use-umwero-translation.ts
 export function useUmweroTranslation() {
   const charMap = {
     'a': '"', ':': '=', 'u': ':', 'o': '{',

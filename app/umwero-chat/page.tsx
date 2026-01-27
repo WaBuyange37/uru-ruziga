@@ -1,4 +1,5 @@
 "use client"
+// /home/nzela37/Kwizera/Projects/uru-ruziga/app/umwero-chat/page.tsx
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from "../../components/ui/button"

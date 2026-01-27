@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../../../../lib/prisma'
-
+// /home/nzela37/Kwizera/Projects/uru-ruziga/pages/api/lessons/[id]/progress.ts
 // Helper function to verify JWT token
 function verifyToken(req: NextApiRequest) {
   const token = req.headers.authorization?.replace('Bearer ', '') || 

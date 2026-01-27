@@ -20,8 +20,12 @@ body {
 
 @font-face {
   font-family: 'UMWEROalpha';
-  src: url('/UMWEROPUAnumbers.otf') format('opentype');
+  src: url('/UMWEROPUAnumbers.ttf') format('opentype');
+   font-weight: normal;
+  font-style: normal;
+  font-display: swap;
 }
+
 
 * {
   scrollbar-width: thin;
@@ -40,5 +44,69 @@ body {
   background-color: #8B4513;
   border-radius: 20px;
   border: 2px solid #F3E5AB;
+}
+
+/* ========================================
+   UMWERO FONT DECLARATIONS
+   ======================================== */
+
+@font-face {
+  font-family: 'UMWEROalpha';
+  src: url('/Umwero.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'UMWEROPUAnumbers';
+  src: url('/UMWEROPUAnumbers.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Fallback paths in case fonts are in different location */
+@font-face {
+  font-family: 'UMWEROalpha-alt';
+  src: url('../public/Umwero.ttf') format('truetype'),
+       url('/Umwero.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========================================
+   CSS VARIABLES & UTILITY CLASSES
+   ======================================== */
+
+:root {
+  --font-umwero: 'UMWEROalpha', 'UMWEROalpha-alt', serif;
+}
+
+/* Global Umwero font class */
+.font-umwero {
+  font-family: var(--font-umwero) !important;
+}
+
+/* Apply Umwero font to all children */
+.font-umwero * {
+  font-family: var(--font-umwero) !important;
+}
+
+/* Ensure proper rendering */
+.font-umwero,
+.font-umwero * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: normal;
+}
+
+/* Test class - you can use this to verify font is working */
+.test-umwero {
+  font-family: 'UMWEROalpha', serif;
+  font-size: 48px;
+  color: #8B4513;
 }
 
