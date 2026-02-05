@@ -160,7 +160,13 @@ export function UmweroTranslator() {
                 placeholder="Enter text to translate..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                style={{ fontSize: `${fontSize}px`, height: '300px' }}
+                style={{ 
+                  fontSize: `${fontSize}px`, 
+                  height: '300px',
+                  letterSpacing: translationDirection === 'umweroToLatin' ? '0.12em' : '0.02em',
+                  wordSpacing: translationDirection === 'umweroToLatin' ? '0.22em' : '0.05em',
+                  lineHeight: translationDirection === 'umweroToLatin' ? '1.65' : '1.5'
+                }}
                 className={`resize-none bg-white border-[#8B4513] text-[#8B4513] ${translationDirection === 'umweroToLatin' && fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
               />
             </div>
@@ -172,7 +178,13 @@ export function UmweroTranslator() {
                 value={translated}
                 readOnly
                 className={`resize-none bg-white border-[#8B4513] text-[#8B4513] ${translationDirection === 'latinToUmwero' && fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
-                style={{ fontSize: `${fontSize}px`, height: '300px' }}
+                style={{ 
+                  fontSize: `${fontSize}px`, 
+                  height: '300px',
+                  letterSpacing: translationDirection === 'latinToUmwero' ? '0.12em' : '0.02em',
+                  wordSpacing: translationDirection === 'latinToUmwero' ? '0.22em' : '0.05em',
+                  lineHeight: translationDirection === 'latinToUmwero' ? '1.65' : '1.5'
+                }}
               />
             </div>
           </div>

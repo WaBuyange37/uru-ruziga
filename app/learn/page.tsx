@@ -173,13 +173,57 @@ export default function Page() {
     }
   ]
 
+  const [vowelLessons, setVowelLessons] = useState<any[]>([])
+  const [vowelIndex, setVowelIndex] = useState(0)
+
   const startLesson = (lessonId: string) => {
     setActiveLesson(lessonId)
+    if (lessonId === 'vowels') {
+      setVowelIndex(0)
+    }
   }
 
   const stopLesson = () => {
     setActiveLesson(null)
   }
+
+  // Fetch vowel lessons (and consonants) on mount
+  useEffect(() => {
+    const loadLessons = async () => {
+      try {
+        const token = localStorage.getItem('token')
+        const headers: any = {}
+        if (token) headers['Authorization'] = `Bearer ${token}`
+
+        const res = await fetch('/api/lessons?type=VOWEL', { headers })
+        if (!res.ok) {
+          console.warn('Failed to fetch vowel lessons, status:', res.status)
+          return
+        }
+        const data = await res.json()
+        let lessons = data.lessons || []
+
+        // Desired order: [a, u, o, e, i]
+        const orderPref = ['a','u','o','e','i']
+        lessons = lessons.sort((a: any, b: any) => {
+          try {
+            const aV = JSON.parse(a.content).vowel
+            const bV = JSON.parse(b.content).vowel
+            return orderPref.indexOf(aV) - orderPref.indexOf(bV)
+          } catch (e) {
+            return 0
+          }
+        })
+
+        setVowelLessons(lessons)
+      } catch (error) {
+        console.error('Error loading lessons:', error)
+      }
+    }
+
+    loadLessons()
+  }, [])
+
 
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
@@ -198,7 +242,67 @@ export default function Page() {
             
             {/* Show CompleteVowelLesson for vowels lesson */}
             {activeLesson === 'vowels' ? (
-              <CompleteVowelLesson />
+              vowelLessons.length > 0 ? (
+                <CompleteVowelLesson
+                  vowelData={(() => {
+                    try {
+                      const content = JSON.parse(vowelLessons[vowelIndex].content)
+                      return {
+                        vowel: content.vowel,
+                        umwero: content.umwero,
+                        pronunciation: content.pronunciation,
+                        meaning: content.meaning,
+                        culturalNote: content.culturalNote,
+                        examples: content.examples || []
+                      }
+                    } catch (e) {
+                      return {
+                        vowel: 'a',
+                        umwero: '"',
+                        pronunciation: '/a/ as in father',
+                        meaning: 'Represents Cows',
+                        culturalNote: ''
+                      }
+                    }
+                  })()}
+                  lessonId={vowelLessons[vowelIndex].id}
+                  vowelNumber={vowelIndex + 1}
+                  totalVowels={vowelLessons.length}
+                  allVowels={vowelLessons.map((l: any) => {
+                    try {
+                      const c = JSON.parse(l.content)
+                      return { vowel: c.vowel, completed: l.progress?.completed || false, id: l.id }
+                    } catch (e) {
+                      return { vowel: 'a', completed: false, id: l.id }
+                    }
+                  })}
+                  onComplete={async () => {
+                    // refresh lessons progress after completion
+                    const token = localStorage.getItem('token')
+                    const headers: any = {}
+                    if (token) headers['Authorization'] = `Bearer ${token}`
+                    const res = await fetch('/api/lessons?type=VOWEL', { headers })
+                    if (res.ok) {
+                      const data = await res.json()
+                      setVowelLessons(data.lessons || [])
+                    }
+                    stopLesson()
+                  }}
+                  onNext={() => {
+                    if (vowelIndex < vowelLessons.length - 1) setVowelIndex(vowelIndex + 1)
+                  }}
+                  onPrevious={() => {
+                    if (vowelIndex > 0) setVowelIndex(vowelIndex - 1)
+                  }}
+                  hasNext={vowelIndex < vowelLessons.length - 1}
+                  hasPrevious={vowelIndex > 0}
+                />
+              ) : (
+                <div className="max-w-4xl mx-auto bg-white rounded-lg p-8 mt-16">
+                  <h2 className="text-2xl font-bold text-[#8B4513] mb-4">No vowel lessons found</h2>
+                  <p className="text-gray-600">Please try logging in or seeding the database.</p>
+                </div>
+              )
             ) : (
               // Placeholder for other lessons
               <div className="max-w-4xl mx-auto bg-white rounded-lg p-8 mt-16">

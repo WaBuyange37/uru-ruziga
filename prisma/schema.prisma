@@ -1,7 +1,3 @@
-// prisma/schema.prisma
-// Complete schema for Supabase (PostgreSQL)
-// Optimized for educational apps with Umwero learning
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,9 +7,261 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================
-// ENUMS
-// ============================================
+model User {
+  id             String            @id @default(cuid())
+  email          String            @unique
+  password       String
+  fullName       String?
+  phoneNumber    String?
+  role           UserRole          @default(USER)
+  avatar         String?
+  bio            String?
+  country        String?
+  language       String            @default("en")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  lastLoginAt    DateTime?
+  certificates   Certificate[]
+  comments       Comment[]
+  discussions    Discussion[]
+  donations      Donation[]
+  lessonProgress LessonProgress[]
+  orders         Order[]
+  achievements   UserAchievement[]
+  drawings       UserDrawing[]
+
+  @@index([email])
+  @@index([role])
+  @@map("users")
+}
+
+model Lesson {
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  content       String?
+  module        LessonModule     @default(BEGINNER)
+  type          LessonType       @default(VOWEL)
+  order         Int
+  duration      Int
+  videoUrl      String?
+  thumbnailUrl  String?
+  prerequisites String[]
+  isPublished   Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  progress      LessonProgress[]
+  quizzes       Quiz[]
+  userDrawings  UserDrawing[]
+
+  @@index([module, order])
+  @@index([type])
+  @@map("lessons")
+}
+
+model LessonProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  lessonId    String
+  completed   Boolean   @default(false)
+  score       Int?
+  timeSpent   Int       @default(0)
+  attempts    Int       @default(0)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@index([lessonId])
+  @@index([completed])
+  @@map("lesson_progress")
+}
+
+model UserDrawing {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String?
+  vowel       String
+  umweroChar  String
+  drawingData String
+  aiScore     Int?
+  feedback    String?
+  isCorrect   Boolean  @default(false)
+  timeSpent   Int      @default(0)
+  createdAt   DateTime @default(now())
+  lesson      Lesson?  @relation(fields: [lessonId], references: [id])
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([lessonId])
+  @@index([vowel])
+  @@index([createdAt])
+  @@map("user_drawings")
+}
+
+model Quiz {
+  id           String        @id @default(cuid())
+  lessonId     String
+  title        String
+  description  String?
+  questions    String
+  passingScore Int           @default(70)
+  timeLimit    Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  attempts     QuizAttempt[]
+  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@map("quizzes")
+}
+
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  answers   String
+  score     Int
+  passed    Boolean
+  timeSpent Int
+  createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+model Achievement {
+  id               String            @id @default(cuid())
+  name             String            @unique
+  description      String
+  icon             String?
+  category         String
+  requirement      String
+  points           Int               @default(0)
+  isSecret         Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime    @default(now())
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model Certificate {
+  id               String   @id @default(cuid())
+  userId           String
+  courseName       String
+  level            String
+  issueDate        DateTime @default(now())
+  certificateUrl   String?
+  verificationCode String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([verificationCode])
+  @@map("certificates")
+}
+
+model Discussion {
+  id        String    @id @default(cuid())
+  userId    String
+  title     String
+  content   String
+  category  String?
+  isPinned  Boolean   @default(false)
+  views     Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  comments  Comment[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([createdAt])
+  @@map("discussions")
+}
+
+model Comment {
+  id           String     @id @default(cuid())
+  userId       String
+  discussionId String
+  content      String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([discussionId])
+  @@map("comments")
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  status        String
+  total         Float
+  items         String
+  paymentMethod String?
+  transactionId String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("orders")
+}
+
+model Donation {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Float
+  currency      String   @default("USD")
+  message       String?
+  isAnonymous   Boolean  @default(false)
+  paymentMethod String?
+  transactionId String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("donations")
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
 
 enum UserRole {
   USER
@@ -34,318 +282,4 @@ enum LessonType {
   SENTENCE
   GRAMMAR
   CULTURE
-}
-
-// ============================================
-// USER MANAGEMENT
-// ============================================
-
-model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
-  password    String
-  fullName    String?
-  phoneNumber String?
-  role        UserRole  @default(USER)
-  avatar      String?
-  bio         String?   @db.Text
-  country     String?
-  language    String    @default("en")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lastLoginAt DateTime?
-
-  // Relations
-  orders         Order[]
-  discussions    Discussion[]
-  comments       Comment[]
-  donations      Donation[]
-  lessonProgress LessonProgress[]
-  drawings       UserDrawing[] // Canvas practice drawings
-  achievements   UserAchievement[] // Gamification
-  certificates   Certificate[] // Course completion
-
-  @@index([email])
-  @@index([role])
-  @@map("users")
-}
-
-// ============================================
-// LEARNING SYSTEM
-// ============================================
-
-model Lesson {
-  id            String       @id @default(cuid())
-  title         String
-  description   String?      @db.Text
-  content       String?      @db.Text // JSON content
-  module        LessonModule @default(BEGINNER)
-  type          LessonType   @default(VOWEL)
-  order         Int
-  duration      Int // in minutes
-  videoUrl      String?
-  thumbnailUrl  String?
-  prerequisites String[] // Array of lesson IDs
-  isPublished   Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  // Relations
-  progress     LessonProgress[]
-  userDrawings UserDrawing[]
-  quizzes      Quiz[]
-
-  @@index([module, order])
-  @@index([type])
-  @@map("lessons")
-}
-
-model LessonProgress {
-  id          String    @id @default(cuid())
-  userId      String
-  lessonId    String
-  completed   Boolean   @default(false)
-  score       Int? // Percentage (0-100)
-  timeSpent   Int       @default(0) // in seconds
-  attempts    Int       @default(0)
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-  @@index([completed])
-  @@map("lesson_progress")
-}
-
-// ============================================
-// CANVAS PRACTICE & DRAWINGS
-// ============================================
-
-model UserDrawing {
-  id          String   @id @default(cuid())
-  userId      String
-  lessonId    String?
-  vowel       String // e.g., "a", "e", "i", "o", "u"
-  umweroChar  String // e.g., '"', '|', '}', '{', ':'
-  drawingData String   @db.Text // Base64 image OR Supabase storage URL
-  aiScore     Int? // AI validation score (0-100)
-  feedback    String?  @db.Text // AI feedback
-  isCorrect   Boolean  @default(false)
-  timeSpent   Int      @default(0) // in seconds
-  createdAt   DateTime @default(now())
-
-  // Relations
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: SetNull)
-
-  @@index([userId])
-  @@index([lessonId])
-  @@index([vowel])
-  @@index([createdAt])
-  @@map("user_drawings")
-}
-
-// ============================================
-// QUIZZES & ASSESSMENTS
-// ============================================
-
-model Quiz {
-  id           String   @id @default(cuid())
-  lessonId     String
-  title        String
-  description  String?  @db.Text
-  questions    String   @db.Text // JSON array of questions
-  passingScore Int      @default(70)
-  timeLimit    Int? // in minutes
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  lesson   Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  attempts QuizAttempt[]
-
-  @@index([lessonId])
-  @@map("quizzes")
-}
-
-model QuizAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  quizId    String
-  answers   String   @db.Text // JSON
-  score     Int
-  passed    Boolean
-  timeSpent Int // in seconds
-  createdAt DateTime @default(now())
-
-  // Relations
-  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([quizId])
-  @@map("quiz_attempts")
-}
-
-// ============================================
-// GAMIFICATION
-// ============================================
-
-model Achievement {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String   @db.Text
-  icon        String?
-  category    String // e.g., "completion", "streak", "mastery"
-  requirement String   @db.Text // JSON criteria
-  points      Int      @default(0)
-  isSecret    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-
-  // Relations
-  userAchievements UserAchievement[]
-
-  @@map("achievements")
-}
-
-model UserAchievement {
-  id            String   @id @default(cuid())
-  userId        String
-  achievementId String
-  unlockedAt    DateTime @default(now())
-
-  // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@index([userId])
-  @@map("user_achievements")
-}
-
-model Certificate {
-  id               String   @id @default(cuid())
-  userId           String
-  courseName       String
-  level            String // BEGINNER, INTERMEDIATE, ADVANCED
-  issueDate        DateTime @default(now())
-  certificateUrl   String? // PDF URL in Supabase storage
-  verificationCode String   @unique
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([verificationCode])
-  @@map("certificates")
-}
-
-// ============================================
-// COMMUNITY
-// ============================================
-
-model Discussion {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  content   String   @db.Text
-  category  String?
-  isPinned  Boolean  @default(false)
-  views     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  comments Comment[]
-
-  @@index([userId])
-  @@index([category])
-  @@index([createdAt])
-  @@map("discussions")
-}
-
-model Comment {
-  id           String   @id @default(cuid())
-  userId       String
-  discussionId String
-  content      String   @db.Text
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  discussion Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([discussionId])
-  @@map("comments")
-}
-
-// ============================================
-// COMMERCE
-// ============================================
-
-model Order {
-  id            String   @id @default(cuid())
-  userId        String
-  status        String // pending, completed, cancelled
-  total         Float
-  items         String   @db.Text // JSON
-  paymentMethod String?
-  transactionId String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([status])
-  @@map("orders")
-}
-
-model Donation {
-  id            String   @id @default(cuid())
-  userId        String
-  amount        Float
-  currency      String   @default("USD")
-  message       String?  @db.Text
-  isAnonymous   Boolean  @default(false)
-  paymentMethod String?
-  transactionId String?
-  createdAt     DateTime @default(now())
-
-  // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([createdAt])
-  @@map("donations")
-}
-
-// ============================================
-// ANALYTICS (Optional - for future)
-// ============================================
-
-model ActivityLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  action     String // e.g., "lesson_started", "drawing_saved"
-  entityType String? // e.g., "lesson", "drawing"
-  entityId   String?
-  metadata   String?  @db.Text // JSON
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
-
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-  @@map("activity_logs")
 }

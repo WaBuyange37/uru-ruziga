@@ -77,11 +77,10 @@ export default function Home() {
           <div className="container mx-auto text-center">
             <CircleIcon className="mx-auto h-24 w-24 mb-8 text-[#8B4513]" />
             <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-[#8B4513]">
-              Welcome to Umwero Learning Platform
+              {t("welcomeToUmwero")}
             </h1>
             <p className="text-xl text-[#D2691E] mb-8">
-              Join our community to learn the beautiful Umwero alphabet and
-              preserve Kinyarwanda culture
+              {t("joinCommunity")}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button
@@ -89,7 +88,7 @@ export default function Home() {
                 asChild
                 className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
               >
-                <Link href="/signup">Get Started - Sign Up</Link>
+                <Link href="/signup">{t("getStarted")}</Link>
               </Button>
               <Button
                 size="lg"
@@ -97,7 +96,7 @@ export default function Home() {
                 asChild
                 className="border-[#8B4513] text-[#8B4513]"
               >
-                <Link href="/login">Already have an account? Login</Link>
+                <Link href="/login">{t("alreadyHaveAccount")}</Link>
               </Button>
             </div>
           </div>
@@ -107,19 +106,19 @@ export default function Home() {
         <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
           <div className="container mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
-              What You'll Get Access To
+              {t("whatYouGetAccess")}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card className="bg-[#F3E5AB] border-[#8B4513]">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                     <BookOpen className="h-5 w-5" />
-                    Interactive Lessons
+                    {t("interactiveLessonsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[#D2691E]">
-                    Learn Umwero step by step with interactive lessons
+                    {t("interactiveLessonsDesc")}
                   </p>
                 </CardContent>
               </Card>
@@ -127,12 +126,12 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                     <BarChart3 className="h-5 w-5" />
-                    Track Progress
+                    {t("trackProgressTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[#D2691E]">
-                    Monitor your learning journey and achievements
+                    {t("trackProgressDesc")}
                   </p>
                 </CardContent>
               </Card>
@@ -140,12 +139,12 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                     <GamepadIcon className="h-5 w-5" />
-                    Fun Games
+                    {t("funGamesTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[#D2691E]">
-                    Learn through engaging games and activities
+                    {t("funGamesDesc")}
                   </p>
                 </CardContent>
               </Card>
@@ -153,12 +152,12 @@ export default function Home() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                     <Calculator className="h-5 w-5" />
-                    Translation Tools
+                    {t("translationToolsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-[#D2691E]">
-                    Convert between Umwero and Latin scripts
+                    {t("translationToolsDesc")}
                   </p>
                 </CardContent>
               </Card>
@@ -176,10 +175,10 @@ export default function Home() {
       <section className="relative py-12 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
         <div className="container mx-auto text-center">
           <h1 className="text-3xl md:text-4xl font-bold tracking-tighter mb-4 text-[#8B4513]">
-            Welcome back, {user?.fullName}! 👋
+            {t("welcomeBack")}, {user?.fullName}! 👋
           </h1>
           <p className="text-lg text-[#D2691E] mb-6">
-            Continue your Umwero learning journey
+            {t("continueJourney")}
           </p>
 
           {/* Dashboard Access Button */}
@@ -193,7 +192,7 @@ export default function Home() {
                 >
                   <Link href="/admin">
                     <Settings className="mr-2 h-5 w-5" />
-                    Admin Dashboard
+                    {t("adminDashboard")}
                   </Link>
                 </Button>
                 <Button
@@ -204,7 +203,7 @@ export default function Home() {
                 >
                   <Link href="/dashboard">
                     <BarChart3 className="mr-2 h-5 w-5" />
-                    My Progress
+                    {t("myProgress")}
                   </Link>
                 </Button>
               </>
@@ -216,7 +215,7 @@ export default function Home() {
               >
                 <Link href="/dashboard">
                   <BarChart3 className="mr-2 h-5 w-5" />
-                  View Your Progress
+                  {t("viewYourProgress")}
                 </Link>
               </Button>
             )}
@@ -228,7 +227,7 @@ export default function Home() {
             >
               <Link href="/learn">
                 <BookOpen className="mr-2 h-5 w-5" />
-                Continue Learning
+                {t("continueLearn")}
               </Link>
             </Button>
           </div>
@@ -239,19 +238,19 @@ export default function Home() {
       <section className="py-16 px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
-            Features
+            {t("features")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card className="bg-[#F3E5AB] border-[#8B4513]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                   <BookOpen className="h-5 w-5" />
-                  Learn Umwero
+                  {t("learnUmweroTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#D2691E]">
-                  Interactive lessons to master the ancient script
+                  {t("learnUmweroDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -259,12 +258,12 @@ export default function Home() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                   <Calendar className="h-5 w-5" />
-                  Calendar
+                  {t("calendarTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#D2691E]">
-                  Explore ancient calendar systems
+                  {t("calendarDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -272,23 +271,23 @@ export default function Home() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                   <Calculator className="h-5 w-5" />
-                  Tools
+                  {t("toolsTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#D2691E]">Translation and learning tools</p>
+                <p className="text-[#D2691E]">{t("toolsDesc")}</p>
               </CardContent>
             </Card>
             <Card className="bg-[#F3E5AB] border-[#8B4513]">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-[#8B4513]">
                   <GamepadIcon className="h-5 w-5" />
-                  Games
+                  {t("gamesTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#D2691E]">
-                  Learn through interactive games
+                  {t("gamesDesc")}
                 </p>
               </CardContent>
             </Card>
@@ -300,7 +299,7 @@ export default function Home() {
       <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#F3E5AB]">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
-            Video Tutorials
+            {t("videoTutorialsTitle")}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {videoUrls.map((url, index) => (
@@ -324,16 +323,16 @@ export default function Home() {
       <section className="py-16 px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4 text-[#8B4513]">
-            Support Our Mission
+            {t("supportOurMissionTitle")}
           </h2>
           <p className="text-xl mb-6 text-[#D2691E]">
-            Help us preserve and promote Kinyarwanda culture
+            {t("supportOurMissionDesc")}
           </p>
           <Button
             asChild
             className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
           >
-            <Link href="/fund">Support the Project</Link>
+            <Link href="/fund">{t("supportTheProject")}</Link>
           </Button>
         </div>
       </section>

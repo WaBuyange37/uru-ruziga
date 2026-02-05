@@ -1,0 +1,228 @@
+/* Umwero Font Styles */
+@font-face {
+  font-family: 'Umwero';
+  src: url('/Umwero.ttf') format('truetype'),
+       url('/UMWEROalpha.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'UmweroPUA';
+  src: url('/UMWEROPUAnumbers.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Umwero text styling - IMPROVED READABILITY */
+.umwero-text {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  font-size: 1.25em;
+  line-height: 1.7; /* Reduced from 2 for better balance */
+  letter-spacing: 0.1em; /* Increased from 0.05em for better character separation */
+  word-spacing: 0.2em; /* Added word spacing for clarity */
+  direction: ltr;
+  unicode-bidi: normal;
+}
+
+.umwero-heading {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  font-size: 1.6em;
+  line-height: 1.6; /* Reduced from 1.8 */
+  letter-spacing: 0.15em; /* Increased from 0.1em */
+  word-spacing: 0.25em; /* Added word spacing */
+  font-weight: bold;
+}
+
+.umwero-large {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  font-size: 2.2em;
+  line-height: 1.5; /* Reduced from 1.7 */
+  letter-spacing: 0.2em; /* Increased from 0.15em */
+  word-spacing: 0.3em; /* Added word spacing */
+}
+
+/* Ensure proper rendering of Umwero characters */
+.umwero-text,
+.umwero-heading,
+.umwero-large {
+  -webkit-font-feature-settings: "liga" 1, "calt" 1;
+  font-feature-settings: "liga" 1, "calt" 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Language-specific styling - IMPROVED SPACING */
+[data-language="um"] {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  letter-spacing: 0.08em; /* Base letter spacing for all Umwero text */
+  word-spacing: 0.15em; /* Base word spacing */
+  line-height: 1.65; /* Reduced from 1.9 for better balance */
+}
+
+[data-language="um"] h1,
+[data-language="um"] h2,
+[data-language="um"] h3,
+[data-language="um"] h4,
+[data-language="um"] h5,
+[data-language="um"] h6 {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  letter-spacing: 0.15em; /* Increased from 0.1em */
+  word-spacing: 0.25em; /* Added word spacing */
+  line-height: 1.5; /* Reduced from 1.7 */
+  margin-bottom: 0.8em;
+}
+
+[data-language="um"] p,
+[data-language="um"] span,
+[data-language="um"] div {
+  font-family: 'Umwero', 'UmweroPUA', monospace;
+  letter-spacing: 0.1em; /* Increased from 0.05em */
+  word-spacing: 0.18em; /* Added word spacing */
+  line-height: 1.7; /* Reduced from 2 for paragraph readability */
+}
+
+[data-language="um"] button,
+[data-language="um"] .btn,
+[data-language="um"] a {
+  letter-spacing: 0.12em;
+  word-spacing: 0.2em;
+  padding: 0.6em 1.2em;
+}
+
+/* Input fields and textareas in Umwero */
+[data-language="um"] input,
+[data-language="um"] textarea {
+  letter-spacing: 0.1em;
+  word-spacing: 0.18em;
+  line-height: 1.65; /* Reduced from 1.8 */
+  padding: 0.8em;
+}
+
+/* Navigation in Umwero */
+[data-language="um"] nav {
+  letter-spacing: 0.12em;
+  word-spacing: 0.22em;
+}
+
+/* Tables in Umwero */
+[data-language="um"] table {
+  letter-spacing: 0.08em;
+  word-spacing: 0.15em;
+}
+
+[data-language="um"] th,
+[data-language="um"] td {
+  padding: 0.8em 1em;
+  line-height: 1.6; /* Reduced from 1.8 */
+}
+
+/* Professional color scheme for Umwero */
+.umwero-primary {
+  color: #8B4513; /* Saddle Brown - representing earth/tradition */
+}
+
+.umwero-secondary {
+  color: #D2691E; /* Chocolate - warm, inviting */
+}
+
+.umwero-accent {
+  color: #F3E5AB; /* Wheat - light, educational */
+}
+
+.umwero-background {
+  background-color: #F3E5AB;
+}
+
+.umwero-card {
+  background: linear-gradient(135deg, #F3E5AB 0%, #FFFFFF 100%);
+  border: 2px solid #8B4513;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
+}
+
+/* Responsive font sizing - OPTIMIZED FOR READABILITY */
+@media (max-width: 768px) {
+  .umwero-text {
+    font-size: 1.15em;
+    letter-spacing: 0.09em;
+    word-spacing: 0.18em;
+    line-height: 1.7; /* Reduced from 1.95 */
+  }
+  
+  .umwero-heading {
+    font-size: 1.4em;
+    letter-spacing: 0.13em;
+    word-spacing: 0.23em;
+  }
+  
+  .umwero-large {
+    font-size: 1.9em;
+    letter-spacing: 0.18em;
+    word-spacing: 0.28em;
+  }
+  
+  [data-language="um"] {
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    word-spacing: 0.16em;
+  }
+}
+
+@media (max-width: 480px) {
+  .umwero-text {
+    font-size: 1.05em;
+    letter-spacing: 0.08em;
+    word-spacing: 0.16em;
+    line-height: 1.65; /* Reduced from 1.9 */
+  }
+  
+  .umwero-heading {
+    font-size: 1.3em;
+    letter-spacing: 0.12em;
+    word-spacing: 0.22em;
+  }
+  
+  .umwero-large {
+    font-size: 1.7em;
+    letter-spacing: 0.16em;
+    word-spacing: 0.26em;
+  }
+  
+  [data-language="um"] {
+    font-size: 0.95rem;
+    letter-spacing: 0.07em;
+    word-spacing: 0.15em;
+  }
+}
+
+/* Large screens - maximum comfort */
+@media (min-width: 1440px) {
+  .umwero-text {
+    font-size: 1.4em;
+    letter-spacing: 0.12em;
+    word-spacing: 0.22em;
+    line-height: 1.8; /* Reduced from 2.1 */
+  }
+  
+  .umwero-heading {
+    font-size: 1.8em;
+    letter-spacing: 0.17em;
+    word-spacing: 0.27em;
+  }
+  
+  .umwero-large {
+    font-size: 2.5em;
+    letter-spacing: 0.22em;
+    word-spacing: 0.32em;
+  }
+  
+  [data-language="um"] {
+    font-size: 1.15rem;
+    letter-spacing: 0.1em;
+    word-spacing: 0.18em;
+  }
+}

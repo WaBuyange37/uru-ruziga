@@ -2,9 +2,8 @@
 // Fresh seed for clean Neon database
 // Creates 3 users: Kwizera (admin), Demo student, Test teacher
 
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, LessonModule, LessonType, UserRole } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
-
 const prisma = new PrismaClient()
 
 // ============================================
@@ -16,8 +15,8 @@ const VOWEL_LESSONS = [
     id: 'vowel-a',
     title: 'Vowel: A',
     description: 'Learn the Umwero character for "a" - represents Cow\'s head with Horns (Inyambo Cows)',
-    module: 'BEGINNER',
-    type: 'VOWEL',
+    module: LessonModule.BEGINNER,
+    type: LessonType.VOWEL,
     order: 1,
     duration: 5,
     content: JSON.stringify({
@@ -28,9 +27,9 @@ const VOWEL_LESSONS = [
       culturalNote: 'The character for "a" symbolizes the sacred Inyambo cows with their distinctive long horns. These cows are a symbol of Rwandan heritage and beauty.',
       examples: [
         { umwero: '"M"Z}', latin: 'amazi', english: 'water' },
-        { umwero: '"A"', latin: 'aba', english: 'these' },
+        { umwero: '"B"', latin: 'aba', english: 'these' },
         { umwero: '"M"T"', latin: 'amata', english: 'milk' },
-        { umwero: '"A"NTU', latin: 'abantu', english: 'people' },
+        { umwero: '"B"NTU', latin: 'abantu', english: 'people' },
       ],
       practiceWords: ['amazi', 'aba', 'amata', 'abantu'],
     }),
@@ -40,24 +39,24 @@ const VOWEL_LESSONS = [
   {
     id: 'vowel-e',
     title: 'Vowel: E',
-    description: 'Learn the Umwero character for "e" - represents air and breath',
-    module: 'BEGINNER',
-    type: 'VOWEL',
+    description: 'Learn the Umwero character for "e" - represents hoe for cultivating the land',
+    module: LessonModule.BEGINNER,
+    type: LessonType.VOWEL,
     order: 2,
     duration: 5,
     content: JSON.stringify({
       vowel: 'e',
       umwero: '|',
-      pronunciation: '/e/ as in "bed"',
-      meaning: 'Represents air and breath',
-      culturalNote: 'Air is the breath of life. This simple vertical line represents the invisible but essential force that gives life to all things.',
+      pronunciation: '/e/ as "Emera" in "bed--eng"',
+      meaning: 'cultivating the land',
+      culturalNote: 'The character for "e" represents the hoe used in cultivating the land. It symbolizes the hard work and dedication required to grow and nurture life.',
       examples: [
-        { umwero: '|M|', latin: 'eme', english: 'stand' },
-        { umwero: 'N|', latin: 'ne', english: 'and' },
-        { umwero: '|Z|', latin: 'eze', english: 'king' },
-        { umwero: 'T|R|', latin: 'tere', english: 'five' },
+        { umwero: '|M"', latin: 'ema', english: 'stand' },
+        { umwero: 'N"', latin: 'na', english: 'and' },
+        { umwero: '|R|K"N"', latin: 'erekana', english: 'show' },
+        { umwero: 'T|R"', latin: 'tera', english: 'throw' },
       ],
-      practiceWords: ['eme', 'ne', 'eze', 'tere'],
+      practiceWords: ['ema', 'na', 'erekana', 'tera'],
     }),
     prerequisites: [],
     isPublished: true,
@@ -65,24 +64,24 @@ const VOWEL_LESSONS = [
   {
     id: 'vowel-i',
     title: 'Vowel: I',
-    description: 'Learn the Umwero character for "i" - represents water and flow',
-    module: 'BEGINNER',
-    type: 'VOWEL',
+    description: 'Learn the Umwero character for "i" - a long vowel',
+    module: LessonModule.BEGINNER,
+    type: LessonType.VOWEL,
     order: 3,
     duration: 5,
     content: JSON.stringify({
       vowel: 'i',
       umwero: '}',
-      pronunciation: '/i/ as in "machine"',
-      meaning: 'Represents water and flow',
+      pronunciation: '/i/ as in"inyinya" or "machine--eng"',
+      meaning: 'long vowel',
       culturalNote: 'Water flows and adapts. Like water that flows around obstacles, this vowel teaches us flexibility and continuous movement.',
       examples: [
-        { umwero: '}A}', latin: 'ibi', english: 'these things' },
-        { umwero: '}N}', latin: 'ini', english: 'liver' },
-        { umwero: '}M}G}R{', latin: 'imigiro', english: 'roots' },
-        { umwero: '}NT}M}', latin: 'intimi', english: 'friend' },
+        { umwero: '}B}', latin: 'ibi', english: 'these things' },
+        { umwero: 'N}N}', latin: 'nini', english: 'big' },
+        { umwero: '}M}Z}', latin: 'imizi', english: 'roots' },
+        { umwero: '}M}B:', latin: 'imibu', english: 'mosquitos' },
       ],
-      practiceWords: ['ibi', 'ini', 'imigiro', 'intimi'],
+      practiceWords: ['ibi', 'nini', 'imizi', 'imibu'],
     }),
     prerequisites: [],
     isPublished: true,
@@ -91,8 +90,8 @@ const VOWEL_LESSONS = [
     id: 'vowel-o',
     title: 'Vowel: O',
     description: 'Learn the Umwero character for "o" - represents spirit and wholeness',
-    module: 'BEGINNER',
-    type: 'VOWEL',
+    module: LessonModule.BEGINNER,
+    type: LessonType.VOWEL,
     order: 4,
     duration: 5,
     content: JSON.stringify({
@@ -116,8 +115,8 @@ const VOWEL_LESSONS = [
     id: 'vowel-u',
     title: 'Vowel: U',
     description: 'Learn the Umwero character for "u" - represents fire and energy',
-    module: 'BEGINNER',
-    type: 'VOWEL',
+    module: LessonModule.BEGINNER,
+    type: LessonType.VOWEL,
     order: 5,
     duration: 5,
     content: JSON.stringify({
@@ -133,6 +132,34 @@ const VOWEL_LESSONS = [
         { umwero: ':R:W"NT"', latin: 'urwanda', english: 'Rwanda' },
       ],
       practiceWords: ['umuco', 'ubuntu', 'umuziga', 'urwanda'],
+    }),
+    prerequisites: [],
+    isPublished: true,
+  }
+]
+
+// ============================================
+// CONSONANT LESSONS
+// ============================================
+
+const CONSONANT_LESSONS = [
+  {
+    id: 'consonant-basic',
+    title: 'Consonants: Basic',
+    description: 'Learn the basic Umwero consonants and practice syllables',
+    module: LessonModule.BEGINNER,
+    type: LessonType.CONSONANT,
+    order: 1,
+    duration: 20,
+    content: JSON.stringify({
+      title: "Basic Consonants",
+      characters: [
+        { umwero: 'M', latin: 'm', pronunciation: '/m/', examples: ['M"M" (mama)', ':M:C{ (umuco)'] },
+        { umwero: 'N', latin: 'n', pronunciation: '/n/', examples: ['N}N} (nini)', 'N" (na)'] },
+        { umwero: 'B', latin: 'b', pronunciation: '/b/', examples: ['A"A" (baba)', 'A}A} (bibi)'] },
+        { umwero: 'K', latin: 'k', pronunciation: '/k/', examples: ['K}" (kua)', 'K} (ki)'] },
+      ],
+      exercises: ['Match consonants to examples', 'Write simple syllables'],
     }),
     prerequisites: [],
     isPublished: true,
@@ -203,7 +230,7 @@ const USERS = [
     email: '37nzela@gmail.com',
     password: 'Mugix260',
     fullName: 'Kwizera Mugisha',
-    role: 'ADMIN',
+    role: UserRole.ADMIN,
     country: 'Rwanda',
     language: 'en',
     bio: 'Creator of Umwero alphabet. Passionate about preserving Kinyarwanda language and culture.',
@@ -212,7 +239,7 @@ const USERS = [
     email: 'demo@uruziga.com',
     password: 'demo123',
     fullName: 'Demo Student',
-    role: 'USER',
+    role: UserRole.USER,
     country: 'Rwanda',
     language: 'en',
     bio: 'Demo account for testing the platform.',
@@ -221,7 +248,7 @@ const USERS = [
     email: 'teacher@uruziga.com',
     password: 'teach123',
     fullName: 'Umwero Teacher',
-    role: 'TEACHER',
+    role: UserRole.TEACHER,
     country: 'Rwanda',
     language: 'en',
     bio: 'Test teacher account for managing students and lessons.',
@@ -235,6 +262,24 @@ const USERS = [
 async function main() {
   console.log('🌱 Starting fresh Uruziga database seed...\n')
 
+  // Clear existing data first
+  console.log('🧹 Cleaning existing data...')
+  await prisma.userAchievement.deleteMany()
+  await prisma.quizAttempt.deleteMany()
+  await prisma.quiz.deleteMany()
+  await prisma.userDrawing.deleteMany()
+  await prisma.lessonProgress.deleteMany()
+  await prisma.comment.deleteMany()
+  await prisma.discussion.deleteMany()
+  await prisma.donation.deleteMany()
+  await prisma.order.deleteMany()
+  await prisma.certificate.deleteMany()
+  await prisma.activityLog.deleteMany()
+  await prisma.achievement.deleteMany()
+  await prisma.lesson.deleteMany()
+  await prisma.user.deleteMany()
+  console.log('✅ Database cleaned\n')
+
   // Seed Lessons
   console.log('📚 Seeding vowel lessons...')
   for (const lessonData of VOWEL_LESSONS) {
@@ -243,7 +288,15 @@ async function main() {
     })
     console.log(`  ✓ ${lesson.title}`)
   }
-  console.log(`✅ ${VOWEL_LESSONS.length} lessons created\n`)
+  console.log(`✅ ${VOWEL_LESSONS.length} vowel lessons created\n`)
+
+  // Seed Consonant Lessons
+  console.log('� Seeding consonant lessons...')
+  for (const lessonData of CONSONANT_LESSONS) {
+    const lesson = await prisma.lesson.create({ data: lessonData })
+    console.log(`  ✓ ${lesson.title}`)
+  }
+  console.log(`✅ ${CONSONANT_LESSONS.length} consonant lessons created\n`)
 
   // Seed Achievements
   console.log('🏆 Seeding achievements...')
@@ -276,28 +329,40 @@ async function main() {
   // Summary
   console.log('✨ Database seed completed successfully!\n')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('📊 SUMMARY')
+  console.log('� SUMMARY')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log(`  📚 Lessons:      ${VOWEL_LESSONS.length}`)
-  console.log(`  🏆 Achievements: ${ACHIEVEMENTS.length}`)
-  console.log(`  👥 Users:        ${USERS.length}`)
+  console.log(`  📚 Vowel Lessons:     ${VOWEL_LESSONS.length}`)
+  console.log(`  📚 Consonant Lessons: ${CONSONANT_LESSONS.length}`)
+  console.log(`  🏆 Achievements:      ${ACHIEVEMENTS.length}`)
+  console.log(`  👥 Users:             ${USERS.length}`)
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
   
   console.log('🚀 Your Neon database is ready!\n')
   console.log('📝 LOGIN CREDENTIALS:\n')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-  console.log('👑 ADMIN (Platform Owner)')
+  console.log('👑 ADMIN (Platform Owner - Full Control)')
   console.log('   Email:    37nzela@gmail.com')
   console.log('   Password: Mugix260')
-  console.log('   Role:     ADMIN\n')
-  console.log('👤 DEMO STUDENT')
-  console.log('   Email:    demo@uruziga.com')
-  console.log('   Password: demo123')
-  console.log('   Role:     USER\n')
-  console.log('👨‍🏫 TEST TEACHER')
+  console.log('   Role:     ADMIN')
+  console.log('   Powers:   - Manage all users & roles')
+  console.log('             - Delete accounts')
+  console.log('             - Control funds & donations')
+  console.log('             - Manage advertisements')
+  console.log('             - Full platform control\n')
+  console.log('👨‍🏫 TEACHER (Can Create Lessons)')
   console.log('   Email:    teacher@uruziga.com')
   console.log('   Password: teach123')
   console.log('   Role:     TEACHER')
+  console.log('   Powers:   - Create & edit lessons')
+  console.log('             - View student progress')
+  console.log('             - Manage quizzes\n')
+  console.log('👤 STUDENT (Learner)')
+  console.log('   Email:    demo@uruziga.com')
+  console.log('   Password: demo123')
+  console.log('   Role:     USER')
+  console.log('   Powers:   - Take lessons')
+  console.log('             - Track progress')
+  console.log('             - Earn achievements')
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 }
 
