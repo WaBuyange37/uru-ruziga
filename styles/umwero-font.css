@@ -20,9 +20,9 @@
 .umwero-text {
   font-family: 'Umwero', 'UmweroPUA', monospace;
   font-size: 1.25em;
-  line-height: 1.7; /* Reduced from 2 for better balance */
-  letter-spacing: 0.1em; /* Increased from 0.05em for better character separation */
-  word-spacing: 0.2em; /* Added word spacing for clarity */
+  line-height: 1.55; /* Reduced for tighter spacing */
+  letter-spacing: 0.08em; /* Reduced slightly */
+  word-spacing: 0.15em; /* Reduced slightly */
   direction: ltr;
   unicode-bidi: normal;
 }
@@ -30,18 +30,18 @@
 .umwero-heading {
   font-family: 'Umwero', 'UmweroPUA', monospace;
   font-size: 1.6em;
-  line-height: 1.6; /* Reduced from 1.8 */
-  letter-spacing: 0.15em; /* Increased from 0.1em */
-  word-spacing: 0.25em; /* Added word spacing */
+  line-height: 1.5; /* Reduced */
+  letter-spacing: 0.12em; /* Reduced */
+  word-spacing: 0.2em; /* Reduced */
   font-weight: bold;
 }
 
 .umwero-large {
   font-family: 'Umwero', 'UmweroPUA', monospace;
   font-size: 2.2em;
-  line-height: 1.5; /* Reduced from 1.7 */
-  letter-spacing: 0.2em; /* Increased from 0.15em */
-  word-spacing: 0.3em; /* Added word spacing */
+  line-height: 1.4; /* Reduced */
+  letter-spacing: 0.15em; /* Reduced */
+  word-spacing: 0.25em; /* Reduced */
 }
 
 /* Ensure proper rendering of Umwero characters */
@@ -58,9 +58,9 @@
 /* Language-specific styling - IMPROVED SPACING */
 [data-language="um"] {
   font-family: 'Umwero', 'UmweroPUA', monospace;
-  letter-spacing: 0.08em; /* Base letter spacing for all Umwero text */
-  word-spacing: 0.15em; /* Base word spacing */
-  line-height: 1.65; /* Reduced from 1.9 for better balance */
+  letter-spacing: 0.06em; /* Reduced */
+  word-spacing: 0.12em; /* Reduced */
+  line-height: 1.5; /* Reduced for tighter spacing */
 }
 
 [data-language="um"] h1,
@@ -70,9 +70,9 @@
 [data-language="um"] h5,
 [data-language="um"] h6 {
   font-family: 'Umwero', 'UmweroPUA', monospace;
-  letter-spacing: 0.15em; /* Increased from 0.1em */
-  word-spacing: 0.25em; /* Added word spacing */
-  line-height: 1.5; /* Reduced from 1.7 */
+  letter-spacing: 0.12em; /* Reduced */
+  word-spacing: 0.2em; /* Reduced */
+  line-height: 1.4; /* Reduced */
   margin-bottom: 0.8em;
 }
 
@@ -80,44 +80,44 @@
 [data-language="um"] span,
 [data-language="um"] div {
   font-family: 'Umwero', 'UmweroPUA', monospace;
-  letter-spacing: 0.1em; /* Increased from 0.05em */
-  word-spacing: 0.18em; /* Added word spacing */
-  line-height: 1.7; /* Reduced from 2 for paragraph readability */
+  letter-spacing: 0.08em; /* Reduced */
+  word-spacing: 0.15em; /* Reduced */
+  line-height: 1.55; /* Reduced */
 }
 
 [data-language="um"] button,
 [data-language="um"] .btn,
 [data-language="um"] a {
-  letter-spacing: 0.12em;
-  word-spacing: 0.2em;
+  letter-spacing: 0.1em; /* Reduced */
+  word-spacing: 0.16em; /* Reduced */
   padding: 0.6em 1.2em;
 }
 
 /* Input fields and textareas in Umwero */
 [data-language="um"] input,
 [data-language="um"] textarea {
-  letter-spacing: 0.1em;
-  word-spacing: 0.18em;
-  line-height: 1.65; /* Reduced from 1.8 */
+  letter-spacing: 0.08em; /* Reduced */
+  word-spacing: 0.15em; /* Reduced */
+  line-height: 1.5; /* Reduced */
   padding: 0.8em;
 }
 
 /* Navigation in Umwero */
 [data-language="um"] nav {
-  letter-spacing: 0.12em;
-  word-spacing: 0.22em;
+  letter-spacing: 0.1em; /* Reduced */
+  word-spacing: 0.18em; /* Reduced */
 }
 
 /* Tables in Umwero */
 [data-language="um"] table {
-  letter-spacing: 0.08em;
-  word-spacing: 0.15em;
+  letter-spacing: 0.06em; /* Reduced */
+  word-spacing: 0.12em; /* Reduced */
 }
 
 [data-language="um"] th,
 [data-language="um"] td {
   padding: 0.8em 1em;
-  line-height: 1.6; /* Reduced from 1.8 */
+  line-height: 1.5; /* Reduced */
 }
 
 /* Professional color scheme for Umwero */
@@ -148,54 +148,54 @@
 @media (max-width: 768px) {
   .umwero-text {
     font-size: 1.15em;
-    letter-spacing: 0.09em;
-    word-spacing: 0.18em;
-    line-height: 1.7; /* Reduced from 1.95 */
+    letter-spacing: 0.07em;
+    word-spacing: 0.14em;
+    line-height: 1.55;
   }
   
   .umwero-heading {
     font-size: 1.4em;
-    letter-spacing: 0.13em;
-    word-spacing: 0.23em;
+    letter-spacing: 0.11em;
+    word-spacing: 0.19em;
   }
   
   .umwero-large {
     font-size: 1.9em;
-    letter-spacing: 0.18em;
-    word-spacing: 0.28em;
+    letter-spacing: 0.14em;
+    word-spacing: 0.24em;
   }
   
   [data-language="um"] {
     font-size: 1rem;
-    letter-spacing: 0.08em;
-    word-spacing: 0.16em;
+    letter-spacing: 0.06em;
+    word-spacing: 0.13em;
   }
 }
 
 @media (max-width: 480px) {
   .umwero-text {
     font-size: 1.05em;
-    letter-spacing: 0.08em;
-    word-spacing: 0.16em;
-    line-height: 1.65; /* Reduced from 1.9 */
+    letter-spacing: 0.06em;
+    word-spacing: 0.13em;
+    line-height: 1.5;
   }
   
   .umwero-heading {
     font-size: 1.3em;
-    letter-spacing: 0.12em;
-    word-spacing: 0.22em;
+    letter-spacing: 0.1em;
+    word-spacing: 0.18em;
   }
   
   .umwero-large {
     font-size: 1.7em;
-    letter-spacing: 0.16em;
-    word-spacing: 0.26em;
+    letter-spacing: 0.13em;
+    word-spacing: 0.22em;
   }
   
   [data-language="um"] {
     font-size: 0.95rem;
-    letter-spacing: 0.07em;
-    word-spacing: 0.15em;
+    letter-spacing: 0.05em;
+    word-spacing: 0.12em;
   }
 }
 
@@ -203,26 +203,26 @@
 @media (min-width: 1440px) {
   .umwero-text {
     font-size: 1.4em;
-    letter-spacing: 0.12em;
-    word-spacing: 0.22em;
-    line-height: 1.8; /* Reduced from 2.1 */
+    letter-spacing: 0.09em;
+    word-spacing: 0.17em;
+    line-height: 1.6;
   }
   
   .umwero-heading {
     font-size: 1.8em;
-    letter-spacing: 0.17em;
-    word-spacing: 0.27em;
+    letter-spacing: 0.13em;
+    word-spacing: 0.22em;
   }
   
   .umwero-large {
     font-size: 2.5em;
-    letter-spacing: 0.22em;
-    word-spacing: 0.32em;
+    letter-spacing: 0.17em;
+    word-spacing: 0.27em;
   }
   
   [data-language="um"] {
     font-size: 1.15rem;
-    letter-spacing: 0.1em;
-    word-spacing: 0.18em;
+    letter-spacing: 0.08em;
+    word-spacing: 0.15em;
   }
 }

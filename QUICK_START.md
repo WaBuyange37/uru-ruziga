@@ -1,5 +1,20 @@
 # 🚀 Quick Start Guide - Umwero Learning Platform
 
+## ⚠️ SECURITY FIRST!
+
+**Before you start, ensure your secrets are safe:**
+
+1. **Never commit `.env` file** - It's already in `.gitignore` ✅
+2. **Use `.env.example`** - Copy it to `.env` and fill in your values
+3. **Generate secure secrets:**
+   ```bash
+   # Generate JWT_SECRET
+   openssl rand -base64 32
+   ```
+4. **Read SECURITY.md** for complete security guidelines
+
+---
+
 ## ⚡ Get Started in 5 Minutes
 
 ### 1. Start the Development Server

@@ -163,9 +163,9 @@ export function UmweroTranslator() {
                 style={{ 
                   fontSize: `${fontSize}px`, 
                   height: '300px',
-                  letterSpacing: translationDirection === 'umweroToLatin' ? '0.12em' : '0.02em',
-                  wordSpacing: translationDirection === 'umweroToLatin' ? '0.22em' : '0.05em',
-                  lineHeight: translationDirection === 'umweroToLatin' ? '1.65' : '1.5'
+                  letterSpacing: translationDirection === 'umweroToLatin' ? '0.08em' : '0.02em',
+                  wordSpacing: translationDirection === 'umweroToLatin' ? '0.15em' : '0.05em',
+                  lineHeight: translationDirection === 'umweroToLatin' ? '1.5' : '1.4'
                 }}
                 className={`resize-none bg-white border-[#8B4513] text-[#8B4513] ${translationDirection === 'umweroToLatin' && fontLoaded ? 'font-["UMWEROalpha"]' : ''}`}
               />
@@ -181,9 +181,9 @@ export function UmweroTranslator() {
                 style={{ 
                   fontSize: `${fontSize}px`, 
                   height: '300px',
-                  letterSpacing: translationDirection === 'latinToUmwero' ? '0.12em' : '0.02em',
-                  wordSpacing: translationDirection === 'latinToUmwero' ? '0.22em' : '0.05em',
-                  lineHeight: translationDirection === 'latinToUmwero' ? '1.65' : '1.5'
+                  letterSpacing: translationDirection === 'latinToUmwero' ? '0.08em' : '0.02em',
+                  wordSpacing: translationDirection === 'latinToUmwero' ? '0.15em' : '0.05em',
+                  lineHeight: translationDirection === 'latinToUmwero' ? '1.5' : '1.4'
                 }}
               />
             </div>
