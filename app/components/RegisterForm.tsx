@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useAuth } from "../contexts/AuthContext"
 
 export default function RegisterForm() {
+  const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const { register } = useAuth()
@@ -11,7 +12,7 @@ export default function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await register(email, password)
+      await register(fullName, email, password)
       // Handle successful registration (e.g., redirect to login page)
     } catch (error) {
       console.error("Registration failed:", error)
@@ -21,6 +22,19 @@ export default function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+          Full Name
+        </label>
+        <input
+          type="text"
+          id="fullName"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          required
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+        />
+      </div>
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-700">
           Email

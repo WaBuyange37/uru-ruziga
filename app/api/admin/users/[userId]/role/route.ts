@@ -13,9 +13,10 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const { userId } = await params
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     
     if (!token) {
@@ -35,7 +36,7 @@ export async function PATCH(
     }
 
     const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
+      where: { id: userId },
       data: { role: role as UserRole },
       select: {
         id: true,

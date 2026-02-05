@@ -39,10 +39,10 @@ export default function GamesAndQuizzesPage() {
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8 text-[#8B4513]">Games & Quizzes</h1>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="games">Games</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+            <TabsTrigger value="games" onClick={() => setActiveTab('games')}>Games</TabsTrigger>
+            <TabsTrigger value="quizzes" onClick={() => setActiveTab('quizzes')}>Quizzes</TabsTrigger>
           </TabsList>
           <TabsContent value="games">
             <div className="grid gap-4 md:grid-cols-2">

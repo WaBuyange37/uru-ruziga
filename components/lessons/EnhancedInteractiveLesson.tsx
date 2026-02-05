@@ -249,23 +249,23 @@ export function EnhancedInteractiveLesson({ lessonData, onComplete, onExit }: En
 
       {/* Main Content */}
       <div className="p-6">
-        <Tabs value={currentSection} onValueChange={(value) => setCurrentSection(value as LessonSection)}>
+        <Tabs defaultValue={currentSection} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6">
-            <TabsTrigger value="theory" className="flex items-center gap-2">
+            <TabsTrigger value="theory" className="flex items-center gap-2" onClick={() => setCurrentSection('theory')}>
               <BookOpen className="h-4 w-4" />
               Theory
               {currentSection !== 'theory' && sectionProgress.theory === 100 && (
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
               )}
             </TabsTrigger>
-            <TabsTrigger value="characters" className="flex items-center gap-2">
+            <TabsTrigger value="characters" className="flex items-center gap-2" onClick={() => setCurrentSection('characters')}>
               <Star className="h-4 w-4" />
               Characters ({characterIndex + 1}/{lessonData.characters.length})
             </TabsTrigger>
-            <TabsTrigger value="practice" className="flex items-center gap-2">
+            <TabsTrigger value="practice" className="flex items-center gap-2" onClick={() => setCurrentSection('practice')}>
               ✍️ Practice ({practiceIndex + 1}/{lessonData.exercises.length})
             </TabsTrigger>
-            <TabsTrigger value="quiz" className="flex items-center gap-2">
+            <TabsTrigger value="quiz" className="flex items-center gap-2" onClick={() => setCurrentSection('quiz')}>
               <Trophy className="h-4 w-4" />
               Quiz
             </TabsTrigger>

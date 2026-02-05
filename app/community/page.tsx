@@ -91,17 +91,17 @@ export default function CommunityPage() {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <Tabs defaultValue={activeTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="forum" className="gap-2">
+            <TabsTrigger value="forum" className="gap-2" onClick={() => setActiveTab('forum')}>
               <MessageCircle className="h-4 w-4" />
               Discussion Forum
             </TabsTrigger>
-            <TabsTrigger value="workshops" className="gap-2">
+            <TabsTrigger value="workshops" className="gap-2" onClick={() => setActiveTab('workshops')}>
               <Calendar className="h-4 w-4" />
               Live Workshops
             </TabsTrigger>
-            <TabsTrigger value="submissions" className="gap-2">
+            <TabsTrigger value="submissions" className="gap-2" onClick={() => setActiveTab('submissions')}>
               <Upload className="h-4 w-4" />
               User Submissions
             </TabsTrigger>

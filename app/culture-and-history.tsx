@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useTranslation } from '../../hooks/useTranslation'
+import { useTranslation } from '../hooks/useTranslation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -53,13 +53,14 @@ export default function CultureAndHistoryPage() {
         {t("cultureAndHistory")}
       </h1>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs defaultValue={activeTab} className="w-full">
         <TabsList className="w-full justify-start mb-8 overflow-x-auto flex-nowrap">
           {sections.map((section) => (
             <TabsTrigger 
               key={section.id} 
               value={section.id} 
               className="gap-2 whitespace-nowrap"
+              onClick={() => setActiveTab(section.id)}
             >
               <section.icon className="h-4 w-4" />
               {section.title}

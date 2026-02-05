@@ -13,9 +13,10 @@ const JWT_SECRET = process.env.JWT_SECRET
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    const { userId } = await params
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     
     if (!token) {
@@ -29,12 +30,12 @@ export async function DELETE(
     }
 
     // Don't allow deleting yourself
-    if (decoded.userId === params.userId) {
+    if (decoded.userId === userId) {
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
     }
 
     await prisma.user.delete({
-      where: { id: params.userId }
+      where: { id: userId }
     })
 
     return NextResponse.json({ message: 'User deleted successfully' })

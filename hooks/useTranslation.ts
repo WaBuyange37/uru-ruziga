@@ -267,9 +267,9 @@ export function useTranslation() {
   const t = (key: TranslationKey): string => {
     const translation = translations[language][key] || translations.en[key] || key
     
-    // If language is Umwero ('um'), convert Kinyarwanda text to Umwero characters
+    // If language is Umwero ('um'), convert to uppercase first, then to Umwero characters
     if (language === 'um') {
-      return convertToUmwero(translation)
+      return convertToUmwero(translation.toUpperCase())
     }
     
     return translation

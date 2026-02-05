@@ -203,17 +203,17 @@ export default function Page() {
         const data = await res.json()
         let lessons = data.lessons || []
 
-        // Desired order: [a, u, o, e, i]
-        const orderPref = ['a','u','o','e','i']
-        lessons = lessons.sort((a: any, b: any) => {
+        // Sort by the order field in the database (1-5 for A, U, O, E, I)
+        lessons = lessons.sort((a: any, b: any) => a.order - b.order)
+
+        console.log('Loaded vowel lessons:', lessons.map((l: any) => {
           try {
-            const aV = JSON.parse(a.content).vowel
-            const bV = JSON.parse(b.content).vowel
-            return orderPref.indexOf(aV) - orderPref.indexOf(bV)
+            const content = JSON.parse(l.content)
+            return { vowel: content.vowel, order: l.order, title: l.title }
           } catch (e) {
-            return 0
+            return { error: 'parse error', order: l.order }
           }
-        })
+        }))
 
         setVowelLessons(lessons)
       } catch (error) {

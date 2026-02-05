@@ -61,6 +61,7 @@
   letter-spacing: 0.06em; /* Reduced */
   word-spacing: 0.12em; /* Reduced */
   line-height: 1.5; /* Reduced for tighter spacing */
+  text-transform: uppercase; /* Convert all Umwero text to uppercase */
 }
 
 [data-language="um"] h1,

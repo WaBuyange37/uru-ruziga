@@ -1,58 +1,74 @@
-// app/dashboard/page.tsx
-// Dashboard with real database stats
+// app/dashboard/page-enhanced.tsx
+// Interactive dashboard with real database stats
 
 "use client"
 
 import { useState, useEffect } from "react"
 import { useAuth } from "../contexts/AuthContext"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
 import { Button } from "../../components/ui/button"
-import { Badge } from "../../components/ui/badge"
 import { Progress } from "../../components/ui/progress"
+import { Badge } from "../../components/ui/badge"
 import { 
   BookOpen, 
-  Target, 
-  Flame, 
+  Trophy, 
+  TrendingUp, 
   Clock, 
-  Trophy,
-  TrendingUp,
+  Target,
+  Flame,
   Star,
-  RefreshCw,
+  Award,
+  CheckCircle2,
   Loader2
 } from "lucide-react"
 
 interface Stats {
-  lessonsCompleted: number
-  totalLessons: number
-  drawingAccuracy: number
-  averageScore: number
-  learningStreak: number
-  totalPracticeTime: number
-  recentLessons: Array<{
-    id: string
-    title: string
-    type: string
+  user: {
+    fullName: string
+    email: string
+    createdAt: string
+  }
+  overview: {
+    completedLessons: number
+    totalLessons: number
+    progressPercentage: number
+    totalDrawings: number
+    correctDrawings: number
+    accuracy: number
+    averageScore: number
+    totalTimeSpent: number
+    learningStreak: number
+  }
+  lessonProgress: Array<{
+    lesson: {
+      title: string
+      type: string
+      module: string
+    }
     completed: boolean
-    score: number | null
-    updatedAt: string
+    score: number
+    attempts: number
   }>
-  achievements: Array<{
-    id: string
-    name: string
-    description: string
-    unlockedAt: string
-    points: number
-  }>
-  totalPoints: number
+  achievements: {
+    unlocked: Array<{
+      name: string
+      description: string
+      icon: string
+      points: number
+      unlockedAt: string
+    }>
+    new: Array<any>
+    totalPoints: number
+  }
 }
 
-export default function DashboardPage() {
+export default function EnhancedDashboard() {
   const { user, isAuthenticated, loading: authLoading } = useAuth()
   const router = useRouter()
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [showNewAchievements, setShowNewAchievements] = useState(false)
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -67,36 +83,33 @@ export default function DashboardPage() {
   }, [isAuthenticated])
 
   const loadStats = async () => {
-    setLoading(true)
-    setError("")
-
     try {
       const token = localStorage.getItem('token')
-      
-      if (!token) {
-        setError("Not authenticated")
-        return
-      }
-
       const response = await fetch('/api/progress/stats', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Authorization': `Bearer ${token}` }
       })
 
       if (response.ok) {
         const data = await response.json()
         setStats(data)
-      } else {
-        setError('Failed to load stats')
+        
+        // Show new achievements popup
+        if (data.achievements.new.length > 0) {
+          setShowNewAchievements(true)
+        }
       }
-    } catch (error: any) {
-      console.error('Error loading stats:', error)
-      setError('Failed to load stats')
+    } catch (error) {
+      console.error('Failed to load stats:', error)
     } finally {
       setLoading(false)
     }
+  }
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    if (hours > 0) return `${hours}h ${minutes}m`
+    return `${minutes}m`
   }
 
   if (authLoading || loading) {
@@ -107,234 +120,308 @@ export default function DashboardPage() {
     )
   }
 
-  if (error || !stats) {
+  if (!stats) {
     return (
       <div className="container mx-auto p-6">
-        <Card className="bg-red-50 border-red-200">
-          <CardContent className="p-6 text-center">
-            <p className="text-red-600 mb-4">{error || "Failed to load dashboard"}</p>
-            <Button onClick={loadStats} className="bg-[#8B4513] text-[#F3E5AB]">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
+        <p>Failed to load dashboard</p>
       </div>
     )
   }
 
-  const completionPercentage = stats.totalLessons > 0 
-    ? Math.round((stats.lessonsCompleted / stats.totalLessons) * 100) 
-    : 0
-
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-4xl font-bold text-[#8B4513] mb-2">
-            Muraho, {user?.name}! 👋
+          <h1 className="text-3xl font-bold text-[#8B4513]">
+            Muraho, {stats.user.fullName}! 👋
           </h1>
-          <p className="text-[#D2691E]">Keep up the great work learning Umwero!</p>
+          <p className="text-[#D2691E] mt-1">
+            Keep up the great work learning Umwero!
+          </p>
         </div>
-        <Badge className="bg-[#8B4513] text-[#F3E5AB] text-lg px-4 py-2">
-          {stats.totalPoints} points
+        <Badge className="bg-[#8B4513] text-[#F3E5AB]">
+          {stats.achievements.totalPoints} points
         </Badge>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Lessons Completed */}
-        <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[#D2691E] text-sm font-medium flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Lessons Completed
+      {/* New Achievements Popup */}
+      {showNewAchievements && stats.achievements.new.length > 0 && (
+        <Card className="bg-gradient-to-r from-yellow-100 to-yellow-50 border-yellow-400 border-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="h-6 w-6 text-yellow-600" />
+              🎉 New Achievement{stats.achievements.new.length > 1 ? 's' : ''} Unlocked!
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#8B4513] mb-2">
-              {stats.lessonsCompleted}/{stats.totalLessons}
+            <div className="space-y-2">
+              {stats.achievements.new.map((ach: any, idx: number) => (
+                <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg">
+                  <span className="text-2xl">{ach.icon}</span>
+                  <div>
+                    <h3 className="font-semibold text-[#8B4513]">{ach.name}</h3>
+                    <p className="text-sm text-[#D2691E]">{ach.description}</p>
+                  </div>
+                  <Badge className="ml-auto">{ach.points} pts</Badge>
+                </div>
+              ))}
             </div>
-            <Progress value={completionPercentage} className="h-2 mb-2" />
-            <p className="text-xs text-[#D2691E]">{completionPercentage}% complete</p>
+            <Button
+              onClick={() => setShowNewAchievements(false)}
+              className="w-full mt-4 bg-[#8B4513] text-[#F3E5AB]"
+            >
+              Awesome!
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Overview Stats */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Lessons Progress */}
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#D2691E]">Lessons Completed</CardDescription>
+            <CardTitle className="text-3xl text-[#8B4513]">
+              {stats.overview.completedLessons}/{stats.overview.totalLessons}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Progress value={stats.overview.progressPercentage} className="h-2" />
+            <p className="text-xs text-[#D2691E] mt-2">
+              {stats.overview.progressPercentage}% complete
+            </p>
           </CardContent>
         </Card>
 
         {/* Drawing Accuracy */}
-        <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[#D2691E] text-sm font-medium flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Drawing Accuracy
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#D2691E]">Drawing Accuracy</CardDescription>
+            <CardTitle className="text-3xl text-[#8B4513] flex items-center gap-2">
+              <Target className="h-6 w-6" />
+              {stats.overview.accuracy}%
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#8B4513] mb-2">
-              {Math.round(stats.drawingAccuracy)}%
-            </div>
-            <p className="text-xs text-[#D2691E]">
-              {stats.lessonsCompleted > 0 ? `${stats.lessonsCompleted}/0 correct` : '0/0 correct'}
+            <p className="text-sm text-[#8B4513]">
+              {stats.overview.correctDrawings}/{stats.overview.totalDrawings} correct
             </p>
-            <p className="text-xs text-[#D2691E]">
-              Avg score: {Math.round(stats.averageScore)}%
+            <p className="text-xs text-[#D2691E] mt-1">
+              Avg score: {stats.overview.averageScore}%
             </p>
           </CardContent>
         </Card>
 
         {/* Learning Streak */}
-        <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[#D2691E] text-sm font-medium flex items-center gap-2">
-              <Flame className="h-4 w-4" />
-              Learning Streak
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#D2691E]">Learning Streak</CardDescription>
+            <CardTitle className="text-3xl text-[#8B4513] flex items-center gap-2">
+              <Flame className="h-6 w-6 text-orange-500" />
+              {stats.overview.learningStreak}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#8B4513] mb-2">
-              {stats.learningStreak}
-            </div>
-            <p className="text-xs text-[#D2691E]">
-              {stats.learningStreak > 0 ? "Keep it up! 🔥" : "Start your streak today!"}
+            <p className="text-sm text-[#8B4513]">
+              {stats.overview.learningStreak > 0 
+                ? `${stats.overview.learningStreak} day${stats.overview.learningStreak > 1 ? 's' : ''} in a row!`
+                : 'Start your streak today!'
+              }
             </p>
           </CardContent>
         </Card>
 
-        {/* Practice Time */}
-        <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[#D2691E] text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Practice Time
+        {/* Time Spent */}
+        <Card className="bg-[#F3E5AB] border-[#8B4513]">
+          <CardHeader className="pb-2">
+            <CardDescription className="text-[#D2691E]">Practice Time</CardDescription>
+            <CardTitle className="text-3xl text-[#8B4513] flex items-center gap-2">
+              <Clock className="h-6 w-6" />
+              {formatTime(stats.overview.totalTimeSpent)}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-[#8B4513] mb-2">
-              {Math.floor(stats.totalPracticeTime / 60)}m
-            </div>
-            <p className="text-xs text-[#D2691E]">Total practice time</p>
+            <p className="text-sm text-[#8B4513]">
+              Total practice time
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Lessons */}
-      <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+      {/* Character Progress - Vowels */}
+      <Card className="bg-[#F3E5AB] border-[#8B4513]">
         <CardHeader>
           <CardTitle className="text-[#8B4513] flex items-center gap-2">
             <BookOpen className="h-5 w-5" />
-            Recent Lessons
+            Vowel Characters Progress
+          </CardTitle>
+          <CardDescription className="text-[#D2691E]">
+            Master all 5 vowels to unlock consonants
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-5 gap-4">
+            {[
+              { vowel: 'A', umwero: '"', meaning: 'Cow Horns' },
+              { vowel: 'E', umwero: '|', meaning: 'Hoe' },
+              { vowel: 'I', umwero: '}', meaning: 'Water Flow' },
+              { vowel: 'O', umwero: '{', meaning: 'Spirit' },
+              { vowel: 'U', umwero: ':', meaning: 'Fire' }
+            ].map((char, idx) => {
+              const progress = stats.lessonProgress.find(p => 
+                p.lesson.title.includes(`Vowel: ${char.vowel}`)
+              )
+              const isCompleted = progress?.completed && (progress?.score || 0) >= 70
+              
+              return (
+                <div 
+                  key={idx}
+                  className={`relative p-4 rounded-lg border-2 transition-all ${
+                    isCompleted 
+                      ? 'bg-green-50 border-green-500' 
+                      : 'bg-white border-gray-300'
+                  }`}
+                >
+                  {isCompleted && (
+                    <div className="absolute -top-2 -right-2 bg-green-500 rounded-full p-1">
+                      <CheckCircle2 className="h-4 w-4 text-white" />
+                    </div>
+                  )}
+                  <div className="text-center">
+                    <div className="text-5xl font-umwero text-[#8B4513] mb-2">
+                      {char.umwero}
+                    </div>
+                    <div className="text-xl font-bold text-[#8B4513]">
+                      {char.vowel}
+                    </div>
+                    <div className="text-xs text-[#D2691E] mt-1">
+                      {char.meaning}
+                    </div>
+                    {progress && (
+                      <Badge 
+                        className={`mt-2 ${
+                          isCompleted ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}
+                      >
+                        {progress.score}%
+                      </Badge>
+                    )}
+                    {!progress && (
+                      <div className="text-xs text-gray-400 mt-2">
+                        Not started
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Lessons */}
+      <Card className="bg-[#F3E5AB] border-[#8B4513]">
+        <CardHeader>
+          <CardTitle className="text-[#8B4513] flex items-center gap-2">
+            <BookOpen className="h-5 w-5" />
+            Recent Practice Sessions
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {stats.recentLessons.length > 0 ? (
+          {stats.lessonProgress.length > 0 ? (
             <div className="space-y-3">
-              {stats.recentLessons.map((lesson) => (
-                <div 
-                  key={lesson.id}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-[#8B4513]"
-                >
+              {stats.lessonProgress.slice(0, 5).map((progress, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-white rounded-lg">
                   <div className="flex items-center gap-3">
-                    {lesson.completed ? (
-                      <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
-                        <BookOpen className="h-4 w-4 text-white" />
-                      </div>
+                    {progress.completed && progress.score >= 70 ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : progress.completed ? (
+                      <div className="h-5 w-5 rounded-full bg-yellow-500" />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center">
-                        <BookOpen className="h-4 w-4 text-gray-600" />
-                      </div>
+                      <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
                     )}
                     <div>
-                      <p className="font-semibold text-[#8B4513]">{lesson.title}</p>
+                      <h3 className="font-medium text-[#8B4513]">
+                        {progress.lesson.title}
+                      </h3>
                       <p className="text-xs text-[#D2691E]">
-                        {new Date(lesson.updatedAt).toLocaleDateString()}
+                        {progress.attempts} attempt{progress.attempts !== 1 ? 's' : ''}
+                        {progress.completed && progress.score >= 70 && ' • Mastered ✓'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {lesson.score !== null && (
-                      <Badge variant="outline" className="border-[#8B4513] text-[#8B4513]">
-                        {lesson.score}%
-                      </Badge>
-                    )}
-                    {lesson.completed && (
-                      <Badge className="bg-green-500 text-white">
-                        ✓ Completed
-                      </Badge>
-                    )}
-                  </div>
+                  {progress.score !== null && (
+                    <Badge 
+                      className={
+                        progress.score >= 85 ? "bg-green-500" :
+                        progress.score >= 70 ? "bg-blue-500" : "bg-yellow-500"
+                      }
+                    >
+                      {progress.score}%
+                    </Badge>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <BookOpen className="h-12 w-12 mx-auto mb-4 text-[#8B4513] opacity-50" />
-              <p className="text-[#D2691E]">
-                No lessons started yet. Begin your learning journey!
-              </p>
-              <Button 
-                onClick={() => router.push('/learn')}
-                className="mt-4 bg-[#8B4513] text-[#F3E5AB]"
-              >
-                Start Learning
-              </Button>
-            </div>
+            <p className="text-center text-[#D2691E] py-4">
+              No lessons started yet. Begin your learning journey!
+            </p>
           )}
         </CardContent>
       </Card>
 
       {/* Achievements */}
-      <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+      <Card className="bg-[#F3E5AB] border-[#8B4513]">
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-[#8B4513] flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
-              Achievements ({stats.achievements.length})
-            </CardTitle>
-            <p className="text-sm text-[#D2691E]">Total: {stats.totalPoints} points</p>
-          </div>
+          <CardTitle className="text-[#8B4513] flex items-center gap-2">
+            <Trophy className="h-5 w-5" />
+            Achievements ({stats.achievements.unlocked.length})
+          </CardTitle>
+          <CardDescription className="text-[#D2691E]">
+            Total: {stats.achievements.totalPoints} points
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          {stats.achievements.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {stats.achievements.map((achievement) => (
-                <div 
-                  key={achievement.id}
-                  className="p-4 bg-white rounded-lg border-2 border-[#8B4513]"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <Trophy className="h-6 w-6 text-yellow-500" />
-                    <Badge className="bg-[#8B4513] text-[#F3E5AB]">
-                      {achievement.points} pts
-                    </Badge>
+          {stats.achievements.unlocked.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {stats.achievements.unlocked.map((achievement, idx) => (
+                <div key={idx} className="flex items-start gap-3 p-3 bg-white rounded-lg">
+                  <span className="text-3xl">{achievement.icon}</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[#8B4513]">
+                      {achievement.name}
+                    </h3>
+                    <p className="text-xs text-[#D2691E]">
+                      {achievement.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {achievement.points} pts
+                      </Badge>
+                      <span className="text-xs text-gray-500">
+                        {new Date(achievement.unlockedAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <h3 className="font-bold text-[#8B4513] mb-1">
-                    {achievement.name}
-                  </h3>
-                  <p className="text-xs text-[#D2691E] mb-2">
-                    {achievement.description}
-                  </p>
-                  <p className="text-xs text-green-700">
-                    Unlocked: {new Date(achievement.unlockedAt).toLocaleDateString()}
-                  </p>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Trophy className="h-12 w-12 mx-auto mb-4 text-[#8B4513] opacity-50" />
-              <p className="text-[#D2691E]">
-                No achievements yet. Keep practicing to unlock them!
-              </p>
-            </div>
+            <p className="text-center text-[#D2691E] py-4">
+              No achievements yet. Keep practicing to unlock them!
+            </p>
           )}
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Quick Actions */}
+      <div className="grid gap-4 md:grid-cols-3">
         <Button
           onClick={() => router.push('/learn')}
-          className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] py-6 text-lg"
+          className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] h-20"
         >
           <BookOpen className="mr-2 h-5 w-5" />
           Continue Learning
@@ -342,7 +429,7 @@ export default function DashboardPage() {
         <Button
           onClick={() => router.push('/gallery')}
           variant="outline"
-          className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] py-6 text-lg"
+          className="border-[#8B4513] text-[#8B4513] h-20"
         >
           <Star className="mr-2 h-5 w-5" />
           View Gallery
@@ -350,9 +437,9 @@ export default function DashboardPage() {
         <Button
           onClick={loadStats}
           variant="outline"
-          className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] py-6 text-lg"
+          className="border-[#8B4513] text-[#8B4513] h-20"
         >
-          <RefreshCw className="mr-2 h-5 w-5" />
+          <TrendingUp className="mr-2 h-5 w-5" />
           Refresh Stats
         </Button>
       </div>

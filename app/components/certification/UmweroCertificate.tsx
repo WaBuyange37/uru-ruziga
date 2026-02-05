@@ -122,7 +122,7 @@ export function UmweroCertificate({ data, onDownload, onShare }: CertificateGene
               className="w-full h-full flex items-center justify-center text-9xl"
               style={{ fontFamily: "'UMWEROalpha', serif" }}
             >
-              ":M:G{
+              {":M:G{"}
             </div>
           </div>
 
@@ -243,7 +243,6 @@ export function UmweroCertificate({ data, onDownload, onShare }: CertificateGene
               </div>
             </div>
           </div>
-            </div>
         </div>
       </div>
 

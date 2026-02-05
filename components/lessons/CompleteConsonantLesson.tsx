@@ -1,17 +1,15 @@
-// components/lessons/CompleteVowelLesson.tsx
-// FINAL: With Previous/Next buttons at bottom like the image
-
+// components/lessons/CompleteConsonantLesson.tsx
 "use client"
 
 import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { RefreshCw, ArrowRight, ArrowLeft, Lightbulb, CheckCircle, Circle } from "lucide-react"
+import { RefreshCw, ArrowRight, ArrowLeft, CheckCircle, Circle } from "lucide-react"
 import { useAuth } from "../../app/contexts/AuthContext"
 
-interface VowelData {
-  vowel: string
+interface ConsonantData {
+  consonant: string
   umwero: string
   pronunciation: string
   meaning: string
@@ -20,11 +18,11 @@ interface VowelData {
 }
 
 interface Props {
-  vowelData: VowelData
+  consonantData: ConsonantData
   lessonId: string
-  vowelNumber: number
-  totalVowels: number
-  allVowels?: Array<{ vowel: string; completed: boolean }>
+  consonantNumber: number
+  totalConsonants: number
+  allConsonants?: Array<{ consonant: string; completed: boolean }>
   onComplete?: () => void
   onNext?: () => void
   onPrevious?: () => void
@@ -32,12 +30,12 @@ interface Props {
   hasPrevious?: boolean
 }
 
-export function CompleteVowelLesson({ 
-  vowelData, 
+export function CompleteConsonantLesson({ 
+  consonantData, 
   lessonId, 
-  vowelNumber,
-  totalVowels,
-  allVowels = [],
+  consonantNumber,
+  totalConsonants,
+  allConsonants = [],
   onComplete, 
   onNext,
   onPrevious,
@@ -51,8 +49,6 @@ export function CompleteVowelLesson({
   const [userDrawingImage, setUserDrawingImage] = useState<string>("")
   const [aiScore, setAiScore] = useState<number>(0)
   const [aiFeedback, setAiFeedback] = useState<string>("")
-  const [isChecking, setIsChecking] = useState(false)
-  const [showPractice, setShowPractice] = useState(false) // New: controls whether to show canvas
   const { user } = useAuth()
 
   // Initialize canvas
@@ -150,63 +146,33 @@ export function CompleteVowelLesson({
     const canvas = canvasRef.current
     if (!canvas) return
 
-    setIsChecking(true)
-
     // Convert canvas to image
     const imageData = canvas.toDataURL('image/png')
     setUserDrawingImage(imageData)
 
-    // Create reference image for the correct character
-    const referenceCanvas = document.createElement('canvas')
-    referenceCanvas.width = 400
-    referenceCanvas.height = 400
-    const refCtx = referenceCanvas.getContext('2d')
-    if (refCtx) {
-      refCtx.fillStyle = 'white'
-      refCtx.fillRect(0, 0, 400, 400)
-      refCtx.font = '200px UMWEROalpha'
-      refCtx.fillStyle = '#8B4513'
-      refCtx.textAlign = 'center'
-      refCtx.textBaseline = 'middle'
-      refCtx.fillText(vowelData.umwero, 200, 200)
-    }
-    const referenceImage = referenceCanvas.toDataURL('image/png')
-
-    // AI Comparison
+    // AI Comparison using canvas validator
     let score = 0
     let feedback = "Practice completed"
     
     try {
-      const response = await fetch('/api/drawings/ai-compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userDrawingBase64: imageData.split(',')[1],
-          referenceCharacterBase64: referenceImage.split(',')[1],
-          vowel: vowelData.vowel,
-          umweroChar: vowelData.umwero
-        })
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        score = result.score
-        feedback = result.feedback
-      } else {
-        // Fallback scoring
-        score = 70
-        feedback = "Drawing saved for review"
-      }
+      // Dynamic import to avoid SSR issues
+      const { canvasValidator } = await import('../../lib/ai/canvasValidator')
+      const result = await canvasValidator.validateDrawing(canvas, consonantData.umwero)
+      score = result.score
+      feedback = result.feedback
+      
+      setAiScore(score)
+      setAiFeedback(feedback)
     } catch (error) {
       console.error('AI validation error:', error)
+      // Fallback to basic scoring
       score = 70
       feedback = "Drawing saved for review"
+      setAiScore(score)
+      setAiFeedback(feedback)
     }
 
-    setAiScore(score)
-    setAiFeedback(feedback)
     setShowComparison(true)
-    setIsChecking(false)
 
     // Save to database
     if (user) {
@@ -220,8 +186,8 @@ export function CompleteVowelLesson({
             'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({
-            vowel: vowelData.vowel,
-            umweroChar: vowelData.umwero,
+            vowel: consonantData.consonant,
+            umweroChar: consonantData.umwero,
             drawingData: imageData,
             aiScore: score,
             feedback,
@@ -241,7 +207,6 @@ export function CompleteVowelLesson({
 
   const handleNext = () => {
     clearCanvas()
-    setShowPractice(false) // Reset to learning phase
     if (onNext) {
       onNext()
     }
@@ -249,7 +214,6 @@ export function CompleteVowelLesson({
 
   const handlePrevious = () => {
     clearCanvas()
-    setShowPractice(false) // Reset to learning phase
     if (onPrevious) {
       onPrevious()
     }
@@ -260,30 +224,30 @@ export function CompleteVowelLesson({
       <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold text-[#F3E5AB] mb-2">
-            Inyajwi - The Five Sacred Vowels
+            Indangagaciro - Consonants
           </h1>
-          <p className="text-[#F3E5AB]/80">Learn the foundation of Umwero alphabet</p>
+          <p className="text-[#F3E5AB]/80">Master the consonants of Umwero alphabet</p>
         </div>
 
-        {/* Vowel Progress List at Top */}
-        {allVowels.length > 0 && (
+        {/* Consonant Progress List at Top */}
+        {allConsonants.length > 0 && (
           <div className="mb-6 flex justify-center">
-            <div className="bg-[#F3E5AB] rounded-lg border-2 border-[#8B4513] p-3 inline-flex gap-3">
-              {allVowels.map((v, idx) => (
+            <div className="bg-[#F3E5AB] rounded-lg border-2 border-[#8B4513] p-3 inline-flex gap-3 flex-wrap">
+              {allConsonants.map((c, idx) => (
                 <div 
                   key={idx}
                   className={`flex items-center gap-2 px-3 py-2 rounded ${
-                    idx === vowelNumber - 1 
+                    idx === consonantNumber - 1 
                       ? 'bg-[#8B4513] text-[#F3E5AB]' 
                       : 'bg-white text-[#8B4513]'
                   }`}
                 >
-                  {v.completed ? (
+                  {c.completed ? (
                     <CheckCircle className="h-4 w-4 text-green-500" />
                   ) : (
                     <Circle className="h-4 w-4" />
                   )}
-                  <span className="font-bold">{v.vowel.toUpperCase()}</span>
+                  <span className="font-bold">{c.consonant.toUpperCase()}</span>
                 </div>
               ))}
             </div>
@@ -298,104 +262,63 @@ export function CompleteVowelLesson({
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-2xl text-[#8B4513]">
-                    Vowel: {vowelData.vowel.toUpperCase()}
+                    Consonant: {consonantData.consonant.toUpperCase()}
                   </CardTitle>
-                  <p className="text-[#D2691E] text-sm mt-1">{vowelData.pronunciation}</p>
+                  <p className="text-[#D2691E] text-sm mt-1">{consonantData.pronunciation}</p>
                 </div>
                 <Badge className="bg-[#8B4513] text-[#F3E5AB] text-lg px-3 py-1">
-                  {vowelNumber} / {totalVowels}
+                  {consonantNumber} / {totalConsonants}
                 </Badge>
               </div>
             </CardHeader>
 
             <CardContent className="pt-6 space-y-6">
               <div className="bg-white rounded-lg border-2 border-[#8B4513] p-8 flex items-center justify-center">
-                <div className="text-9xl font-umwero text-[#8B4513]">{vowelData.umwero}</div>
+                <div className="text-9xl font-umwero text-[#8B4513]">{consonantData.umwero}</div>
               </div>
 
               <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
                 <h3 className="font-bold text-[#8B4513] mb-2">Meaning:</h3>
-                <p className="text-[#8B4513]">{vowelData.meaning}</p>
+                <p className="text-[#8B4513]">{consonantData.meaning}</p>
               </div>
 
-              <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
-                <h3 className="font-bold text-[#8B4513] mb-2 flex items-center gap-2">
-                  🌍 Cultural Context:
-                </h3>
-                <p className="text-[#8B4513] text-sm italic">{vowelData.culturalNote}</p>
-              </div>
+              {consonantData.culturalNote && (
+                <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
+                  <h3 className="font-bold text-[#8B4513] mb-2 flex items-center gap-2">
+                    🌍 Cultural Context:
+                  </h3>
+                  <p className="text-[#8B4513] text-sm italic">{consonantData.culturalNote}</p>
+                </div>
+              )}
+
+              {consonantData.examples && consonantData.examples.length > 0 && (
+                <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
+                  <h3 className="font-bold text-[#8B4513] mb-2">Examples:</h3>
+                  <div className="space-y-2">
+                    {consonantData.examples.slice(0, 3).map((ex, idx) => (
+                      <div key={idx} className="text-sm">
+                        <span className="font-umwero text-lg">{ex.umwero}</span>
+                        <span className="text-[#D2691E] ml-2">({ex.latin})</span>
+                        <span className="text-gray-600 ml-2">- {ex.english}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Right - Examples or Practice */}
+          {/* Right - Practice / Comparison */}
           <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-            {!showPractice ? (
-              /* Learning Phase - Show Examples */
-              <>
-                <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                  <CardTitle className="text-xl text-[#8B4513]">
-                    📚 Example Words
-                  </CardTitle>
-                  <p className="text-[#D2691E] text-sm">
-                    See how this vowel is used in Kinyarwanda
-                  </p>
-                </CardHeader>
-
-                <CardContent className="pt-6 space-y-4">
-                  {/* Example Words from Database */}
-                  {vowelData.examples && vowelData.examples.length > 0 ? (
-                    <div className="space-y-3">
-                      {vowelData.examples.map((example, idx) => (
-                        <div key={idx} className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-3xl font-umwero text-[#8B4513]">
-                              {example.umwero}
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-[#8B4513]">{example.latin}</div>
-                              <div className="text-sm text-[#D2691E]">{example.english}</div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                      <p className="text-[#8B4513]">No examples available yet.</p>
-                    </div>
-                  )}
-
-                  {/* Learning Tip */}
-                  <div className="bg-blue-50 rounded-lg border border-blue-300 p-4">
-                    <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" />
-                      Learning Tip
-                    </h4>
-                    <p className="text-sm text-blue-700">
-                      Practice pronouncing "{vowelData.vowel}" while looking at the Umwero character. 
-                      Connect the sound with the visual form.
-                    </p>
-                  </div>
-
-                  {/* Start Practice Button */}
-                  <Button
-                    onClick={() => setShowPractice(true)}
-                    className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] h-12"
-                  >
-                    Ready to Practice Drawing
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </CardContent>
-              </>
-            ) : !showComparison ? (
+            {!showComparison ? (
               /* Drawing Mode */
               <>
                 <CardHeader className="border-b-2 border-[#8B4513] pb-4">
                   <CardTitle className="text-xl text-[#8B4513]">
-                    ✏ Andika: "{vowelData.umwero}"
+                    ✏ Andika: "{consonantData.umwero}"
                   </CardTitle>
                   <p className="text-[#D2691E] text-sm">
-                    Koresha imirongo {vowelData.vowel === 'a' || vowelData.vowel === 'u' ? '2' : '1'}
+                    Practice writing this consonant
                   </p>
                 </CardHeader>
 
@@ -416,23 +339,15 @@ export function CompleteVowelLesson({
                       onClick={clearCanvas}
                       variant="outline"
                       className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB]"
-                      disabled={isChecking}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" /> Clear
                     </Button>
                     <Button
                       onClick={checkDrawing}
-                      disabled={!hasDrawn || isChecking}
+                      disabled={!hasDrawn}
                       className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
                     >
-                      {isChecking ? (
-                        <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Checking...
-                        </>
-                      ) : (
-                        'Check'
-                      )}
+                      Check
                     </Button>
                   </div>
                 </CardContent>
@@ -474,7 +389,7 @@ export function CompleteVowelLesson({
                     <div>
                       <h4 className="text-center font-semibold text-[#8B4513] mb-2">Correct Form</h4>
                       <div className="bg-white rounded-lg border-2 border-[#8B4513] aspect-square flex items-center justify-center">
-                        <div className="text-9xl font-umwero text-[#8B4513]">{vowelData.umwero}</div>
+                        <div className="text-9xl font-umwero text-[#8B4513]">{consonantData.umwero}</div>
                       </div>
                     </div>
                   </div>
@@ -502,7 +417,7 @@ export function CompleteVowelLesson({
           </Card>
         </div>
 
-        {/* Previous/Next Navigation at Bottom - Like the image! */}
+        {/* Previous/Next Navigation at Bottom */}
         <div className="mt-8 flex justify-between items-center">
           <Button
             onClick={handlePrevious}
@@ -511,16 +426,16 @@ export function CompleteVowelLesson({
             className="border-2 border-[#F3E5AB] text-[#F3E5AB] hover:bg-[#F3E5AB] hover:text-[#8B4513] disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous Vowel
+            Previous Consonant
           </Button>
 
           <div className="inline-flex gap-2">
-            {Array.from({ length: totalVowels }).map((_, idx) => (
+            {Array.from({ length: totalConsonants }).map((_, idx) => (
               <div
                 key={idx}
                 className={`w-12 h-2 rounded-full ${
-                  allVowels[idx]?.completed ? 'bg-green-500' 
-                  : idx === vowelNumber - 1 ? 'bg-[#8B4513]' 
+                  allConsonants[idx]?.completed ? 'bg-green-500' 
+                  : idx === consonantNumber - 1 ? 'bg-[#8B4513]' 
                   : 'bg-[#F3E5AB]'
                 }`}
               />
@@ -532,7 +447,7 @@ export function CompleteVowelLesson({
             disabled={!hasNext}
             className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            Next Vowel
+            Next Consonant
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
