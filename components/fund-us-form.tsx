@@ -21,8 +21,8 @@ const formSchema = z.object({
   amount: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: "Please enter a valid amount.",
   }),
-  paymentMethod: z.enum(["creditCard", "paypal", "bankTransfer"], {
-    required_error: "Please select a payment method.",
+  paymentMethod: z.enum(["creditCard", "paypal", "bankTransfer"]).refine((val) => val !== undefined, {
+    message: "Please select a payment method.",
   }),
   message: z.string().optional(),
 })
@@ -106,12 +106,12 @@ export function FundUsForm() {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value}
                   className="flex flex-col space-y-1"
                 >
                   <FormItem className="flex items-center space-x-3 space-y-0">
                     <FormControl>
-                      <RadioGroupItem value="creditCard" />
+                      <RadioGroupItem value="creditCard" label="Credit Card" />
                     </FormControl>
                     <FormLabel className="font-normal">
                       Credit Card
@@ -119,7 +119,7 @@ export function FundUsForm() {
                   </FormItem>
                   <FormItem className="flex items-center space-x-3 space-y-0">
                     <FormControl>
-                      <RadioGroupItem value="paypal" />
+                      <RadioGroupItem value="paypal" label="PayPal" />
                     </FormControl>
                     <FormLabel className="font-normal">
                       PayPal
@@ -127,7 +127,7 @@ export function FundUsForm() {
                   </FormItem>
                   <FormItem className="flex items-center space-x-3 space-y-0">
                     <FormControl>
-                      <RadioGroupItem value="bankTransfer" />
+                      <RadioGroupItem value="bankTransfer" label="Bank Transfer" />
                     </FormControl>
                     <FormLabel className="font-normal">
                       Bank Transfer

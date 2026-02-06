@@ -243,6 +243,8 @@ export const translations = {
     supportOurMissionTitle: "Support Our Mission",
     supportOurMissionDesc: "Help us preserve and promote Kinyarwanda culture",
     supportTheProject: "Support the Project",
+    makeDonation: "Make a Donation",
+    message: "Message",
     gamesTitle: "Games",
     gamesDesc: "Learn through engaging games",
     videoTutorialsTitle: "Video Tutorials",
@@ -781,6 +783,8 @@ export const translations = {
     supportOurMissionTitle: "Dufashe Kugera ku Ntego",
     supportOurMissionDesc: "Dufashe kubungabunga no guteza imbere umuco w'Ikinyarwanda",
     supportTheProject: "Tera Inkunga Umushinga",
+    makeDonation: "Tera Igihembo",
+    message: "Ubutumwa",
     
   },
   
@@ -1201,6 +1205,8 @@ export const translations = {
     supportOurMissionTitle: "Dufashe Kugera ku Ntego",
     supportOurMissionDesc: "Dufashe kubungabunga no guteza imbere umuco w'Ikinyarwanda",
     supportTheProject: "Tera Inkunga Umushinga",
+    makeDonation: "Tera Igihembo",
+    message: "Ubutumwa",
   }
 }
 

@@ -30,25 +30,27 @@ export const CheckoutForm: React.FC<{ onComplete: () => void }> = ({ onComplete 
         <h2 className="text-2xl font-bold">Checkout</h2>
         <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="paypal" id="paypal" />
+            <RadioGroupItem value="paypal" id="paypal" label="PayPal" />
             <Label htmlFor="paypal">PayPal</Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="mobile-money" id="mobile-money" />
+            <RadioGroupItem value="mobile-money" id="mobile-money" label="Mobile Money" />
             <Label htmlFor="mobile-money">Mobile Money</Label>
           </div>
         </RadioGroup>
-        <h3 className="text-xl font-semibold">Total: ${selectedItemsTotal.toFixed(2)}</h3>
+        <h3 className="text-xl font-semibold">Total: ${totalPrice.toFixed(2)}</h3>
 
         {paymentMethod === 'paypal' && (
           <PayPalButtons
             style={{ layout: "vertical" }}
             createOrder={(data, actions) => {
               return actions.order.create({
+                intent: "CAPTURE",
                 purchase_units: [
                   {
                     amount: {
-                      value: selectedItemsTotal.toFixed(2),
+                      currency_code: "USD",
+                      value: totalPrice.toFixed(2),
                     },
                   },
                 ],
@@ -57,7 +59,7 @@ export const CheckoutForm: React.FC<{ onComplete: () => void }> = ({ onComplete 
             onApprove={(data, actions) => {
               return actions.order!.capture().then(() => {
                 alert('Payment successful!')
-                deselectAllItems()
+                clearCart()
                 onComplete()
               })
             }}
