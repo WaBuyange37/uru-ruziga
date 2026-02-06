@@ -8,19 +8,19 @@ import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Label } from "./ui/label"
 
 const initialOptions = {
-  "client-id": "test", // Replace with your PayPal client ID
+  clientId: "test", // Replace with your PayPal client ID
   currency: "USD",
   intent: "capture",
 };
 
 export const CheckoutForm: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-  const { totalPrice, deselectAllItems } = useCart()
+  const { totalPrice, clearCart } = useCart()
   const [paymentMethod, setPaymentMethod] = useState('paypal')
 
   const handleMobileMoneyPayment = () => {
     // Integrate with your mobile money API here
     alert('Mobile Money payment processing...')
-    deselectAllItems()
+    clearCart()
     onComplete()
   }
 
