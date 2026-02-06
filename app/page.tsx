@@ -305,7 +305,9 @@ export default function Home() {
             {videoUrls.map((url, index) => (
               <div key={index} className="aspect-video">
                 <iframe
-                  ref={(el) => (videoRefs.current[`video-${index}`] = el)}
+                  ref={(el) => {
+                    if (el) videoRefs.current[`video-${index}`] = el
+                  }}
                   className="w-full h-full rounded-lg shadow-lg"
                   src={url}
                   title={`Umwero Tutorial ${index + 1}`}

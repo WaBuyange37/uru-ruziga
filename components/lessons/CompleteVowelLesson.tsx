@@ -10,7 +10,7 @@ import { Badge } from "../ui/badge"
 import { RefreshCw, ArrowRight, ArrowLeft, Lightbulb, CheckCircle, Circle } from "lucide-react"
 import { useAuth } from "../../app/contexts/AuthContext"
 
-interface VowelData {
+export interface VowelData {
   vowel: string
   umwero: string
   pronunciation: string

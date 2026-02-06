@@ -73,7 +73,6 @@ export default function CultureAndHistoryPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl text-[#8B4513]">{section.title}</CardTitle>
-                <CardDescription>{t(`${section.id}Description`)}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px] md:h-[500px] w-full rounded-md">

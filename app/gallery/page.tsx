@@ -12,7 +12,7 @@ import Image from 'next/image'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from "@/components/ui/dialog"
 import "../../styles/scroll-area.css"
-import { Carousel } from '@/components/Carousel'
+import { Carousel } from '../../components/Carousel'
 
 
 // Updated product data with only local images
@@ -90,6 +90,7 @@ export default function GalleryPage() {
       id: product.id,
       title: product.name,
       price: product.price,
+      quantity: 1
     })
   }
 

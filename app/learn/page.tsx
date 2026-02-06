@@ -14,7 +14,7 @@ import { AvailableCourses } from "../../components/certification/AvailableCourse
 import { CourseModules } from "../../components/certification/CourseModules"
 import { CertificateDisplay } from "../../components/certification/CertificateDisplay"
 import { useTranslation } from '../../hooks/useTranslation'
-import { CompleteVowelLesson } from "../../components/lessons/CompleteVowelLesson"
+import { CompleteVowelLesson, VowelData } from '../../components/lessons/CompleteVowelLesson'
 
 export default function Page() {
   const { t } = useTranslation()
@@ -253,16 +253,17 @@ export default function Page() {
                         pronunciation: content.pronunciation,
                         meaning: content.meaning,
                         culturalNote: content.culturalNote,
-                        examples: content.examples || []
-                      }
+                        examples: Array.isArray(content.examples) ? content.examples : []
+                      } as VowelData
                     } catch (e) {
                       return {
                         vowel: 'a',
                         umwero: '"',
                         pronunciation: '/a/ as in father',
                         meaning: 'Represents Cows',
-                        culturalNote: ''
-                      }
+                        culturalNote: '',
+                        examples: []
+                      } as VowelData
                     }
                   })()}
                   lessonId={vowelLessons[vowelIndex].id}
@@ -424,10 +425,7 @@ export default function Page() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea 
-                        className="h-[400px] overflow-y-auto pr-4"
-                        ref={scrollRef}
-                      >
+                      <ScrollArea className="h-[400px] overflow-y-auto pr-4">
                         <div className="space-y-4 pb-4">
                           {module.lessons.map((lesson) => (
                             <Card key={lesson.id} className="bg-white">

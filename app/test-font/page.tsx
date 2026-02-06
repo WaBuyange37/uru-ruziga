@@ -23,10 +23,10 @@ export default function TestFontPage() {
               color: '#8B4513'
             }}
           >
-            Test: amazi (should show: "M"Z})
+            Test: amazi (should show: "M"Z)
           </div>
           <p className="text-sm text-gray-600 mt-2">
-            Latin: amazi | Umwero: "M"Z} | Meaning: water
+            Latin: amazi | Umwero: "M"Z | Meaning: water
           </p>
         </div>
 
@@ -79,7 +79,7 @@ export default function TestFontPage() {
               If you see the Umwero characters above, the font is working! ✅
             </p>
             <p className="text-sm">
-              If you see curly braces like {`{`, `}`, `"`, `:`, `|`}, the font is NOT loading ❌
+              If you see curly braces like {['{', '}', '"', ':', '|'].join(', ')}, the font is NOT loading ❌
             </p>
             <p className="text-sm font-bold text-red-600">
               Current status: Check the characters above
