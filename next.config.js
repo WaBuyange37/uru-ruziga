@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 // /home/nzela37/Kwizera/Projects/uru-ruziga/next.config.js
 const nextConfig = {
+  // Set explicit workspace root to avoid lockfile confusion
+  outputFileTracingRoot: __dirname,
+  
   // Bypass TypeScript errors during build (remove once all translation keys are synced)
   typescript: {
     ignoreBuildErrors: true,

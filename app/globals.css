@@ -1,22 +1,70 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* /home/nzela37/Kwizera/Projects/uru-ruziga/app/globals.css */
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-@font-face {
-  font-family: 'UMWEROalpha';
-  src: url('/UMWEROalpha.ttf') format('truetype');
-  font-feature-settings: "liga", "rlig", "calt";
+
+/* ========================================
+   ROOT VARIABLES & BASE STYLES
+   ======================================== */
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 243, 229, 171;
+  --background-end-rgb: 255, 255, 255;
+  --font-umwero: 'UMWEROalpha', 'UmweroPUA', serif;
 }
 
-.font-umwero {
-  font-family: "UMWEROalpha", sans-serif;
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
 }
+
+/* ========================================
+   UMWERO FONT DECLARATIONS
+   
+   IMPORTANT: These files must exist in /public/:
+     - /public/Umwero.ttf
+     - /public/UMWEROalpha.woff
+     - /public/UMWEROPUAnumbers.otf
+   ======================================== */
+
+/* Main Umwero alphabet font */
+@font-face {
+  font-family: 'UMWEROalpha';
+  src: url('/UMWEROalpha.woff') format('woff'),
+       url('/Umwero.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Umwero PUA numbers font */
+@font-face {
+  font-family: 'UmweroPUA';
+  src: url('/UMWEROPUAnumbers.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ========================================
+   UMWERO UTILITY CLASSES
+   ======================================== */
+
+/* Global Umwero font class */
+.font-umwero,
+.font-umwero *,
 .umwero-mode,
 .umwero-mode * {
-  font-family: 'UMWEROalpha', serif !important;
+  font-family: var(--font-umwero) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga" 1, "rlig" 1, "calt" 1;
 }
 
 .umwero-mode {
@@ -24,27 +72,219 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Smooth transition */
+/* Language-specific Umwero styling */
+[data-language="um"],
+[data-language="um"] * {
+  font-family: var(--font-umwero) !important;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+
+/* Umwero text size variants */
+.umwero-text {
+  font-family: var(--font-umwero);
+  font-size: 1.25em;
+  line-height: 1.55;
+  letter-spacing: 0.08em;
+  word-spacing: 0.15em;
+  direction: ltr;
+  unicode-bidi: normal;
+}
+
+.umwero-heading {
+  font-family: var(--font-umwero);
+  font-size: 1.6em;
+  line-height: 1.5;
+  letter-spacing: 0.12em;
+  word-spacing: 0.2em;
+  font-weight: bold;
+}
+
+.umwero-large {
+  font-family: var(--font-umwero);
+  font-size: 2.2em;
+  line-height: 1.4;
+  letter-spacing: 0.15em;
+  word-spacing: 0.25em;
+}
+
+/* Test class - verify font is working */
+.test-umwero {
+  font-family: 'UMWEROalpha', serif;
+  font-size: 48px;
+  color: #8B4513;
+}
+
+/* ========================================
+   UMWERO LANGUAGE DATA-ATTRIBUTE OVERRIDES
+   ======================================== */
+[data-language="um"] h1,
+[data-language="um"] h2,
+[data-language="um"] h3,
+[data-language="um"] h4,
+[data-language="um"] h5,
+[data-language="um"] h6 {
+  font-family: var(--font-umwero);
+  letter-spacing: 0.12em;
+  word-spacing: 0.2em;
+  line-height: 1.4;
+  margin-bottom: 0.8em;
+}
+
+[data-language="um"] p,
+[data-language="um"] span,
+[data-language="um"] div {
+  letter-spacing: 0.08em;
+  word-spacing: 0.15em;
+  line-height: 1.55;
+}
+
+[data-language="um"] button,
+[data-language="um"] .btn,
+[data-language="um"] a {
+  letter-spacing: 0.1em;
+  word-spacing: 0.16em;
+  padding: 0.6em 1.2em;
+}
+
+[data-language="um"] input,
+[data-language="um"] textarea {
+  letter-spacing: 0.08em;
+  word-spacing: 0.15em;
+  line-height: 1.5;
+  padding: 0.8em;
+}
+
+[data-language="um"] nav {
+  letter-spacing: 0.1em;
+  word-spacing: 0.18em;
+}
+
+[data-language="um"] table {
+  letter-spacing: 0.06em;
+  word-spacing: 0.12em;
+}
+
+[data-language="um"] th,
+[data-language="um"] td {
+  padding: 0.8em 1em;
+  line-height: 1.5;
+}
+
+/* ========================================
+   UMWERO COLOR SCHEME
+   ======================================== */
+.umwero-primary { color: #8B4513; }
+.umwero-secondary { color: #D2691E; }
+.umwero-accent { color: #F3E5AB; }
+.umwero-background { background-color: #F3E5AB; }
+
+.umwero-card {
+  background: linear-gradient(135deg, #F3E5AB 0%, #FFFFFF 100%);
+  border: 2px solid #8B4513;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(139, 69, 19, 0.1);
+}
+
+/* ========================================
+   SCROLLBAR STYLING
+   ======================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #8B4513 #F3E5AB;
+}
+
+*::-webkit-scrollbar { width: 8px; }
+*::-webkit-scrollbar-track { background: #F3E5AB; }
+*::-webkit-scrollbar-thumb {
+  background-color: #8B4513;
+  border-radius: 20px;
+  border: 2px solid #F3E5AB;
+}
+
+/* Smooth font transition */
 * {
   transition: font-family 0.3s ease;
 }
 
-/* umweero page */
-[data-language="um"] {
-  font-family: 'UMWEROalpha', serif !important;
+/* ========================================
+   RESPONSIVE UMWERO FONT SIZING
+   ======================================== */
+@media (max-width: 768px) {
+  .umwero-text {
+    font-size: 1.15em;
+    letter-spacing: 0.07em;
+    word-spacing: 0.14em;
+    line-height: 1.55;
+  }
+  .umwero-heading {
+    font-size: 1.4em;
+    letter-spacing: 0.11em;
+    word-spacing: 0.19em;
+  }
+  .umwero-large {
+    font-size: 1.9em;
+    letter-spacing: 0.14em;
+    word-spacing: 0.24em;
+  }
+  [data-language="um"] {
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    word-spacing: 0.13em;
+  }
 }
 
-[data-language="um"] * {
-  font-family: 'UMWEROalpha', serif !important;
-  line-height: 1.6;
-  letter-spacing: 0.02em;
+@media (max-width: 480px) {
+  .umwero-text {
+    font-size: 1.05em;
+    letter-spacing: 0.06em;
+    word-spacing: 0.13em;
+    line-height: 1.5;
+  }
+  .umwero-heading {
+    font-size: 1.3em;
+    letter-spacing: 0.1em;
+    word-spacing: 0.18em;
+  }
+  .umwero-large {
+    font-size: 1.7em;
+    letter-spacing: 0.13em;
+    word-spacing: 0.22em;
+  }
+  [data-language="um"] {
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    word-spacing: 0.12em;
+  }
 }
-html, body, * {
-  transition: font-family 0.3s ease;
+
+@media (min-width: 1440px) {
+  .umwero-text {
+    font-size: 1.4em;
+    letter-spacing: 0.09em;
+    word-spacing: 0.17em;
+    line-height: 1.6;
+  }
+  .umwero-heading {
+    font-size: 1.8em;
+    letter-spacing: 0.13em;
+    word-spacing: 0.22em;
+  }
+  .umwero-large {
+    font-size: 2.5em;
+    letter-spacing: 0.17em;
+    word-spacing: 0.27em;
+  }
+  [data-language="um"] {
+    font-size: 1.15rem;
+    letter-spacing: 0.08em;
+    word-spacing: 0.15em;
+  }
 }
 
-
-
+/* ========================================
+   SHADCN/UI THEME VARIABLES
+   ======================================== */
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -73,6 +313,7 @@ html, body, * {
     --chart-5: 27 87% 67%;
     --radius: 0.5rem;
   }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -99,12 +340,11 @@ html, body, * {
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground;
   }

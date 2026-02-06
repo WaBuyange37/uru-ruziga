@@ -456,6 +456,7 @@ export const translations = {
     // Culture & History Page (Kinyarwanda)
     overview: "Incamake",
     historyOfWriting: "Amateka y'Inyandiko",
+    supportUmwero: "Tanga Inkunga kuri Umwero",
     umweroKabbalah: "Umwero Kabbalah",
     cultureHistoryIntro: "Umuco n'amateka bifitanye isano n'iterambere ry'uburyo bwo kwandika.",
     importanceOfWriting: "Inyandiko zabaye urufatiro rw'umuco w'abantu.",
@@ -853,6 +854,7 @@ export const translations = {
     cultural: "Ibintu by'Umuco",
     fashion: "Imyambaro",
     decoration: "Ibimurika",
+    supportUmwero: "Tanga Inkunga kuri Umwero",
     addToCart: "Kongera muri Karito",
     noProductsFound: "Nta bicuruzwa byabonetse",
     productDescription: "Ibicuruzwa by'Umwero bya nyacyo bifasha kurinda umuco nyarwanda no gukora ikoranabuhanga rya platform yo kwiga Umwero.",
