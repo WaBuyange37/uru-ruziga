@@ -200,77 +200,17 @@ export const translations = {
     yourContributionHelps: "Your contribution helps develop educational materials",
     donateNow: "Donate Now",
     
-    // Learning Section
-    beginner: "Beginner",
-    intermediate: "Intermediate",
-    advanced: "Advanced",
-    lessons: "Lessons",
-    completed: "Completed",
-    startLesson: "Start Lesson",
+    // Footer Links
     continueLesson: "Continue Lesson",
     nextLesson: "Next Lesson",
     previousLesson: "Previous Lesson",
     
-    // Lesson Titles
-    introductionToUmweroCharacters: "Introduction to Umwero Characters",
-    learnBasicShapesAndPrinciples: "Learn basic shapes and principles",
-    basicStrokesAndPatterns: "Basic Strokes and Patterns",
-    masterFundamentalStrokes: "Master fundamental strokes",
-    writingYourFirstWords: "Writing Your First Words",
-    startFormingCompleteWords: "Start forming complete words",
-    umweroVowels: "Umwero Vowels",
-    learnVowelCharacters: "Learn vowel characters",
-    umweroConsonants: "Umwero Consonants",
-    masterConsonantCharacters: "Master consonant characters",
-    numbersInUmwero: "Numbers in Umwero",
-    learnToWriteNumbers: "Learn to write numbers",
-    constructingSimpleSentences: "Constructing Simple Sentences",
-    practiceWritingSimpleSentences: "Practice writing simple sentences",
-    pronunciationGuide: "Pronunciation Guide",
-    learnCorrectPronunciation: "Learn correct pronunciation",
-    
-    // Advanced Lessons
-    advancedCharacterCombinations: "Advanced Character Combinations",
-    learnToCombineCharacters: "Learn to combine characters",
-    complexWordFormation: "Complex Word Formation",
-    createComplexWords: "Create complex words",
-    umweroIdiomsAndExpressions: "Umwero Idioms and Expressions",
-    learnCommonIdioms: "Learn common idioms",
-    umweroCalligraphy: "Umwero Calligraphy",
-    developHandwritingStyle: "Develop handwriting style",
-    understandSymbolMeanings: "Understand symbol meanings",
-    
-    // Learning Tools
-    writtenCourses: "Written Courses",
-    practiceTools: "Practice Tools",
-    certification: "Certification",
-    virtualKeyboard: "Virtual Keyboard",
-    practiceTypingUmwero: "Practice typing Umwero",
-    practiceWorksheets: "Practice Worksheets",
-    downloadPDFWorksheets: "Download PDF worksheets",
-    quizzes: "Quizzes",
-    testYourKnowledge: "Test your knowledge",
-    openTool: "Open Tool",
-    
-    // Video Section
-    watchIntroVideo: "Watch Intro Video",
-    watchNow: "Watch Now",
-    introductionToUmweroTeaching: "Introduction to Umwero Teaching",
-    imibireExploringUmwero: "Imibire - Exploring Umwero",
-    diveDeepIntoUmwero: "Dive deep into Umwero",
-    umweroBasicsPartOne: "Umwero Basics - Part One",
-    startUmweroJourney: "Start your Umwero journey",
-    umweroBasicsPartTwo: "Umwero Basics - Part Two",
-    continueUmweroLearning: "Continue your Umwero learning",
-    
-    // Dashboard
-    yourProgress: "Your Progress",
-    searchLessons: "Search lessons...",
-    joinOurLearningCommunity: "Join Our Learning Community",
+    // Footer Links
+   
     connectWithFellowLearners: "Connect with fellow learners",
     joinDiscussion: "Join Discussion",
     shareProgress: "Share Progress",
-    scrollForMore: "Scroll for more",
+    
     
     // Progress & Stats
     lessonsCompleted: "Lessons Completed",
@@ -304,44 +244,6 @@ export const translations = {
     pleaseLogIn: "Please log in to view your dashboard",
     loading: "Loading...",
     loadingProgress: "Loading your progress...",
-    
-    // Miscellaneous
-    days: "days",
-    minutes: "min",
-    hours: "hours",
-    allRightsReserved: "All rights reserved",
-    
-    // Home Page - Additional
-    welcomeToUmwero: "Welcome to Umwero Learning Platform",
-    joinCommunity: "Join our community to learn the beautiful Umwero alphabet and preserve Kinyarwanda culture",
-    getStarted: "Get Started - Sign Up",
-    alreadyHaveAccount: "Already have an account? Login",
-    whatYouGetAccess: "What You'll Get Access To",
-    interactiveLessonsTitle: "Interactive Lessons",
-    interactiveLessonsDesc: "Learn Umwero step by step with interactive lessons",
-    trackProgressTitle: "Track Progress",
-    trackProgressDesc: "Monitor your learning journey and achievements",
-    funGamesTitle: "Fun Games",
-    funGamesDesc: "Learn through engaging games and activities",
-    translationToolsTitle: "Translation Tools",
-    translationToolsDesc: "Convert between Umwero and Latin scripts",
-    welcomeBack: "Welcome back",
-    continueJourney: "Continue your Umwero learning journey",
-    adminDashboard: "Admin Dashboard",
-    myProgress: "My Progress",
-    viewYourProgress: "View Your Progress",
-    continueLearn: "Continue Learning",
-    features: "Features",
-    learnUmweroTitle: "Learn Umwero",
-    learnUmweroDesc: "Interactive lessons to master the ancient script",
-    calendarTitle: "Calendar",
-    calendarDesc: "Explore ancient calendar systems",
-    toolsTitle: "Tools",
-    toolsDesc: "Translation and learning tools",
-    gamesTitle: "Games",
-    gamesDesc: "Learn through interactive games",
-    videoTutorialsTitle: "Video Tutorials",
-    supportOurMissionTitle: "Support Our Mission",
     supportOurMissionDesc: "Help us preserve and promote Kinyarwanda culture",
     supportTheProject: "Support the Project",
     

@@ -14,7 +14,7 @@ const initialOptions = {
 };
 
 export const CheckoutForm: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
-  const { selectedItemsTotal, deselectAllItems } = useCart()
+  const { totalPrice, deselectAllItems } = useCart()
   const [paymentMethod, setPaymentMethod] = useState('paypal')
 
   const handleMobileMoneyPayment = () => {
