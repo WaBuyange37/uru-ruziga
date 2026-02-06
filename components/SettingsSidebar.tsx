@@ -7,6 +7,7 @@ import Link from "next/link"
 import { useAuth } from "../app/contexts/AuthContext"
 import { useLanguage } from "../app/contexts/LanguageContext"
 import { useTranslation } from "../hooks/useTranslation"
+import { TranslationKey } from "../lib/translations"
 import { useCart } from "../app/contexts/CartContext"
 
 const languages = [
@@ -109,7 +110,7 @@ export function SettingsSidebar() {
               {user ? (
                 <div className="text-[#8B4513] text-right text-xs sm:text-sm">
                   <p>
-                    {t("welcome")}, {user.username}!
+                    {t("welcome")}, {user.fullName}!
                   </p>
                   <Link href="/profile">
                     <Button variant="link" className="p-0 h-auto font-normal text-[#8B4513] text-xs sm:text-sm">
@@ -130,7 +131,7 @@ export function SettingsSidebar() {
               <h3 className="font-semibold text-[#8B4513] mb-1 sm:mb-2 text-right text-xs sm:text-sm">{t("cart")}</h3>
               {cart.length > 0 ? (
                 <div className="text-[#8B4513] text-right text-xs sm:text-sm">
-                  <p>{t("itemsInCart", { count: totalItems })}</p>
+                  <p>{t("itemsInCart")}: {totalItems}</p>
                   <p>
                     {t("total")}: ${totalPrice.toFixed(2)}
                   </p>
