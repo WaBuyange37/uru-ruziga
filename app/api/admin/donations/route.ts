@@ -2,14 +2,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/jwt'
 
 const prisma = new PrismaClient()
 
-// Ensure JWT_SECRET is set
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is not set')
-}
-const JWT_SECRET = process.env.JWT_SECRET
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +15,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string, role: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string, role: string }
     
     if (decoded.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 })
