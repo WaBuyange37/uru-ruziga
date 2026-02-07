@@ -4,11 +4,6 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is not set')
-}
-const JWT_SECRET = process.env.JWT_SECRET
-
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
