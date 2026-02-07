@@ -4,6 +4,9 @@ import { PrismaClient } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
+// Force dynamic rendering to avoid build-time evaluation
+export const dynamic = 'force-dynamic'
+
 const prisma = new PrismaClient()
 
 

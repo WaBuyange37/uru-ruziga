@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
+// Force dynamic rendering to avoid build-time evaluation
+export const dynamic = 'force-dynamic'
+
 if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is not set')
 }

@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
+// Force dynamic rendering to avoid build-time evaluation
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '')

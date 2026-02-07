@@ -6,3 +6,6 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
+// Force dynamic rendering to avoid build-time evaluation
+export const dynamic = 'force-dynamic'
+
