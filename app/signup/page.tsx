@@ -1,18 +1,16 @@
 "use client"
-// /home/nzela37/Kwizera/Projects/uru-ruziga/app/signup/page.tsx
+
 import { useState } from "react"
-import { useTranslation } from "../../hooks/useTranslation"
+import { useAuth } from "../contexts/AuthContext"
+import { useRouter } from "next/navigation"
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../../components/ui/card"
 import { Label } from "../../components/ui/label"
-import { EyeIcon, EyeOffIcon, Facebook, Github } from "lucide-react"
+import { EyeIcon, EyeOffIcon, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "../contexts/AuthContext"
-import { useRouter } from "next/navigation"
 
 export default function SignupPage() {
-  const { t } = useTranslation()
   const [fullName, setFullName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -29,7 +27,6 @@ export default function SignupPage() {
     setError("")
     setLoading(true)
 
-    // Validation
     if (!fullName.trim()) {
       setError("Full name is required")
       setLoading(false)
@@ -42,7 +39,6 @@ export default function SignupPage() {
       return
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       setError("Invalid email format")
@@ -69,7 +65,6 @@ export default function SignupPage() {
     }
 
     try {
-      // Fix: Pass parameters in correct order: (username, email, password)
       await register(fullName, email, password)
       router.push("/dashboard")
     } catch (err: any) {
@@ -90,27 +85,28 @@ export default function SignupPage() {
     const strength = getPasswordStrength()
     switch (strength) {
       case "weak": return "text-red-500"
-      case "medium": return "text-yellow-500"
-      case "strong": return "text-green-500"
+      case "medium": return "text-yellow-600"
+      case "strong": return "text-green-600"
       default: return ""
     }
   }
 
   return (
-    <div className="container mx-auto flex items-center justify-center min-h-screen py-8">
-      <Card className="w-full max-w-md bg-[#F3E5AB] border-[#8B4513]">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center text-[#8B4513]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] to-[#E8D89E] px-4 py-8">
+      <Card className="w-full max-w-md shadow-xl border-2 border-[#8B4513]">
+        <CardHeader className="space-y-2 pb-6">
+          <CardTitle className="text-3xl font-bold text-center text-[#8B4513]">
             Create Account
           </CardTitle>
           <CardDescription className="text-center text-[#D2691E]">
             Join the Umwero learning community
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
           <form onSubmit={handleSignup} className="space-y-4">
-            <div>
-              <Label htmlFor="fullName" className="text-[#8B4513]">Full Name</Label>
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-[#8B4513] font-medium">Full Name</Label>
               <Input
                 id="fullName"
                 type="text"
@@ -118,12 +114,12 @@ export default function SignupPage() {
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Enter your full name"
                 required
-                className="bg-white border-[#8B4513] text-[#8B4513]"
+                className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E]"
               />
             </div>
 
-            <div>
-              <Label htmlFor="email" className="text-[#8B4513]">Email</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-[#8B4513] font-medium">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -131,12 +127,12 @@ export default function SignupPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className="bg-white border-[#8B4513] text-[#8B4513]"
+                className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E]"
               />
             </div>
 
-            <div>
-              <Label htmlFor="password" className="text-[#8B4513]">Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-[#8B4513] font-medium">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -145,14 +141,14 @@ export default function SignupPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
-                  className="bg-white border-[#8B4513] text-[#8B4513] pr-10"
+                  className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E] pr-10"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8B4513]"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#8B4513] hover:text-[#D2691E]"
                 >
-                  {showPassword ? <EyeOffIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+                  {showPassword ? <EyeOffIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
                 </button>
               </div>
               {password && (
@@ -162,8 +158,8 @@ export default function SignupPage() {
               )}
             </div>
 
-            <div>
-              <Label htmlFor="confirmPassword" className="text-[#8B4513]">Confirm Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-[#8B4513] font-medium">Confirm Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -171,7 +167,7 @@ export default function SignupPage() {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Re-enter your password"
                 required
-                className="bg-white border-[#8B4513] text-[#8B4513]"
+                className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E]"
               />
             </div>
 
@@ -181,66 +177,68 @@ export default function SignupPage() {
                 id="terms"
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="mt-1 h-4 w-4 text-[#8B4513] border-[#8B4513] rounded focus:ring-[#8B4513] focus:ring-2"
+                className="mt-1 h-4 w-4 text-[#8B4513] border-[#8B4513] rounded focus:ring-[#8B4513]"
               />
               <Label
                 htmlFor="terms"
-                className="text-sm text-[#8B4513] leading-4 cursor-pointer"
+                className="text-sm text-[#8B4513] leading-5 cursor-pointer"
               >
                 I agree to the{" "}
-                <Link href="/terms" className="text-blue-600 hover:underline">
+                <Link href="/terms" className="text-[#D2691E] hover:underline">
                   Terms and Conditions
                 </Link>
                 {" "}and{" "}
-                <Link href="/privacy" className="text-blue-600 hover:underline">
+                <Link href="/privacy" className="text-[#D2691E] hover:underline">
                   Privacy Policy
                 </Link>
               </Label>
             </div>
 
             {error && (
-              <div className="text-red-500 text-sm bg-red-50 p-3 rounded border border-red-200">
-                {error}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700 text-sm font-medium">{error}</p>
               </div>
             )}
 
             <Button 
               type="submit" 
-              className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+              className="w-full h-11 bg-[#8B4513] hover:bg-[#A0522D] text-[#F3E5AB] font-semibold shadow-sm"
               disabled={loading}
             >
-              {loading ? "Creating Account..." : "Create Account"}
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating Account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
           </form>
         </CardContent>
 
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex flex-col space-y-4 pt-6">
           <div className="relative w-full">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-[#8B4513]" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#F3E5AB] px-2 text-[#8B4513]">Or sign up with</span>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-3 text-[#8B4513]">
+                Already have an account?
+              </span>
             </div>
           </div>
 
-          <div className="flex space-x-4 w-full">
-            <Button variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
-              <Github className="mr-2 h-4 w-4" /> 
-              Github
+          <Link href="/login" className="w-full">
+            <Button 
+              type="button"
+              variant="outline" 
+              className="w-full h-11 border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] font-semibold"
+            >
+              Sign In
             </Button>
-            <Button variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
-              <Facebook className="mr-2 h-4 w-4" /> 
-              Facebook
-            </Button>
-          </div>
-
-          <p className="text-center text-sm text-[#8B4513]">
-            Already have an account?{" "}
-            <Link href="/login" className="text-blue-600 hover:underline font-medium">
-              Sign in here
-            </Link>
-          </p>
+          </Link>
         </CardFooter>
       </Card>
     </div>

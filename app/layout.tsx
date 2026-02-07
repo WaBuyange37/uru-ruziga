@@ -2,13 +2,11 @@
 import "../styles/globals.css"
 import "../styles/umwero-font.css"
 import { Inter } from 'next/font/google'
-import { SiteHeader } from "../components/site-header"
-import { SiteFooter } from "../components/site-footer"
 import { AuthProvider } from "./contexts/AuthContext"
 import { LanguageProvider } from "./contexts/LanguageContext"
 import { CartProvider } from "./contexts/CartContext"
-import { SettingsSidebar } from "../components/SettingsSidebar"
 import { UmweroWrapper } from "../components/UmweroWrapper"
+import LayoutContent from "../components/LayoutContent"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -19,6 +17,12 @@ export const metadata = {
   authors: [{ name: "Kwizera Mugisha" }],
   creator: "Kwizera Mugisha",
   publisher: "Umwero Movement",
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 5,
+    userScalable: true,
+  },
   openGraph: {
     title: "Umwero Learning Platform",
     description: "Learn the revolutionary Umwero alphabet and preserve Kinyarwanda culture",
@@ -60,16 +64,7 @@ export default function RootLayout({
           <LanguageProvider>
             <CartProvider>
               <UmweroWrapper>
-                <div className="flex flex-col min-h-screen">
-                  <SiteHeader />
-                  <div className="flex flex-grow">
-                    <SettingsSidebar />
-                    <main className="flex-grow overflow-auto w-full pl-12 sm:pl-16 md:pl-20 pb-16 sm:pb-0">
-                      {children}
-                    </main>
-                  </div>
-                  <SiteFooter />
-                </div>
+                <LayoutContent>{children}</LayoutContent>
               </UmweroWrapper>
             </CartProvider>
           </LanguageProvider>

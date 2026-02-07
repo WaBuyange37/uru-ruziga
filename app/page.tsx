@@ -73,20 +73,20 @@ export default function Home() {
     return (
       <div className="flex flex-col min-h-screen">
         {/* Hero Section for Non-Authenticated Users */}
-        <section className="relative py-20 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
-          <div className="container mx-auto text-center">
-            <CircleIcon className="mx-auto h-24 w-24 mb-8 text-[#8B4513]" />
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-[#8B4513]">
+        <section className="relative py-12 sm:py-16 md:py-20 px-4 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
+          <div className="container mx-auto text-center max-w-4xl">
+            <CircleIcon className="mx-auto h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 mb-6 sm:mb-8 text-[#8B4513]" />
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-3 sm:mb-4 text-[#8B4513] px-2">
               {t("welcomeToUmwero")}
             </h1>
-            <p className="text-xl text-[#D2691E] mb-8">
+            <p className="text-base sm:text-lg md:text-xl text-[#D2691E] mb-6 sm:mb-8 px-4">
               {t("joinCommunity")}
             </p>
-            <div className="flex flex-wrap justify-center gap-4">
+            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4 px-4">
               <Button
                 size="lg"
                 asChild
-                className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] w-full sm:w-auto"
               >
                 <Link href="/signup">{t("getStarted")}</Link>
               </Button>
@@ -94,7 +94,7 @@ export default function Home() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="border-[#8B4513] text-[#8B4513]"
+                className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] w-full sm:w-auto"
               >
                 <Link href="/login">{t("alreadyHaveAccount")}</Link>
               </Button>
@@ -103,60 +103,60 @@ export default function Home() {
         </section>
 
         {/* Preview Features */}
-        <section className="py-20 px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
-          <div className="container mx-auto">
-            <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
+        <section className="py-12 sm:py-16 md:py-20 px-4 bg-[#FFFFFF]">
+          <div className="container mx-auto max-w-7xl">
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#8B4513] px-4">
               {t("whatYouGetAccess")}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-[#F3E5AB] border-[#8B4513]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513]">
+                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
                     <BookOpen className="h-5 w-5" />
                     {t("interactiveLessonsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E]">
+                  <p className="text-[#D2691E] text-sm">
                     {t("interactiveLessonsDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-[#8B4513]">
+              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513]">
+                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
                     <BarChart3 className="h-5 w-5" />
                     {t("trackProgressTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E]">
+                  <p className="text-[#D2691E] text-sm">
                     {t("trackProgressDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-[#8B4513]">
+              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513]">
+                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
                     <GamepadIcon className="h-5 w-5" />
                     {t("funGamesTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E]">
+                  <p className="text-[#D2691E] text-sm">
                     {t("funGamesDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-[#8B4513]">
+              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513]">
+                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
                     <Calculator className="h-5 w-5" />
                     {t("translationToolsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E]">
+                  <p className="text-[#D2691E] text-sm">
                     {t("translationToolsDesc")}
                   </p>
                 </CardContent>

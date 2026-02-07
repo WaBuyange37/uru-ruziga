@@ -5,47 +5,27 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "../lib/utils"
 import { Button } from "./ui/button"
-import { Input } from "./ui/input"
 import {
   Menu,
-  X,
-  Search,
   CircleIcon,
   ChevronDown,
   LogIn,
   LogOut,
-  Users,
   UserCircle,
-  ShoppingCart,
-  Globe,
-  Gamepad,
-  Settings,
   User,
 } from "lucide-react"
 import { useAuth } from "../app/contexts/AuthContext"
-import { useCart } from "../app/contexts/CartContext"
 import { useTranslation } from "../hooks/useTranslation"
 import LanguageSwitcher from "./LanguageSwitcher"
-import { DropdownMenu, DropdownMenuItem, DropdownMenuSeparator } from "./ui/dropdown-menu"
+import { DropdownMenu, DropdownMenuItem } from "./ui/dropdown-menu"
 
 export function SiteHeader() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const pathname = usePathname()
   const router = useRouter()
   const { user, logout, isAuthenticated } = useAuth()
-  const { totalItems } = useCart()
   const { t } = useTranslation()
 
   const isAuthPage = pathname === "/login" || pathname === "/signup"
-
-  const handleDropdownToggle = (label: string) => {
-    if (openDropdown === label) {
-      setOpenDropdown(null)
-    } else {
-      setOpenDropdown(label)
-    }
-  }
 
   const routes = [
     { href: "/", label: "home" },
@@ -64,15 +44,15 @@ export function SiteHeader() {
 
   if (isAuthPage) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b bg-[#F3E5AB]">
-        <div className="container flex h-16 items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2 px-2">
-            <CircleIcon className="h-12 w-12 text-[#8B4513]" />
-            <span className="text-2xl font-bold sm:inline-block">Uruziga</span>
+      <header className="sticky top-0 z-50 w-full border-b-2 border-[#8B4513] bg-[#F3E5AB] shadow-md">
+        <div className="container flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4">
+          <Link href="/" className="flex items-center space-x-2">
+            <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8B4513]" />
+            <span className="text-lg sm:text-2xl font-bold text-[#8B4513]">Uruziga</span>
           </Link>
           <nav>
             <Link href={pathname === "/login" ? "/signup" : "/login"}>
-              <Button variant="ghost" className="flex items-center">
+              <Button variant="ghost" className="text-[#8B4513] hover:bg-[#D2691E] hover:text-[#F3E5AB] text-sm sm:text-base px-2 sm:px-4">
                 {pathname === "/login" ? t("signup") : t("login")}
               </Button>
             </Link>
@@ -83,19 +63,20 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-[#F3E5AB]">
-      <div className="container flex h-16 items-center justify-between">
-        <Link href="/" className="flex items-center space-x-2 px-2">
-          <CircleIcon className="h-12 w-12 text-[#8B4513]" />
-          <span className="text-2xl font-bold sm:inline-block">Uruziga</span>
+    <header className="sticky top-0 z-50 w-full border-b-2 border-[#8B4513] bg-[#F3E5AB] shadow-md">
+      <div className="container flex h-14 sm:h-16 items-center justify-between px-3 sm:px-4 max-w-full">
+        <Link href="/" className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#8B4513]" />
+          <span className="text-lg sm:text-2xl font-bold text-[#8B4513]">Uruziga</span>
         </Link>
-        <nav className="hidden md:flex items-center space-x-4 flex-1 justify-center">
+        
+        <nav className="hidden lg:flex items-center space-x-1 flex-1 justify-center mx-4">
           {routes.map((route) => (
             <div key={route.href || route.label} className="relative">
               {route.children ? (
                 <DropdownMenu
                   trigger={
-                    <button className="flex items-center px-3 py-2 text-sm font-medium text-foreground/60 hover:text-foreground/80 transition-colors">
+                    <button className="flex items-center px-2 xl:px-3 py-2 text-sm font-medium text-[#8B4513] hover:bg-[#D2691E] hover:text-[#F3E5AB] rounded-md transition-colors whitespace-nowrap">
                       {t(route.label)}
                       <ChevronDown className="ml-1 h-3 w-3" />
                     </button>
@@ -113,8 +94,10 @@ export function SiteHeader() {
                 <Link
                   href={route.href}
                   className={cn(
-                    "transition-colors hover:text-foreground/80 px-3 py-2 rounded-md text-sm font-medium",
-                    pathname === route.href ? "bg-primary text-primary-foreground" : "text-foreground/60",
+                    "transition-colors hover:bg-[#D2691E] hover:text-[#F3E5AB] px-2 xl:px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap",
+                    pathname === route.href 
+                      ? "bg-[#8B4513] text-[#F3E5AB]" 
+                      : "text-[#8B4513]",
                   )}
                 >
                   {t(route.label)}
@@ -123,26 +106,26 @@ export function SiteHeader() {
             </div>
           ))}
         </nav>
-        <div className="flex items-center space-x-4">
-          <LanguageSwitcher />
-          {/* <Link href="/cart">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full text-xs px-1">
-                  {totalItems}
-                </span>
-              )}
-            </Button>
-          </Link> */}
+        
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+          <div className="hidden sm:block">
+            <LanguageSwitcher />
+          </div>
+          
           {isAuthenticated ? (
             <DropdownMenu
               trigger={
-                <Button variant="ghost" size="icon">
-                  <UserCircle className="h-5 w-5" />
+                <Button variant="ghost" size="icon" className="hover:bg-[#D2691E] hover:text-[#F3E5AB] h-9 w-9 sm:h-10 sm:w-10">
+                  <UserCircle className="h-5 w-5 text-[#8B4513]" />
                 </Button>
               }
             >
+              <DropdownMenuItem>
+                <Link href="/dashboard" className="flex items-center w-full">
+                  <User className="mr-2 h-4 w-4" />
+                  Dashboard
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem>
                 <Link href="/profile" className="flex items-center w-full">
                   <User className="mr-2 h-4 w-4" />
@@ -156,19 +139,23 @@ export function SiteHeader() {
             </DropdownMenu>
           ) : (
             <Link href="/login">
-              <Button variant="ghost" size="icon">
-                <LogIn className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hover:bg-[#D2691E] hover:text-[#F3E5AB] h-9 w-9 sm:h-10 sm:w-10">
+                <LogIn className="h-5 w-5 text-[#8B4513]" />
               </Button>
             </Link>
           )}
+          
           <DropdownMenu
             trigger={
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <Menu className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="lg:hidden hover:bg-[#D2691E] hover:text-[#F3E5AB] h-9 w-9 sm:h-10 sm:w-10">
+                <Menu className="h-5 w-5 text-[#8B4513]" />
               </Button>
             }
             align="right"
           >
+            <div className="sm:hidden px-4 py-2 border-b border-[#8B4513]">
+              <LanguageSwitcher />
+            </div>
             {routes.map((route) =>
               route.children ? (
                 <DropdownMenuItem key={route.label}>
@@ -203,4 +190,3 @@ export function SiteHeader() {
     </header>
   )
 }
-

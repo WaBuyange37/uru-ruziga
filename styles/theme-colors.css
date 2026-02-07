@@ -1,0 +1,81 @@
+/* Theme Colors for Umwero Learning Platform */
+/* Based on warm, educational, and culturally appropriate palette */
+
+:root {
+  /* Primary Colors - Warm Browns (representing earth, tradition) */
+  --primary-brown: #8B4513;        /* Saddle Brown - main brand color */
+  --primary-brown-dark: #6B3410;   /* Darker brown for hover states */
+  --primary-brown-light: #A0522D;  /* Sienna - lighter accent */
+  
+  /* Secondary Colors - Warm Beige/Cream (representing parchment, learning) */
+  --secondary-beige: #F3E5AB;      /* Pale Goldenrod - backgrounds */
+  --secondary-beige-dark: #E8D89E; /* Darker beige for contrast */
+  --secondary-cream: #FFF8DC;      /* Cornsilk - lightest backgrounds */
+  
+  /* Accent Colors - Terracotta/Orange (representing warmth, energy) */
+  --accent-orange: #D2691E;        /* Chocolate - links and highlights */
+  --accent-terracotta: #CD853F;    /* Peru - secondary accents */
+  --accent-gold: #DAA520;          /* Goldenrod - achievements */
+  
+  /* Neutral Colors */
+  --neutral-white: #FFFFFF;
+  --neutral-gray-light: #F5F5F5;
+  --neutral-gray: #E0E0E0;
+  --neutral-gray-dark: #757575;
+  --neutral-black: #2C2C2C;
+  
+  /* Semantic Colors */
+  --success-green: #4CAF50;
+  --warning-yellow: #FFC107;
+  --error-red: #F44336;
+  --info-blue: #2196F3;
+  
+  /* Text Colors */
+  --text-primary: #2C2C2C;
+  --text-secondary: #757575;
+  --text-on-primary: #F3E5AB;
+  --text-on-secondary: #8B4513;
+}
+
+/* Apply theme colors to common elements */
+body {
+  color: var(--text-primary);
+  background-color: var(--neutral-white);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--primary-brown);
+  color: var(--text-on-primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-brown-light);
+}
+
+/* Links */
+a {
+  color: var(--accent-orange);
+}
+
+a:hover {
+  color: var(--primary-brown);
+}
+
+/* Cards and Panels */
+.card {
+  background-color: var(--secondary-beige);
+  border-color: var(--primary-brown);
+}
+
+/* Header */
+.header {
+  background-color: var(--secondary-beige);
+  border-bottom-color: var(--primary-brown);
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: var(--secondary-beige);
+  border-right-color: var(--primary-brown);
+}

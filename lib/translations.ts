@@ -414,8 +414,8 @@ export const translations = {
     umwero: "Umwero",
     
     // Main Navigation
-    home: "Ahabanza",
-    learn: "Kwiga",
+    home: "Mu Bicumbi",
+    learn: "Iga",
     tools: "Ibikoresho",
     fundUs: "Duterere",
     gallery: "Amafoto",
@@ -606,7 +606,7 @@ export const translations = {
     umweroBasicsPartOne: "Ibanze ku Mwero - Igice cya Mbere",
     startUmweroJourney: "Tangira urugendo rw'Umwero",
     umweroBasicsPartTwo: "Ibanze ku Mwero - Igice cya Kabiri",
-    continueUmweroLearning: "Komeza kwiga Umwero",
+    continueUmweroLearning: "Iga Umwero",
     
     // Dashboard
     yourProgress: "Iterambere Ryawe",
@@ -789,8 +789,8 @@ export const translations = {
     continueJourney: "Komeza urugendo rwawe rwo kwiga Umwero",
     
     myProgress: "Iterambere Ryanjye",
-    viewYourProgress: "Reba Iterambere Ryawe",
-    continueLearn: "Komeza Kwiga",
+    viewYourProgress: "Reba aho ugeze",
+    continueLearn: "Iga",
     features: "Ibintu by'Ingenzi",
     learnUmweroTitle: "Kwiga Umwero",
     learnUmweroDesc: "Amasomo ashishikaje yo kwiga inyandiko ya kera",
@@ -870,8 +870,8 @@ export const translations = {
     umwero: "Umwero",
     
     // Main Navigation
-    home: "Ahabanza",
-    learn: "Kwiga",
+    home: "Mu Bicumbi",
+    learn: "Iga",
     tools: "Ibikoresho",
     fundUs: "Duterere",
     gallery: "Amafoto",
@@ -1064,7 +1064,7 @@ export const translations = {
     umweroBasicsPartOne: "Ibanze ku Mwero - Igice cya Mbere",
     startUmweroJourney: "Tangira urugendo rw'Umwero",
     umweroBasicsPartTwo: "Ibanze ku Mwero - Igice cya Kabiri",
-    continueUmweroLearning: "Komeza kwiga Umwero",
+    continueUmweroLearning: "Iga Umwero",
     
     // Dashboard
     yourProgress: "Iterambere Ryawe",
@@ -1252,8 +1252,8 @@ export const translations = {
     welcomeBack: "Murakaza neza",
     continueJourney: "Komeza urugendo rwawe rwo kwiga Umwero",
     myProgress: "Iterambere Ryanjye",
-    viewYourProgress: "Reba Iterambere Ryawe",
-    continueLearn: "Komeza Kwiga",
+    viewYourProgress: "Reba aho ugeze",
+    continueLearn: "Iga",
     features: "Ibintu by'Ingenzi",
     learnUmweroTitle: "Kwiga Umwero",
     learnUmweroDesc: "Amasomo ashishikaje yo kwiga inyandiko ya kera",

@@ -1,6 +1,4 @@
 "use client"
-// app/login/page.tsx
-// Perfect login page for Neon database
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -25,7 +23,6 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
 
-    // Basic validation
     if (!email.trim()) {
       setError("Please enter your email")
       return
@@ -40,8 +37,6 @@ export default function LoginPage() {
 
     try {
       await login(email, password)
-      
-      // Success! Redirect to dashboard
       router.push("/dashboard")
     } catch (err: any) {
       console.error("Login error:", err)
@@ -52,9 +47,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 flex justify-center items-center min-h-screen bg-[#FFFFFF]">
-      <Card className="w-full max-w-md bg-[#F3E5AB] border-2 border-[#8B4513] shadow-lg">
-        <CardHeader className="space-y-1">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] to-[#E8D89E] px-4 py-8">
+      <Card className="w-full max-w-md shadow-xl border-2 border-[#8B4513]">
+        <CardHeader className="space-y-2 pb-6">
           <CardTitle className="text-3xl font-bold text-center text-[#8B4513]">
             Welcome Back
           </CardTitle>
@@ -64,10 +59,9 @@ export default function LoginPage() {
         </CardHeader>
         
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email Input */}
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#8B4513] font-semibold">
+              <Label htmlFor="email" className="text-[#8B4513] font-medium">
                 Email Address
               </Label>
               <Input
@@ -76,21 +70,20 @@ export default function LoginPage() {
                 placeholder="your.email@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value.toLowerCase())}
-                className="bg-white border-[#8B4513] text-[#8B4513] focus:ring-[#8B4513]"
+                className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E]"
                 disabled={loading}
                 autoComplete="email"
               />
             </div>
 
-            {/* Password Input */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[#8B4513] font-semibold">
+                <Label htmlFor="password" className="text-[#8B4513] font-medium">
                   Password
                 </Label>
                 <Link 
                   href="/forgot-password" 
-                  className="text-xs text-blue-600 hover:underline"
+                  className="text-sm text-[#D2691E] hover:text-[#8B4513] hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -102,7 +95,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="bg-white border-[#8B4513] text-[#8B4513] pr-10 focus:ring-[#8B4513]"
+                  className="h-11 bg-white border-[#8B4513] focus:border-[#D2691E] focus:ring-[#D2691E] pr-10"
                   disabled={loading}
                   autoComplete="current-password"
                 />
@@ -113,28 +106,26 @@ export default function LoginPage() {
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOffIcon className="h-4 w-4" />
+                    <EyeOffIcon className="h-5 w-5" />
                   ) : (
-                    <EyeIcon className="h-4 w-4" />
+                    <EyeIcon className="h-5 w-5" />
                   )}
                 </button>
               </div>
             </div>
 
-            {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
                 <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <p className="text-red-600 text-sm font-medium">
+                <p className="text-red-700 text-sm font-medium">
                   {error}
                 </p>
               </div>
             )}
 
-            {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] font-semibold py-6 text-lg"
+              className="w-full h-11 bg-[#8B4513] hover:bg-[#A0522D] text-[#F3E5AB] font-semibold text-base shadow-sm"
               disabled={loading}
             >
               {loading ? (
@@ -147,26 +138,15 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          {/* Demo Accounts Info */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs font-semibold text-blue-900 mb-2">
-              Demo Accounts (for testing):
-            </p>
-            <div className="space-y-1 text-xs text-blue-800">
-              <p><strong>Student:</strong> demo@uruziga.com / demo123</p>
-              <p><strong>Teacher:</strong> teacher@uruziga.com / teach123</p>
-            </div>
-          </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col space-y-4 pb-6">
+        <CardFooter className="flex flex-col space-y-4 pt-6">
           <div className="relative w-full">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t border-[#8B4513]" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-[#F3E5AB] px-2 text-[#8B4513] font-medium">
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-3 text-[#8B4513]">
                 New to Uruziga?
               </span>
             </div>
@@ -176,7 +156,7 @@ export default function LoginPage() {
             <Button 
               type="button"
               variant="outline" 
-              className="w-full border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] font-semibold"
+              className="w-full h-11 border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] font-semibold"
             >
               Create New Account
             </Button>

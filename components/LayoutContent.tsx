@@ -1,21 +1,29 @@
 "use client"
 
-import { usePathname } from 'next/navigation'
+import { useAuth } from "../app/contexts/AuthContext"
+import { usePathname } from "next/navigation"
+import { SiteHeader } from "./site-header"
+import { SiteFooter } from "./site-footer"
 import { SettingsSidebar } from "./SettingsSidebar"
-import { useTranslation } from '../hooks/useTranslation'
 
-export function LayoutContent({ children }: { children: React.ReactNode }) {
+export default function LayoutContent({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth()
   const pathname = usePathname()
-  const isGalleryPage = pathname === '/gallery'
-  //const { t } = useTranslation() //Removed this line
+  
+  // Pages where sidebar should not show even if logged in
+  const noSidebarPages = ['/login', '/signup', '/forgot-password']
+  const showSidebar = isAuthenticated && !noSidebarPages.includes(pathname)
 
   return (
-    <div className="flex flex-grow">
-      {!isGalleryPage && <SettingsSidebar />}
-      <main className={`flex-grow ${isGalleryPage ? 'w-full' : 'pl-[8%] sm:pl-[20%]'}`}>
-        {children}
-      </main>
+    <div className="flex flex-col min-h-screen">
+      <SiteHeader />
+      <div className="flex flex-grow">
+        {showSidebar && <SettingsSidebar />}
+        <main className={`flex-grow overflow-auto w-full pb-16 sm:pb-0 ${showSidebar ? 'pl-16' : ''}`}>
+          {children}
+        </main>
+      </div>
+      <SiteFooter />
     </div>
   )
 }
-

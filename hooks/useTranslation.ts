@@ -11,6 +11,13 @@ const UMWERO_MAP: { [key: string]: string } = {
   'o': '{', 'O': '{',
   'u': ':', 'U': ':',
   
+  // Ligatures (Ibihekane) - must be checked before individual characters
+  'aa': String.fromCodePoint(0xE000), 'AA': String.fromCodePoint(0xE000),
+  'ee': String.fromCodePoint(0xE001), 'EE': String.fromCodePoint(0xE001),
+  'ii': String.fromCodePoint(0xE002), 'II': String.fromCodePoint(0xE002),
+  'oo': String.fromCodePoint(0xE003), 'OO': String.fromCodePoint(0xE003),
+  'uu': String.fromCodePoint(0xE004), 'UU': String.fromCodePoint(0xE004),
+  
   // Consonants
   'NC': 'CC',
   'NCW': 'CCKW',
@@ -230,8 +237,28 @@ const UMWERO_MAP: { [key: string]: string } = {
   // Keep spaces and punctuation
 }
 
-// Compound consonants to check first (order matters!)
-const COMPOUNDS = ['mb', 'nc', 'nd', 'nk', 'sh', 'pf', 'MB', 'NC', 'ND', 'NK', 'SH', 'PF']
+// Ibihekane (Ligatures/Compound consonants) - must be checked first (order matters!)
+const IBIHEKANE = [
+  // 4-letter compounds
+  'NSHYW', 'nshyw', 'NSHW', 'nshw', 'NSHY', 'nshy',
+  // 3-letter compounds  
+  'NCW', 'ncw', 'NKW', 'nkw', 'MFW', 'mfw', 'MFY', 'mfy', 
+  'NSH', 'nsh', 'PFW', 'pfw', 'PFY', 'pfy', 'SHW', 'shw',
+  'SHY', 'shy', 'NDW', 'ndw', 'NDY', 'ndy', 'NGW', 'ngw',
+  'NTW', 'ntw', 'NNY', 'nny', 'NYY', 'nyy', 'NZW', 'nzw',
+  'MVW', 'mvw', 'MVY', 'mvy', 'MPY', 'mpy', 'MBW', 'mbw',
+  'TSW', 'tsw', 'NJW', 'njw', 'NJY', 'njy', 'NCY', 'ncy',
+  'ZGW', 'zgw', 'MYW', 'myw', 'NYW', 'nyw',
+  // 2-letter compounds
+  'NC', 'nc', 'NK', 'nk', 'MF', 'mf', 'SH', 'sh', 'PF', 'pf',
+  'MB', 'mb', 'ND', 'nd', 'NG', 'ng', 'NT', 'nt', 'NZ', 'nz',
+  'MV', 'mv', 'MP', 'mp', 'NS', 'ns', 'NJ', 'nj', 'NY', 'ny',
+  'TS', 'ts', 'CY', 'cy', 'BY', 'by', 'BW', 'bw', 'RY', 'ry',
+  'DW', 'dw', 'GW', 'gw', 'JW', 'jw', 'KY', 'ky', 'KW', 'kw',
+  'JY', 'jy', 'MW', 'mw', 'MY', 'my', 'NW', 'nw', 'RW', 'rw',
+  'SY', 'sy', 'SW', 'sw', 'TW', 'tw', 'TY', 'ty', 'VW', 'vw',
+  'VY', 'vy', 'ZW', 'zw'
+]
 
 export function convertToUmwero(text: string): string {
   let result = ''
@@ -240,13 +267,16 @@ export function convertToUmwero(text: string): string {
   while (i < text.length) {
     let matched = false
     
-    // Check for compound consonants first
-    for (const compound of COMPOUNDS) {
+    // Check for Ibihekane (ligatures/compound consonants) first - longest to shortest
+    for (const compound of IBIHEKANE) {
       if (text.substring(i, i + compound.length).toLowerCase() === compound.toLowerCase()) {
-        result += UMWERO_MAP[compound.toLowerCase()]
-        i += compound.length
-        matched = true
-        break
+        const mappedValue = UMWERO_MAP[compound.toLowerCase()]
+        if (mappedValue) {
+          result += mappedValue
+          i += compound.length
+          matched = true
+          break
+        }
       }
     }
     

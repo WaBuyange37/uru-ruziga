@@ -160,88 +160,87 @@ export default function FundingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+    <div className="min-h-screen bg-[#FFFFFF]">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-amber-600 to-orange-600 text-white">
-        <div className="absolute inset-0 bg-black opacity-20"></div>
-        <div className="relative container mx-auto px-4 py-16">
+      <div className="relative overflow-hidden bg-[#F3E5AB] border-b-2 border-[#8B4513]">
+        <div className="container mx-auto px-4 py-12 sm:py-16">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl font-bold mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-[#8B4513]">
               {t("supportUmwero")}
             </h1>
-            <p className="text-xl mb-8 opacity-95">
+            <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-[#D2691E]">
               Join us in preserving and promoting the Umwero alphabet - a vital part of Kinyarwanda culture and heritage. 
               Your contribution helps us create educational content, preserve cultural artifacts, and reach more learners worldwide.
             </p>
             
             {/* Trust Badges */}
-            <div className="flex justify-center gap-6 mb-8">
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                <Shield className="h-4 w-4" />
-                <span className="text-sm">Secure Payment</span>
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-6">
+              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
+                <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Secure Payment</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                <CheckCircle className="h-4 w-4" />
-                <span className="text-sm">Tax Deductible</span>
+              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
+                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Tax Deductible</span>
               </div>
-              <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full">
-                <ArrowRight className="h-4 w-4" />
-                <span className="text-sm">Instant Receipt</span>
+              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
+                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span>Instant Receipt</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-7xl">
         {/* Progress Overview */}
         {stats && (
-          <Card className="mb-12 bg-white shadow-xl border-0">
-            <CardContent className="p-8">
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">Campaign Progress</h2>
-                <p className="text-gray-600">Together we're making a difference</p>
+          <Card className="mb-8 sm:mb-12 bg-[#F3E5AB] border-2 border-[#8B4513] shadow-lg">
+            <CardContent className="p-4 sm:p-6 md:p-8">
+              <div className="text-center mb-6 sm:mb-8">
+                <h2 className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-2">Campaign Progress</h2>
+                <p className="text-sm sm:text-base text-[#D2691E]">Together we're making a difference</p>
               </div>
               
-              <div className="mb-8">
-                <div className="flex justify-between mb-4">
-                  <span className="text-2xl font-bold text-amber-600">
+              <div className="mb-6 sm:mb-8">
+                <div className="flex flex-col sm:flex-row justify-between mb-4 gap-2">
+                  <span className="text-xl sm:text-2xl font-bold text-[#8B4513]">
                     {formatAmount(stats.totalRaised)}
                   </span>
-                  <span className="text-xl text-gray-600">
+                  <span className="text-lg sm:text-xl text-[#D2691E]">
                     Goal: {formatAmount(stats.goalAmount)}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-6 overflow-hidden">
+                <div className="w-full bg-gray-200 rounded-full h-5 sm:h-6 overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-amber-500 to-orange-500 h-6 rounded-full transition-all duration-1000 flex items-center justify-center"
+                    className="bg-[#8B4513] h-5 sm:h-6 rounded-full transition-all duration-1000 flex items-center justify-center"
                     style={{ width: `${getProgressPercentage()}%` }}
                   >
-                    <span className="text-white text-sm font-semibold">
+                    <span className="text-[#F3E5AB] text-xs sm:text-sm font-semibold">
                       {getProgressPercentage().toFixed(1)}%
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 mb-1">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
                     {formatAmount(stats.totalRaised)}
                   </div>
-                  <div className="text-gray-600">Total Raised</div>
+                  <div className="text-sm sm:text-base text-[#D2691E]">Total Raised</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 mb-1">
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
                     {stats.totalDonors}
                   </div>
-                  <div className="text-gray-600">Donors</div>
+                  <div className="text-sm sm:text-base text-[#D2691E]">Donors</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-amber-600 mb-1">
+                <div className="text-center p-3 bg-white rounded-lg">
+                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
                     {formatAmount(stats.averageDonation)}
                   </div>
-                  <div className="text-gray-600">Average Gift</div>
+                  <div className="text-sm sm:text-base text-[#D2691E]">Average Gift</div>
                 </div>
               </div>
             </CardContent>
@@ -249,22 +248,22 @@ export default function FundingPage() {
         )}
 
         {/* Impact Metrics */}
-        <div className="mb-12">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Our Impact</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="mb-8 sm:mb-12">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center text-[#8B4513] mb-6 sm:mb-8">Our Impact</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
             {[
-              { label: 'Students Reached', value: '2,500+', icon: <Users className="h-5 w-5" /> },
-              { label: 'Lessons Created', value: '150+', icon: <Target className="h-5 w-5" /> },
-              { label: 'Countries', value: '12', icon: <Globe className="h-5 w-5" /> },
-              { label: 'Cultural Artifacts Preserved', value: '85+', icon: <Shield className="h-5 w-5" /> }
+              { label: 'Students Reached', value: '2,500+', icon: <Users className="h-4 w-4 sm:h-5 sm:w-5" /> },
+              { label: 'Lessons Created', value: '150+', icon: <Target className="h-4 w-4 sm:h-5 sm:w-5" /> },
+              { label: 'Countries', value: '12', icon: <Globe className="h-4 w-4 sm:h-5 sm:w-5" /> },
+              { label: 'Artifacts Preserved', value: '85+', icon: <Shield className="h-4 w-4 sm:h-5 sm:w-5" /> }
             ].map((metric, index) => (
-              <Card key={index} className="bg-white shadow-lg border-0">
-                <CardContent className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-12 bg-amber-100 rounded-full mb-4">
+              <Card key={index} className="bg-[#F3E5AB] border-2 border-[#8B4513] shadow-md">
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-[#8B4513] text-[#F3E5AB] rounded-full mb-3 sm:mb-4">
                     {metric.icon}
                   </div>
-                  <div className="text-2xl font-bold text-gray-800 mb-1">{metric.value}</div>
-                  <div className="text-gray-600">{metric.label}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#8B4513] mb-1">{metric.value}</div>
+                  <div className="text-xs sm:text-sm text-[#D2691E]">{metric.label}</div>
                 </CardContent>
               </Card>
             ))}
