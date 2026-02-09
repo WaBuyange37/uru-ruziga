@@ -23,7 +23,7 @@ export function SettingsSidebar() {
 
   return (
     <aside
-      className="fixed left-0 top-16 bottom-0 bg-[#F3E5AB] border-r-2 border-[#8B4513] transition-all duration-300 z-40 w-16 hover:w-64 group shadow-md"
+      className="hidden md:block fixed left-0 top-16 bottom-0 bg-[#F3E5AB] border-r-2 border-[#8B4513] transition-all duration-300 z-40 w-16 hover:w-64 group shadow-md"
     >
       <div className="h-full flex flex-col items-end p-4 overflow-y-auto">
         <div className="w-full mb-4 flex justify-end items-center">

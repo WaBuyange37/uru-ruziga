@@ -17,12 +17,6 @@ export const metadata = {
   authors: [{ name: "Kwizera Mugisha" }],
   creator: "Kwizera Mugisha",
   publisher: "Umwero Movement",
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 5,
-    userScalable: true,
-  },
   openGraph: {
     title: "Umwero Learning Platform",
     description: "Learn the revolutionary Umwero alphabet and preserve Kinyarwanda culture",
@@ -40,6 +34,13 @@ export const metadata = {
     index: true,
     follow: true,
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
 }
 
 export default function RootLayout({

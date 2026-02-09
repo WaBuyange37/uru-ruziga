@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BookOpen, Users, Plus, Edit, Eye } from 'lucide-react'
 import { getPermissions } from '@/lib/permissions'
+import { LessonUploadForm } from '@/components/teacher/LessonUploadForm'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface Lesson {
@@ -248,13 +249,14 @@ export default function TeacherDashboard() {
 
         {/* Create Lesson Tab */}
         <TabsContent value="create">
-          <Card>
-            <CardHeader>
-              <CardTitle>Create New Lesson</CardTitle>
-              <CardDescription>Add a new Umwero lesson for your students</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleCreateLesson} className="space-y-6">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Create New Lesson</CardTitle>
+                <CardDescription>Add a new Umwero lesson for your students</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreateLesson} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="title">Lesson Title *</Label>
@@ -372,6 +374,18 @@ export default function TeacherDashboard() {
               </form>
             </CardContent>
           </Card>
+
+          {/* File Upload Section */}
+          <LessonUploadForm
+            onUploadComplete={(url, type) => {
+              if (type === 'video') {
+                setNewLesson({ ...newLesson, videoUrl: url })
+              } else if (type === 'image') {
+                setNewLesson({ ...newLesson, thumbnailUrl: url })
+              }
+            }}
+          />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

@@ -1,135 +1,153 @@
 import { useState, useEffect } from 'react'
 
 interface Discussion {
-  id: string;
-  author: string;
-  title: string;
-  content: string;
-  comments: Comment[];
+  id: string
+  userId: string
+  title: string
+  content: string
+  script: string
+  category?: string
+  mediaUrls?: string[]
+  isPinned: boolean
+  views: number
+  likesCount: number
+  createdAt: string
+  updatedAt: string
+  user: {
+    id: string
+    fullName: string | null
+    username: string | null
+    avatar: string | null
+    role: string
+  }
+  _count: {
+    comments: number
+  }
 }
 
-interface Comment {
-  id: string;
-  author: string;
-  content: string;
+interface CreateDiscussionInput {
+  title: string
+  content: string
+  script: 'UMWERO' | 'LATIN'
+  category?: string
+  mediaUrls?: string[]
 }
 
 export function useDiscussions() {
   const [discussions, setDiscussions] = useState<Discussion[]>([])
-  const [newDiscussion, setNewDiscussion] = useState({ title: '', content: '' })
-  const [newComment, setNewComment] = useState('')
-  const [activeDiscussion, setActiveDiscussion] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token')
+    }
+    return null
+  }
+
+  const fetchDiscussions = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/discussions')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch discussions')
+      }
+
+      const data = await response.json()
+      setDiscussions(data.discussions || [])
+    } catch (err: any) {
+      console.error('Fetch discussions error:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const storedDiscussions = localStorage.getItem('discussions')
-    if (storedDiscussions) {
-      try {
-        setDiscussions(JSON.parse(storedDiscussions))
-      } catch (error) {
-        console.error('Error parsing discussions from localStorage:', error)
-        setDiscussions([])
-      }
-    }
-
-    const storedNewDiscussion = localStorage.getItem('newDiscussion')
-    if (storedNewDiscussion) {
-      try {
-        setNewDiscussion(JSON.parse(storedNewDiscussion))
-      } catch (error) {
-        console.error('Error parsing newDiscussion from localStorage:', error)
-        setNewDiscussion({ title: '', content: '' })
-      }
-    }
-
-    const storedActiveDiscussion = localStorage.getItem('activeDiscussion')
-    if (storedActiveDiscussion) {
-      setActiveDiscussion(storedActiveDiscussion)
-    }
+    fetchDiscussions()
   }, [])
 
-  useEffect(() => {
-    localStorage.setItem('discussions', JSON.stringify(discussions))
-  }, [discussions])
-
-  useEffect(() => {
-    localStorage.setItem('newDiscussion', JSON.stringify(newDiscussion))
-  }, [newDiscussion])
-
-  useEffect(() => {
-    if (activeDiscussion) {
-      localStorage.setItem('activeDiscussion', activeDiscussion)
-    } else {
-      localStorage.removeItem('activeDiscussion')
+  const createDiscussion = async (input: CreateDiscussionInput): Promise<Discussion | null> => {
+    const token = getToken()
+    if (!token) {
+      setError('Authentication required')
+      return null
     }
-  }, [activeDiscussion])
 
-  const addDiscussion = () => {
-    if (newDiscussion.title && newDiscussion.content) {
-      const discussion: Discussion = {
-        id: Date.now().toString(),
-        author: 'Current User',
-        title: newDiscussion.title,
-        content: newDiscussion.content,
-        comments: []
-      }
-      const updatedDiscussions = [discussion, ...discussions]
-      setDiscussions(updatedDiscussions)
-      localStorage.setItem('discussions', JSON.stringify(updatedDiscussions))
-      setNewDiscussion({ title: '', content: '' })
-      localStorage.removeItem('newDiscussion')
-      setActiveDiscussion(discussion.id)
-    }
-  }
+    try {
+      setLoading(true)
+      setError(null)
 
-  const addComment = (discussionId: string) => {
-    if (newComment) {
-      const updatedDiscussions = discussions.map(discussion => {
-        if (discussion.id === discussionId) {
-          return {
-            ...discussion,
-            comments: [
-              ...discussion.comments,
-              {
-                id: Date.now().toString(),
-                author: 'Current User',
-                content: newComment
-              }
-            ]
-          }
-        }
-        return discussion
+      const response = await fetch('/api/discussions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(input)
       })
-      setDiscussions(updatedDiscussions)
-      localStorage.setItem('discussions', JSON.stringify(updatedDiscussions))
-      setNewComment('')
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to create discussion')
+      }
+
+      const data = await response.json()
+      const newDiscussion = data.discussion
+
+      setDiscussions(prev => [newDiscussion, ...prev])
+      return newDiscussion
+    } catch (err: any) {
+      console.error('Create discussion error:', err)
+      setError(err.message)
+      return null
+    } finally {
+      setLoading(false)
     }
   }
 
-  const deleteComment = (discussionId: string, commentId: string) => {
-    const updatedDiscussions = discussions.map(discussion => {
-      if (discussion.id === discussionId) {
-        return {
-          ...discussion,
-          comments: discussion.comments.filter(comment => comment.id !== commentId)
+  const deleteDiscussion = async (discussionId: string): Promise<boolean> => {
+    const token = getToken()
+    if (!token) {
+      setError('Authentication required')
+      return false
+    }
+
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/discussions/${discussionId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete discussion')
       }
-      return discussion
-    })
-    setDiscussions(updatedDiscussions)
-    localStorage.setItem('discussions', JSON.stringify(updatedDiscussions))
+
+      setDiscussions(prev => prev.filter(d => d.id !== discussionId))
+      return true
+    } catch (err: any) {
+      console.error('Delete discussion error:', err)
+      setError(err.message)
+      return false
+    } finally {
+      setLoading(false)
+    }
   }
 
   return {
     discussions,
-    newDiscussion,
-    setNewDiscussion,
-    newComment,
-    setNewComment,
-    activeDiscussion,
-    setActiveDiscussion,
-    addDiscussion,
-    addComment,
-    deleteComment
+    loading,
+    error,
+    fetchDiscussions,
+    createDiscussion,
+    deleteDiscussion
   }
 }
-

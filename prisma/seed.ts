@@ -228,15 +228,17 @@ const ACHIEVEMENTS = [
 const USERS = [
   {
     email: '37nzela@gmail.com',
+    username: 'kwizera',
     password: 'Mugix260',
     fullName: 'Kwizera Mugisha',
-    role: UserRole.ADMIN,
+    role: UserRole.ADMIN,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
     country: 'Rwanda',
-    language: 'en',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       language: 'en',
     bio: 'Creator of Umwero alphabet. Passionate about preserving Kinyarwanda language and culture.',
   },
   {
     email: 'demo@uruziga.com',
+    username: 'demo',
     password: 'demo123',
     fullName: 'Demo Student',
     role: UserRole.USER,
@@ -246,6 +248,7 @@ const USERS = [
   },
   {
     email: 'teacher@uruziga.com',
+    username: 'teacher',
     password: 'teach123',
     fullName: 'Umwero Teacher',
     role: UserRole.TEACHER,
@@ -342,6 +345,7 @@ async function main() {
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   console.log('👑 ADMIN (Platform Owner - Full Control)')
   console.log('   Email:    37nzela@gmail.com')
+  console.log('   Username: kwizera')
   console.log('   Password: Mugix260')
   console.log('   Role:     ADMIN')
   console.log('   Powers:   - Manage all users & roles')
@@ -351,6 +355,7 @@ async function main() {
   console.log('             - Full platform control\n')
   console.log('👨‍🏫 TEACHER (Can Create Lessons)')
   console.log('   Email:    teacher@uruziga.com')
+  console.log('   Username: teacher')
   console.log('   Password: teach123')
   console.log('   Role:     TEACHER')
   console.log('   Powers:   - Create & edit lessons')
@@ -358,6 +363,7 @@ async function main() {
   console.log('             - Manage quizzes\n')
   console.log('👤 STUDENT (Learner)')
   console.log('   Email:    demo@uruziga.com')
+  console.log('   Username: demo')
   console.log('   Password: demo123')
   console.log('   Role:     USER')
   console.log('   Powers:   - Take lessons')

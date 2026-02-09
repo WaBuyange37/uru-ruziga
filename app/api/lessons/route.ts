@@ -1,6 +1,12 @@
 // app/api/lessons/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { verifyToken } from '@/lib/jwt'
+import { hasPermission } from '@/lib/permissions'
+import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { validateRequest, createLessonSchema } from '@/lib/validators'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error fetching lessons:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch lessons', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to fetch lessons' },
       { status: 500 }
     )
   }
@@ -55,7 +61,43 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    // Rate limiting
+    const rateLimitResponse = await withRateLimit(request, RATE_LIMITS.API_GENERAL)
+    if (rateLimitResponse) return rateLimitResponse
+
+    // Authentication
+    const token = request.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const decoded = await verifyToken(token)
+    if (!decoded) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    }
+
+    // Check permissions (TEACHER or ADMIN only)
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, role: true },
+    })
+
+    if (!user || !hasPermission(user.role as any, 'canCreateLesson')) {
+      return NextResponse.json(
+        { error: 'Insufficient permissions. Teacher or Admin role required.' },
+        { status: 403 }
+      )
+    }
+
+    // Validate input
+    const validation = await validateRequest(request.clone(), createLessonSchema)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      )
+    }
+
     const {
       title,
       description,
@@ -66,15 +108,9 @@ export async function POST(request: NextRequest) {
       duration,
       videoUrl,
       thumbnailUrl,
-    } = body
-
-    // Validation
-    if (!title || !description || !content || !module || !type) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
+      prerequisites,
+      isPublished,
+    } = validation.data
 
     // Parse content if it's a string
     let parsedContent = content
@@ -96,11 +132,12 @@ export async function POST(request: NextRequest) {
         content: parsedContent,
         module,
         type,
-        order: order || 1,
-        duration: duration || 10,
+        order,
+        duration,
         videoUrl: videoUrl || null,
         thumbnailUrl: thumbnailUrl || null,
-        isPublished: true,
+        prerequisites: prerequisites || [],
+        isPublished: isPublished !== undefined ? isPublished : true,
       }
     })
 
@@ -111,7 +148,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating lesson:', error)
     return NextResponse.json(
-      { error: 'Failed to create lesson', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to create lesson' },
       { status: 500 }
     )
   }

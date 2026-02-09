@@ -4,111 +4,124 @@ import { translations, TranslationKey } from '../lib/translations'
 
 // Umwero character mapping (Latin → Umwero)
 const UMWERO_MAP: { [key: string]: string } = {
-  // Vowels
-  'a': '"', 'A': '"',
-  'e': '|', 'E': '|',
-  'i': '}', 'I': '}',
-  'o': '{', 'O': '{',
-  'u': ':', 'U': ':',
+  // Vowels (both cases)
+  'A': '"', 'a': '"',
+  'E': '|', 'e': '|',
+  'I': '}', 'i': '}',
+  'O': '{', 'o': '{',
+  'U': ':', 'u': ':',
   
-  // Ligatures (Ibihekane) - must be checked before individual characters
-  'aa': String.fromCodePoint(0xE000), 'AA': String.fromCodePoint(0xE000),
-  'ee': String.fromCodePoint(0xE001), 'EE': String.fromCodePoint(0xE001),
-  'ii': String.fromCodePoint(0xE002), 'II': String.fromCodePoint(0xE002),
-  'oo': String.fromCodePoint(0xE003), 'OO': String.fromCodePoint(0xE003),
-  'uu': String.fromCodePoint(0xE004), 'UU': String.fromCodePoint(0xE004),
+  // Ligatures (Ibihekane) - vowel combinations
+  'AA': String.fromCodePoint(0xE000), 'aa': String.fromCodePoint(0xE000),
+  'EE': String.fromCodePoint(0xE001), 'ee': String.fromCodePoint(0xE001),
+  'II': String.fromCodePoint(0xE002), 'ii': String.fromCodePoint(0xE002),
+  'OO': String.fromCodePoint(0xE003), 'oo': String.fromCodePoint(0xE003),
+  'UU': String.fromCodePoint(0xE004), 'uu': String.fromCodePoint(0xE004),
   
-  // Consonants
-  'NC': 'CC',
-  'NCW': 'CCKW',
-  'CW': 'CKW',
-  'D': 'D',
-  'DW': 'DGW',
-  'RY': 'DL',
-  'NK': 'E',
-  'NKW': 'EW',
-  'F': 'F',
-  'MF': 'FF',
-  'MFW': 'FFK',
-  'MFY': 'FFKK',
-  'FW': 'FK',
-  'FY': 'FKK',
-  'G': 'G',
-  'GW': 'GW',
-  'H': 'H',
-  'SH': 'HH',
-  'NSH': 'HHH',
-  'NSHW': 'HHHKW',
-  'SHW': 'HHKW',
-  'PF': 'I',
-  'PFW': 'IK',
-  'PFY': 'IKK',
-  'J': 'J',
-  'JW': 'JGW',
-  'K': 'K',
-  'KY': 'KK',
-  'NKY': 'KKK',
-  'KW': 'KW',
-  'JY': 'L',
-  'NJY': 'LL',
-  'M': 'M',
-  'MW': 'ME',
-  'MY': 'MYY',
-  'MYW': 'MYYEW',
-  'N': 'N',
-  'ND': 'ND',
-  'NDW': 'NDGW',
-  'NDY': 'NDL',
-  'NW': 'NEW',
-  'NG': 'NG',
-  'NGW': 'NGW',
-  'NT': 'NN',
-  'NTW': 'NNEW',
-  'NNY': 'NNYY',
-  'NYY': 'NYY',
-  'NZ': 'NZ',
-  'NZW': 'NZGW',
-  'MV': 'O',
-  'MVW': 'OG',
-  'MVY': 'OL',
-  'MPY': 'PPKK',
-  'P': 'P',
-  'PW': 'PK',
-  'PY': 'PKK',
-  'MP': 'MM',
-  'SHY': 'Q',
-  'SHYW': 'QKW',
-  'NSHY': 'QQ',
-  'NSHYW': 'QQKW',
-  'R': 'R',
-  'L': 'R',
-  'CY':'KK',
-  'BY':'BBL',
-  'BW': 'BBG',
-  'MB': 'A',
-  'MBW': 'BBG',
-  'RW': 'RGW',
-  'S': 'S',
-  'SY': 'SKK',
-  'SW': 'SKW',
-  'NS': 'SS',
-  'NSY': 'SSKK',
-  'NSW': 'SSKW',
-  'TW': 'TKW',
-  'TY': 'TKK ',
-  'NJ': 'U',
-  'NJW': 'UGW',
-  'V': 'V',
-  'VW': 'VG',
-  'VY': 'VL',
-  'W': 'W',
-  'TS': 'X',
-  'TSW': 'XKW',
-  'Y': 'Y',
-  'NY': 'YY',
-  'NYW': 'YYEW',
-  'Z': 'Z',
-  'ZW': 'ZGW`',
+  // 5-letter compounds
+  'NSHYW': 'QQKW', 'nshyw': 'QQKW',
+  
+  // 4-letter compounds
+  'NSHW': 'HHHKW', 'nshw': 'HHHKW',
+  'NSHY': 'QQ', 'nshy': 'QQ',
+  'MYYEW': 'MYYEW', 'myyew': 'MYYEW',
+  
+  // 3-letter compounds
+  'NCW': 'CCKW', 'ncw': 'CCKW',
+  'NKW': 'EW', 'nkw': 'EW',
+  'MFW': 'FFK', 'mfw': 'FFK',
+  'MFY': 'FFKK', 'mfy': 'FFKK',
+  'NSH': 'HHH', 'nsh': 'HHH',
+  'PFW': 'IK', 'pfw': 'IK',
+  'PFY': 'IKK', 'pfy': 'IKK',
+  'SHW': 'HHKW', 'shw': 'HHKW',
+  'SHY': 'Q', 'shy': 'Q',
+  'NDW': 'NDGW', 'ndw': 'NDGW',
+  'NDY': 'NDL', 'ndy': 'NDL',
+  'NGW': 'NGW', 'ngw': 'NGW',
+  'NTW': 'NNEW', 'ntw': 'NNEW',
+  'NNY': 'NNYY', 'nny': 'NNYY',
+  'NYY': 'NYY', 'nyy': 'NYY',
+  'NZW': 'NZGW', 'nzw': 'NZGW',
+  'MVW': 'OG', 'mvw': 'OG',
+  'MVY': 'OL', 'mvy': 'OL',
+  'MPY': 'PPKK', 'mpy': 'PPKK',
+  'MBW': 'BBG', 'mbw': 'BBG',
+  'TSW': 'XKW', 'tsw': 'XKW',
+  'NJW': 'UGW', 'njw': 'UGW',
+  'NJY': 'LL', 'njy': 'LL',
+  'NCY': 'CC', 'ncy': 'CC',
+  'ZGW': 'ZGW', 'zgw': 'ZGW',
+  'MYW': 'MYYEW', 'myw': 'MYYEW',
+  'NYW': 'YYEW', 'nyw': 'YYEW',
+  'NKY': 'KKK', 'nky': 'KKK',
+  'NSW': 'SSKW', 'nsw': 'SSKW',
+  'NSY': 'SSKK', 'nsy': 'SSKK',
+  
+  // 2-letter compounds
+  'NC': 'CC', 'nc': 'CC',
+  'NK': 'E', 'nk': 'E',
+  'MF': 'FF', 'mf': 'FF',
+  'SH': 'HH', 'sh': 'HH',
+  'PF': 'I', 'pf': 'I',
+  'MB': 'A', 'mb': 'A',
+  'ND': 'ND', 'nd': 'ND',
+  'NG': 'NG', 'ng': 'NG',
+  'NT': 'NN', 'nt': 'NN',
+  'NZ': 'NZ', 'nz': 'NZ',
+  'MV': 'O', 'mv': 'O',
+  'MP': 'MM', 'mp': 'MM',
+  'NS': 'SS', 'ns': 'SS',
+  'NJ': 'U', 'nj': 'U',
+  'NY': 'YY', 'ny': 'YY',
+  'TS': 'X', 'ts': 'X',
+  'CY': 'KK', 'cy': 'KK',
+  'BY': 'BBL', 'by': 'BBL',
+  'BW': 'BBG', 'bw': 'BBG',
+  'RY': 'DL', 'ry': 'DL',
+  'DW': 'DGW', 'dw': 'DGW',
+  'GW': 'GW', 'gw': 'GW',
+  'JW': 'JGW', 'jw': 'JGW',
+  'KY': 'KK', 'ky': 'KK',
+  'KW': 'KW', 'kw': 'KW',
+  'JY': 'L', 'jy': 'L',
+  'MW': 'ME', 'mw': 'ME',
+  'MY': 'MYY', 'my': 'MYY',
+  'NW': 'NEW', 'nw': 'NEW',
+  'RW': 'RGW', 'rw': 'RGW',
+  'SY': 'SKK', 'sy': 'SKK',
+  'SW': 'SKW', 'sw': 'SKW',
+  'TW': 'TKW', 'tw': 'TKW',
+  'TY': 'TKK', 'ty': 'TKK',
+  'VW': 'VG', 'vw': 'VG',
+  'VY': 'VL', 'vy': 'VL',
+  'ZW': 'ZGW', 'zw': 'ZGW',
+  'CW': 'CKW', 'cw': 'CKW',
+  'FW': 'FK', 'fw': 'FK',
+  'FY': 'FKK', 'fy': 'FKK',
+  'PW': 'PK', 'pw': 'PK',
+  'PY': 'PKK', 'py': 'PKK',
+  
+  // Single consonants
+  'B': 'B', 'b': 'B',
+  'C': 'C', 'c': 'C',
+  'D': 'D', 'd': 'D',
+  'F': 'F', 'f': 'F',
+  'G': 'G', 'g': 'G',
+  'H': 'H', 'h': 'H',
+  'J': 'J', 'j': 'J',
+  'K': 'K', 'k': 'K',
+  'L': 'R', 'l': 'R',
+  'M': 'M', 'm': 'M',
+  'N': 'N', 'n': 'N',
+  'P': 'P', 'p': 'P',
+  'R': 'R', 'r': 'R',
+  'S': 'S', 's': 'S',
+  'T': 'T', 't': 'T',
+  'V': 'V', 'v': 'V',
+  'W': 'W', 'w': 'W',
+  'Y': 'Y', 'y': 'Y',
+  'Z': 'Z', 'z': 'Z',
 
   // numbers-ones
   1: String.fromCodePoint(0x0031),
@@ -226,69 +239,81 @@ const UMWERO_MAP: { [key: string]: string } = {
   // Umweero numerals from 100 to hundred Decillions need to be looped for better  and shortter code
   //I will do it in next update, even these are more much lines
 
-  // Compound consonants (must be checked before single chars)
-  'mb': 'A', 'Mb': 'A',
+  // Compound consonants (lowercase variants)
+  'mb': 'A', 'Mb': 'A', 
   'nc': 'CC', 'Nc': 'CC',
-  'nd': 'NT', 'Nd': 'NT',
+  'nd': 'ND', 'Nd': 'ND',
   'nk': 'E', 'Nk': 'E',
   'sh': 'HH', 'Sh': 'HH',
   'pf': 'I', 'Pf': 'I',
-  
-  // Keep spaces and punctuation
 }
 
-// Ibihekane (Ligatures/Compound consonants) - must be checked first (order matters!)
-const IBIHEKANE = [
-  // 4-letter compounds
-  'NSHYW', 'nshyw', 'NSHW', 'nshw', 'NSHY', 'nshy',
-  // 3-letter compounds  
-  'NCW', 'ncw', 'NKW', 'nkw', 'MFW', 'mfw', 'MFY', 'mfy', 
-  'NSH', 'nsh', 'PFW', 'pfw', 'PFY', 'pfy', 'SHW', 'shw',
-  'SHY', 'shy', 'NDW', 'ndw', 'NDY', 'ndy', 'NGW', 'ngw',
-  'NTW', 'ntw', 'NNY', 'nny', 'NYY', 'nyy', 'NZW', 'nzw',
-  'MVW', 'mvw', 'MVY', 'mvy', 'MPY', 'mpy', 'MBW', 'mbw',
-  'TSW', 'tsw', 'NJW', 'njw', 'NJY', 'njy', 'NCY', 'ncy',
-  'ZGW', 'zgw', 'MYW', 'myw', 'NYW', 'nyw',
-  // 2-letter compounds
-  'NC', 'nc', 'NK', 'nk', 'MF', 'mf', 'SH', 'sh', 'PF', 'pf',
-  'MB', 'mb', 'ND', 'nd', 'NG', 'ng', 'NT', 'nt', 'NZ', 'nz',
-  'MV', 'mv', 'MP', 'mp', 'NS', 'ns', 'NJ', 'nj', 'NY', 'ny',
-  'TS', 'ts', 'CY', 'cy', 'BY', 'by', 'BW', 'bw', 'RY', 'ry',
-  'DW', 'dw', 'GW', 'gw', 'JW', 'jw', 'KY', 'ky', 'KW', 'kw',
-  'JY', 'jy', 'MW', 'mw', 'MY', 'my', 'NW', 'nw', 'RW', 'rw',
-  'SY', 'sy', 'SW', 'sw', 'TW', 'tw', 'TY', 'ty', 'VW', 'vw',
-  'VY', 'vy', 'ZW', 'zw'
-]
-
 export function convertToUmwero(text: string): string {
+  // Convert to uppercase first for consistent mapping
+  const upperText = text.toUpperCase()
   let result = ''
-  let i = 0
-  
-  while (i < text.length) {
-    let matched = false
-    
-    // Check for Ibihekane (ligatures/compound consonants) first - longest to shortest
-    for (const compound of IBIHEKANE) {
-      if (text.substring(i, i + compound.length).toLowerCase() === compound.toLowerCase()) {
-        const mappedValue = UMWERO_MAP[compound.toLowerCase()]
-        if (mappedValue) {
-          result += mappedValue
-          i += compound.length
-          matched = true
-          break
+  const words = upperText.split(' ')
+
+  for (let word of words) {
+    let i = 0
+    while (i < word.length) {
+      let found = false
+      
+      // Check for 5-letter compounds first (longest first)
+      if (i + 4 < word.length) {
+        const fiveLetters = word.slice(i, i + 5)
+        if (UMWERO_MAP[fiveLetters]) {
+          result += UMWERO_MAP[fiveLetters]
+          i += 5
+          found = true
         }
       }
+      
+      // Check for 4-letter compounds
+      if (!found && i + 3 < word.length) {
+        const fourLetters = word.slice(i, i + 4)
+        if (UMWERO_MAP[fourLetters]) {
+          result += UMWERO_MAP[fourLetters]
+          i += 4
+          found = true
+        }
+      }
+      
+      // Check for 3-letter compounds
+      if (!found && i + 2 < word.length) {
+        const threeLetters = word.slice(i, i + 3)
+        if (UMWERO_MAP[threeLetters]) {
+          result += UMWERO_MAP[threeLetters]
+          i += 3
+          found = true
+        }
+      }
+      
+      // Check for 2-letter compounds
+      if (!found && i + 1 < word.length) {
+        const twoLetters = word.slice(i, i + 2)
+        if (UMWERO_MAP[twoLetters]) {
+          result += UMWERO_MAP[twoLetters]
+          i += 2
+          found = true
+        }
+      }
+      
+      // Check for single character
+      if (!found) {
+        const letter = word[i]
+        if (UMWERO_MAP[letter]) {
+          result += UMWERO_MAP[letter]
+        } else {
+          result += letter // Keep non-mapped characters as is
+        }
+        i++
+      }
     }
-    
-    // If no compound matched, check single character
-    if (!matched) {
-      const char = text[i]
-      result += UMWERO_MAP[char] || char
-      i++
-    }
+    result += ' ' // Add space between words
   }
-  
-  return result
+
+  return result.trim()
 }
 
 export function useTranslation() {
@@ -297,9 +322,9 @@ export function useTranslation() {
   const t = (key: TranslationKey): string => {
     const translation = translations[language][key] || translations.en[key] || key
     
-    // If language is Umwero ('um'), convert to uppercase first, then to Umwero characters
+    // If language is Umwero ('um'), convert to Umwero characters
     if (language === 'um') {
-      return convertToUmwero(translation.toUpperCase())
+      return convertToUmwero(translation)
     }
     
     return translation

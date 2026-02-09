@@ -14,9 +14,9 @@ interface User {
 interface AuthContextType {
   user: User | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (identifier: string, password: string) => Promise<void>
   logout: () => void
-  register: (fullName: string, email: string, password: string) => Promise<void>
+  register: (fullName: string, username: string, email: string, password: string) => Promise<void>
   loading: boolean
 }
 
@@ -62,14 +62,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth()
   }, [])
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, password }),
       })
 
       const data = await response.json()
@@ -93,14 +93,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (fullName: string, email: string, password: string) => {
+  const register = async (fullName: string, username: string, email: string, password: string) => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ fullName, email, password }),
+        body: JSON.stringify({ fullName, username, email, password }),
       })
 
       const data = await response.json()
@@ -109,8 +109,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Registration failed')
       }
 
-      // After successful registration, log in automatically
-      await login(email, password)
+      // Auto-login after registration
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
+      
+      setUser(data.user)
     } catch (error: any) {
       console.error('Registration error:', error)
       throw error

@@ -14,9 +14,9 @@ import { useRouter } from "next/navigation"
 
 export default function CartPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const router = useRouter()
-  const { cart, removeFromCart, updateQuantity, clearCart, totalPrice } = useCart()
+  const { cart, removeFromCart, updateQuantity, clearCart, totalPrice, loading } = useCart()
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [formData, setFormData] = useState({
     phone: "",
@@ -26,14 +26,14 @@ export default function CartPage() {
   const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null)
 
   useEffect(() => {
-    if (!user) {
+    if (!isAuthenticated) {
       router.push("/login")
     }
-  }, [user, router])
+  }, [isAuthenticated, router])
 
-  const handleQuantityChange = (id: string, newQuantity: number) => {
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
     if (newQuantity < 1) return
-    updateQuantity(id, newQuantity)
+    await updateQuantity(itemId, newQuantity)
   }
 
   const handleCheckout = () => {
@@ -53,16 +53,25 @@ export default function CartPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Implement order submission to backend
     console.log("Order submitted", { user, cart, formData, paymentScreenshot })
     alert("Order submitted successfully! We'll contact you soon.")
     setFormData({ phone: "", address: "", notes: "" })
-    clearCart()
+    await clearCart()
     setIsCheckingOut(false)
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return null
+  }
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-4xl">
+        <div className="text-center py-16">
+          <p className="text-gray-600">Loading cart...</p>
+        </div>
+      </div>
+    )
   }
 
   if (cart.length === 0) {
@@ -88,7 +97,6 @@ export default function CartPage() {
       <h1 className="text-3xl font-bold mb-8 text-gray-900">{t("cart")}</h1>
       
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Cart Items */}
         <div className="lg:col-span-2 space-y-4">
           {cart.map((item) => (
             <Card key={item.id} className="border-gray-200 shadow-sm">
@@ -138,7 +146,6 @@ export default function CartPage() {
           ))}
         </div>
 
-        {/* Order Summary */}
         <div className="lg:col-span-1">
           <Card className="border-gray-200 shadow-sm sticky top-24">
             <CardHeader>
@@ -163,8 +170,8 @@ export default function CartPage() {
               </div>
 
               <div className="bg-amber-50 p-3 rounded-lg text-sm text-gray-700">
-                <p className="font-medium mb-1">Account: {user.fullName}</p>
-                <p className="text-xs text-gray-600">{user.email}</p>
+                <p className="font-medium mb-1">Account: {user?.fullName}</p>
+                <p className="text-xs text-gray-600">{user?.email}</p>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
@@ -188,7 +195,6 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Checkout Form */}
       {isCheckingOut && (
         <Card className="mt-8 border-gray-200 shadow-sm">
           <CardHeader>
@@ -214,7 +220,7 @@ export default function CartPage() {
                   <Label htmlFor="name" className="text-gray-700">Full Name</Label>
                   <Input 
                     id="name" 
-                    value={user.fullName} 
+                    value={user?.fullName || ''} 
                     disabled 
                     className="bg-gray-50"
                   />
@@ -223,7 +229,7 @@ export default function CartPage() {
                   <Label htmlFor="email" className="text-gray-700">Email</Label>
                   <Input 
                     id="email" 
-                    value={user.email} 
+                    value={user?.email || ''} 
                     disabled 
                     className="bg-gray-50"
                   />

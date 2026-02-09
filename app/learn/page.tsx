@@ -337,18 +337,18 @@ export default function Page() {
       )}
 
       {/* Hero Section */}
-      <section className="relative py-20 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
-        <div className="container mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-[#8B4513]">
+      <section className="relative py-12 sm:py-16 md:py-20 px-3 sm:px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
+        <div className="container mx-auto text-center max-w-4xl">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-3 sm:mb-4 text-[#8B4513]">
             {t("startYourUmweroJourneyToday")}
           </h1>
-          <p className="text-xl text-[#D2691E] mb-8">
+          <p className="text-base sm:text-lg md:text-xl text-[#D2691E] mb-6 sm:mb-8 px-2">
             {t("interactiveLessonsDescription")}
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4 px-2">
             <Button 
               size="lg" 
-              className="gap-2 bg-[#8B4513] hover:bg-[#A0522D]"
+              className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] w-full sm:w-auto h-12 text-base"
               onClick={() => startLesson('vowels')}
             >
               <BookOpen className="h-5 w-5" />
@@ -357,7 +357,7 @@ export default function Page() {
             <Button 
               size="lg" 
               variant="outline" 
-              className="gap-2 border-[#8B4513] text-[#8B4513]" 
+              className="gap-2 border-[#8B4513] text-[#8B4513] w-full sm:w-auto h-12 text-base" 
               onClick={() => setShowIntroVideo(true)}
             >
               <Play className="h-5 w-5" />
@@ -368,95 +368,99 @@ export default function Page() {
       </section>
 
       {/* Search and Progress Section */}
-      <section className="py-8 px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
-        <div className="container mx-auto">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-8">
-            <div className="relative w-full md:w-96">
+      <section className="py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8 bg-[#FFFFFF]">
+        <div className="container mx-auto max-w-6xl">
+          <div className="flex flex-col gap-4 items-stretch mb-6 sm:mb-8">
+            <div className="relative w-full">
               <Search className="absolute left-3 top-3 h-4 w-4 text-[#8B4513]" />
               <Input
                 type="search"
                 placeholder={t("searchLessons")}
-                className="pl-10 bg-[#F3E5AB] text-[#8B4513] border-[#8B4513]"
+                className="pl-10 h-11 bg-[#F3E5AB] text-[#8B4513] border-[#8B4513] w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="text-[#8B4513]">{t("yourProgress")}</div>
-              <Progress value={progress} className="w-[200px]" />
-              <div className="text-[#D2691E]">{progress}%</div>
+            <div className="flex items-center gap-3 w-full bg-[#F3E5AB] p-3 rounded-lg border border-[#8B4513]">
+              <div className="text-[#8B4513] text-sm sm:text-base whitespace-nowrap">{t("yourProgress")}</div>
+              <Progress value={progress} className="flex-1" />
+              <div className="text-[#D2691E] font-semibold text-sm sm:text-base whitespace-nowrap">{progress}%</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Main Content */}
-      <section className="py-8 px-4 md:px-6 lg:px-8">
-        <div className="container mx-auto">
+      <section className="py-6 sm:py-8 px-3 sm:px-4 md:px-6 lg:px-8">
+        <div className="container mx-auto max-w-6xl">
           <Tabs defaultValue="courses" className="w-full">
-            <TabsList className="w-full justify-start mb-8">
-              <TabsTrigger value="courses" className="gap-2">
-                <BookOpen className="h-4 w-4" />
-                {t("writtenCourses")}
+            <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 gap-1 sm:gap-2 mb-6 sm:mb-8 h-auto">
+              <TabsTrigger value="courses" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{t("writtenCourses")}</span>
+                <span className="sm:hidden">Courses</span>
               </TabsTrigger>
-              <TabsTrigger value="videos" className="gap-2">
-                <Video className="h-4 w-4" />
-                {t("videoTutorials")}
+              <TabsTrigger value="videos" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                <Video className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{t("videoTutorials")}</span>
+                <span className="sm:hidden">Videos</span>
               </TabsTrigger>
-              <TabsTrigger value="tools" className="gap-2">
-                <Trophy className="h-4 w-4" />
-                {t("practiceTools")}
+              <TabsTrigger value="tools" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                <Trophy className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{t("practiceTools")}</span>
+                <span className="sm:hidden">Tools</span>
               </TabsTrigger>
-              <TabsTrigger value="certification" className="gap-2">
-                <GraduationCap className="h-4 w-4" />
-                {t("certification")}
+              <TabsTrigger value="certification" className="gap-1 sm:gap-2 text-xs sm:text-sm py-2 sm:py-2.5">
+                <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{t("certification")}</span>
+                <span className="sm:hidden">Cert</span>
               </TabsTrigger>
             </TabsList>
 
             {/* Courses Tab */}
             <TabsContent value="courses">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 {modules.map((module, index) => (
                   <Card key={index} className="bg-[#F3E5AB] border-[#8B4513]">
-                    <CardHeader>
-                      <CardTitle className="text-[#8B4513]">{module.title}</CardTitle>
-                      <CardDescription className="text-[#D2691E]">
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <CardTitle className="text-[#8B4513] text-lg sm:text-xl">{module.title}</CardTitle>
+                      <CardDescription className="text-[#D2691E] text-sm">
                         {module.lessons.length} {t("lessons")}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <ScrollArea className="h-[400px] overflow-y-auto pr-4">
-                        <div className="space-y-4 pb-4">
+                      <ScrollArea className="h-[350px] sm:h-[400px] overflow-y-auto pr-2 sm:pr-4">
+                        <div className="space-y-3 sm:space-y-4 pb-4">
                           {module.lessons.map((lesson) => (
                             <Card key={lesson.id} className="bg-white">
-                              <CardHeader>
-                                <div className="flex items-center justify-between">
-                                  <CardTitle className="text-[#8B4513] text-lg">
+                              <CardHeader className="pb-2 sm:pb-3">
+                                <div className="flex items-start justify-between gap-2">
+                                  <CardTitle className="text-[#8B4513] text-base sm:text-lg">
                                     {lesson.title}
                                   </CardTitle>
                                   {lesson.completed && (
-                                    <Badge variant="outline" className="bg-green-100">
+                                    <Badge variant="outline" className="bg-green-100 text-xs flex-shrink-0">
                                       {t("completed")}
                                     </Badge>
                                   )}
                                 </div>
-                                <CardDescription className="text-[#D2691E]">
+                                <CardDescription className="text-[#D2691E] text-xs sm:text-sm">
                                   {lesson.description}
                                 </CardDescription>
                               </CardHeader>
-                              <CardContent>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center text-[#8B4513]">
-                                    <Clock className="h-4 w-4 mr-2" />
+                              <CardContent className="pt-2">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
+                                  <div className="flex items-center text-[#8B4513] text-xs sm:text-sm">
+                                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                                     {lesson.duration}
                                   </div>
                                   <Button
                                     size="sm"
-                                    className="gap-2 bg-[#8B4513] hover:bg-[#A0522D]"
+                                    className="gap-1 sm:gap-2 bg-[#8B4513] hover:bg-[#A0522D] w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
                                     onClick={() => startLesson(lesson.id)}
                                   >
                                     {t("startLesson")}
-                                    <ArrowRight className="h-4 w-4" />
+                                    <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 </div>
                               </CardContent>
@@ -465,8 +469,8 @@ export default function Page() {
                         </div>
                       </ScrollArea>
                       <div className={`text-center mt-2 transition-opacity duration-300 ${isScrolled ? 'opacity-0' : 'opacity-100'}`}>
-                        <ArrowDown className="h-6 w-6 mx-auto text-[#8B4513] animate-bounce" />
-                        <span className="text-sm text-[#8B4513]">{t("scrollForMore")}</span>
+                        <ArrowDown className="h-5 w-5 sm:h-6 sm:w-6 mx-auto text-[#8B4513] animate-bounce" />
+                        <span className="text-xs sm:text-sm text-[#8B4513]">{t("scrollForMore")}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -476,19 +480,19 @@ export default function Page() {
 
             {/* Videos Tab */}
             <TabsContent value="videos">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {videoTutorials.map((video) => (
                   <Card key={video.id} className="bg-[#F3E5AB] border-[#8B4513]">
                     <CardHeader className="p-0">
                       <VideoPlayer src={video.src} title={video.title} />
                     </CardHeader>
-                    <CardContent className="pt-4">
-                      <h3 className="font-bold text-[#8B4513] mb-2">{video.title}</h3>
-                      <p className="text-[#D2691E] text-sm mb-4">{video.description}</p>
+                    <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4">
+                      <h3 className="font-bold text-[#8B4513] mb-2 text-sm sm:text-base">{video.title}</h3>
+                      <p className="text-[#D2691E] text-xs sm:text-sm mb-3 sm:mb-4">{video.description}</p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#8B4513] text-sm">{video.duration}</span>
-                        <Button size="sm" variant="outline" className="gap-2">
-                          <Play className="h-4 w-4" />
+                        <span className="text-[#8B4513] text-xs sm:text-sm">{video.duration}</span>
+                        <Button size="sm" variant="outline" className="gap-1 sm:gap-2 text-xs sm:text-sm h-8">
+                          <Play className="h-3 w-3 sm:h-4 sm:w-4" />
                           {t("watchNow")}
                         </Button>
                       </div>
@@ -500,20 +504,20 @@ export default function Page() {
 
             {/* Practice Tools Tab */}
             <TabsContent value="tools">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {practiceTools.map((tool) => (
                   <Card key={tool.id} className="bg-[#F3E5AB] border-[#8B4513]">
-                    <CardHeader>
-                      <CardTitle className="text-[#8B4513] flex items-center gap-2">
-                        <tool.icon className="h-5 w-5" />
+                    <CardHeader className="pb-3 sm:pb-4">
+                      <CardTitle className="text-[#8B4513] flex items-center gap-2 text-base sm:text-lg">
+                        <tool.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                         {tool.title}
                       </CardTitle>
-                      <CardDescription className="text-[#D2691E]">
+                      <CardDescription className="text-[#D2691E] text-xs sm:text-sm">
                         {tool.description}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <Button className="w-full bg-[#8B4513] hover:bg-[#A0522D]">
+                      <Button className="w-full bg-[#8B4513] hover:bg-[#A0522D] h-10 sm:h-11 text-sm sm:text-base">
                         {t("openTool")}
                       </Button>
                     </CardContent>
