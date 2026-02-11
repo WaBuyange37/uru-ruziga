@@ -65,7 +65,7 @@ export function useLessonProgress() {
   }, [])
 
   // Mark lesson as completed
-  const completeLess = useCallback((lessonId: string, score: number) => {
+  const completeLesson = useCallback((lessonId: string, score: number) => {
     setProgressState(prev => {
       const existing = prev[lessonId] || {
         lessonId,
@@ -163,7 +163,7 @@ export function useLessonProgress() {
     isLoaded,
     getLessonProgress,
     updateLessonProgress,
-    completeLesson: completeLess,
+    completeLesson,
     startLesson,
     addTimeSpent,
     getGlobalProgress,
