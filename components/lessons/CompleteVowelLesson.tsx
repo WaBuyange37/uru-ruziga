@@ -52,7 +52,6 @@ export function CompleteVowelLesson({
   const [aiScore, setAiScore] = useState<number>(0)
   const [aiFeedback, setAiFeedback] = useState<string>("")
   const [isChecking, setIsChecking] = useState(false)
-  const [showPractice, setShowPractice] = useState(false)
   const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 })
   const { user } = useAuth()
 
@@ -282,7 +281,6 @@ export function CompleteVowelLesson({
 
   const handleNext = () => {
     clearCanvas()
-    setShowPractice(false) // Reset to learning phase
     if (onNext) {
       onNext()
     }
@@ -290,7 +288,6 @@ export function CompleteVowelLesson({
 
   const handlePrevious = () => {
     clearCanvas()
-    setShowPractice(false) // Reset to learning phase
     if (onPrevious) {
       onPrevious()
     }
@@ -368,83 +365,100 @@ export function CompleteVowelLesson({
             </CardContent>
           </Card>
 
-          {/* Right - Examples or Practice */}
+          {/* Right - Example Words (Always Visible) */}
           <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-            {!showPractice ? (
-              /* Learning Phase - Show Examples */
-              <>
-                <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                  <CardTitle className="text-xl text-[#8B4513]">
-                    📚 Example Words
-                  </CardTitle>
-                  <p className="text-[#D2691E] text-sm">
-                    See how this vowel is used in Kinyarwanda
-                  </p>
-                </CardHeader>
+            <CardHeader className="border-b-2 border-[#8B4513] pb-4">
+              <CardTitle className="text-xl text-[#8B4513] flex items-center gap-2">
+                📚 Example Words
+              </CardTitle>
+              <p className="text-[#D2691E] text-sm">
+                See how this vowel is used in Kinyarwanda
+              </p>
+            </CardHeader>
 
-                <CardContent className="pt-6 space-y-4">
-                  {/* Example Words from Database */}
-                  {vowelData.examples && vowelData.examples.length > 0 ? (
-                    <div className="space-y-3">
-                      {vowelData.examples.map((example, idx) => (
-                        <div key={idx} className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="text-3xl font-umwero text-[#8B4513]">
-                              {example.umwero}
-                            </div>
-                            <div className="text-right">
-                              <div className="font-bold text-[#8B4513]">{example.latin}</div>
-                              <div className="text-sm text-[#D2691E]">{example.english}</div>
-                            </div>
-                          </div>
+            <CardContent className="pt-6 space-y-4">
+              {/* Example Words from Database */}
+              {vowelData.examples && vowelData.examples.length > 0 ? (
+                <div className="space-y-3">
+                  {vowelData.examples.map((example, idx) => (
+                    <div key={idx} className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-3xl font-umwero text-[#8B4513]">
+                          {example.umwero}
                         </div>
-                      ))}
+                        <div className="text-right">
+                          <div className="font-bold text-[#8B4513]">{example.latin}</div>
+                          <div className="text-sm text-[#D2691E]">{example.english}</div>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                      <p className="text-[#8B4513]">No examples available yet.</p>
-                    </div>
-                  )}
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
+                  <p className="text-[#8B4513]">No examples available yet.</p>
+                </div>
+              )}
 
-                  {/* Learning Tip */}
-                  <div className="bg-blue-50 rounded-lg border border-blue-300 p-4">
-                    <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                      <Lightbulb className="h-4 w-4" />
-                      Learning Tip
-                    </h4>
-                    <p className="text-sm text-blue-700">
-                      Practice pronouncing "{vowelData.vowel}" while looking at the Umwero character. 
-                      Connect the sound with the visual form.
+              {/* Learning Tip */}
+              <div className="bg-blue-50 rounded-lg border border-blue-300 p-4">
+                <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
+                  <Lightbulb className="h-4 w-4" />
+                  Learning Tip
+                </h4>
+                <p className="text-sm text-blue-700">
+                  Practice pronouncing "{vowelData.vowel}" while looking at the Umwero character. 
+                  Connect the sound with the visual form.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Practice Section - Full Width Below */}
+        <Card className="mt-6 bg-[#F3E5AB] border-2 border-[#8B4513]">
+          {!showComparison ? (
+            /* Drawing Mode */
+            <>
+              <CardHeader className="border-b-2 border-[#8B4513] pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl text-[#8B4513]">
+                      Practice: Glyph '{vowelData.vowel.toUpperCase()}'
+                    </CardTitle>
+                    <p className="text-[#D2691E] text-sm mt-1">
+                      Trace the character carefully - Follow the guide lines for maximum accuracy
                     </p>
                   </div>
+                  <Badge className="bg-[#8B4513] text-[#F3E5AB] text-sm px-3 py-1">
+                    LESSON PROGRESS: {vowelNumber} of {totalVowels}
+                  </Badge>
+                </div>
+              </CardHeader>
 
-                  {/* Start Practice Button */}
-                  <Button
-                    onClick={() => setShowPractice(true)}
-                    className="w-full bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] h-12"
-                  >
-                    Ready to Practice Drawing
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </CardContent>
-              </>
-            ) : !showComparison ? (
-              /* Drawing Mode */
-              <>
-                <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                  <CardTitle className="text-xl text-[#8B4513]">
-                    ✏ Andika: "{vowelData.umwero}"
-                  </CardTitle>
-                  <p className="text-[#D2691E] text-sm">
-                    Koresha imirongo {vowelData.vowel === 'a' || vowelData.vowel === 'u' ? '2' : '1'}
-                  </p>
-                </CardHeader>
+              <CardContent className="pt-6">
+                <div className="max-w-2xl mx-auto space-y-4">
+                  {/* Canvas with Reference Character */}
+                  <div className="relative bg-white rounded-lg border-4 border-[#8B4513] overflow-hidden aspect-square touch-none">
+                    {/* Reference character layer (faint) */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15">
+                      <div className="text-[20rem] font-umwero text-[#8B4513] leading-none">
+                        {vowelData.umwero}
+                      </div>
+                    </div>
+                    
+                    {/* Accuracy badge */}
+                    {hasDrawn && (
+                      <div className="absolute top-4 right-4 bg-amber-100 border-2 border-amber-600 rounded-lg px-4 py-2">
+                        <div className="text-xs text-amber-800 font-semibold">ACCURACY</div>
+                        <div className="text-2xl font-bold text-amber-900">--</div>
+                      </div>
+                    )}
 
-                <CardContent className="pt-6 space-y-4">
-                  <div className="bg-white rounded-lg border-2 border-[#8B4513] overflow-hidden relative aspect-square touch-none">
+                    {/* Drawing canvas */}
                     <canvas
                       ref={canvasRef}
-                      className="w-full h-full cursor-crosshair touch-none"
+                      className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
                       onMouseDown={startDrawing}
                       onMouseMove={draw}
                       onMouseUp={stopDrawing}
@@ -456,41 +470,94 @@ export function CompleteVowelLesson({
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  {/* Control Buttons */}
+                  <div className="flex items-center justify-center gap-4">
                     <Button
                       onClick={clearCanvas}
                       variant="outline"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB]"
+                      size="lg"
+                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
                       disabled={isChecking}
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" /> Clear
+                      <RefreshCw className="mr-2 h-5 w-5" /> UNDO
                     </Button>
+                    <Button
+                      onClick={clearCanvas}
+                      variant="outline"
+                      size="lg"
+                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
+                      disabled={isChecking}
+                    >
+                      <RefreshCw className="mr-2 h-5 w-5" /> CLEAR
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
+                    >
+                      👁 GUIDE ON
+                    </Button>
+                  </div>
+
+                  {/* Stroke Hint */}
+                  <div className="bg-amber-50 rounded-lg border-2 border-amber-600 p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-[#8B4513] text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
+                        💡
+                      </div>
+                      <div>
+                        <p className="text-[#8B4513] text-sm italic">
+                          The stroke for '{vowelData.vowel.toUpperCase()}' starts from the top-left curve and moves clockwise. 
+                          Try to keep a consistent pressure.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bottom Navigation */}
+                  <div className="flex items-center justify-between pt-4">
+                    <Button
+                      onClick={handlePrevious}
+                      disabled={!hasPrevious}
+                      variant="outline"
+                      size="lg"
+                      className="border-2 border-[#F3E5AB] bg-white text-[#8B4513] hover:bg-[#F3E5AB] disabled:opacity-30 rounded-full px-8"
+                    >
+                      <ArrowLeft className="mr-2 h-5 w-5" />
+                      Previous
+                    </Button>
+
                     <Button
                       onClick={checkDrawing}
                       disabled={!hasDrawn || isChecking}
-                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                      size="lg"
+                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] rounded-full px-8"
                     >
                       {isChecking ? (
                         <>
-                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
                           Checking...
                         </>
                       ) : (
-                        'Check'
+                        <>
+                          Submit & Check ✓
+                        </>
                       )}
                     </Button>
                   </div>
-                </CardContent>
-              </>
-            ) : (
-              /* Comparison Mode */
-              <>
-                <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                  <CardTitle className="text-xl text-[#8B4513]">Comparison</CardTitle>
-                  <p className="text-[#D2691E] text-sm">How does your writing compare?</p>
-                </CardHeader>
+                </div>
+              </CardContent>
+            </>
+          ) : (
+            /* Comparison Mode */
+            <>
+              <CardHeader className="border-b-2 border-[#8B4513] pb-4">
+                <CardTitle className="text-xl text-[#8B4513]">Results</CardTitle>
+                <p className="text-[#D2691E] text-sm">How does your writing compare?</p>
+              </CardHeader>
 
-                <CardContent className="pt-6 space-y-4">
+              <CardContent className="pt-6">
+                <div className="max-w-2xl mx-auto space-y-4">
                   {/* AI Feedback */}
                   {aiFeedback && (
                     <div className={`p-4 rounded-lg border-2 ${
@@ -524,41 +591,33 @@ export function CompleteVowelLesson({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center justify-between pt-4">
                     <Button
                       onClick={clearCanvas}
                       variant="outline"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB]"
+                      size="lg"
+                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-8"
                     >
-                      <RefreshCw className="mr-2 h-4 w-4" /> Try Again
+                      <RefreshCw className="mr-2 h-5 w-5" /> Try Again
                     </Button>
                     <Button
                       onClick={handleNext}
                       disabled={!hasNext}
-                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                      size="lg"
+                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] rounded-full px-8"
                     >
                       {aiScore >= 55 ? 'Good! Next Character' : 'Continue Anyway'}
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                      <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </div>
-                </CardContent>
-              </>
-            )}
-          </Card>
-        </div>
+                </div>
+              </CardContent>
+            </>
+          )}
+        </Card>
 
-        {/* Previous/Next Navigation at Bottom - Like the image! */}
-        <div className="mt-8 flex justify-between items-center">
-          <Button
-            onClick={handlePrevious}
-            disabled={!hasPrevious}
-            variant="outline"
-            className="border-2 border-[#F3E5AB] text-[#F3E5AB] hover:bg-[#F3E5AB] hover:text-[#8B4513] disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Previous Vowel
-          </Button>
-
+        {/* Progress Dots */}
+        <div className="mt-6 flex justify-center">
           <div className="inline-flex gap-2">
             {Array.from({ length: totalVowels }).map((_, idx) => (
               <div
@@ -571,15 +630,6 @@ export function CompleteVowelLesson({
               />
             ))}
           </div>
-
-          <Button
-            onClick={handleNext}
-            disabled={!hasNext}
-            className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] disabled:opacity-30 disabled:cursor-not-allowed"
-          >
-            Next Vowel
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
         </div>
       </div>
     </div>
