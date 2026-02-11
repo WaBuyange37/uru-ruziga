@@ -25,6 +25,7 @@ import {
   GamepadIcon,
   Globe,
   LayoutDashboard,
+  Palette,
 } from "lucide-react"
 import { useAuth } from "../app/contexts/AuthContext"
 import { useTranslation } from "../hooks/useTranslation"
@@ -59,7 +60,7 @@ export function SiteHeaderModern() {
         { href: "/games-and-quizzes", label: "gamesAndQuizzes", icon: GamepadIcon },
         { href: "/translate", label: "translate", icon: Globe },
         { href: "/umwero-chat", label: "umweroChat", icon: MessageCircle },
-        { href: "/gallery", label: "Ubugeni", icon: CircleIcon },
+        { href: "/gallery", label: "Ubugeni", icon: Palette },
       ],
     },
     { href: "/community", label: "community", icon: Users },

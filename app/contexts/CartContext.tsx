@@ -3,6 +3,7 @@
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
 import { useAuth } from "./AuthContext"
+import { showToast } from "@/components/ui/toast"
 
 interface CartItem {
   id: string
@@ -76,14 +77,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addToCart = async (item: Omit<CartItem, 'id' | 'quantity'> & { quantity?: number }) => {
     if (!isAuthenticated) {
-      alert('Please login to add items to cart')
+      showToast('Please login to add items to cart', 'error')
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+      }, 2000)
       return
     }
 
     const token = getToken()
-    if (!token) return
+    if (!token) {
+      showToast('Session expired. Please login again.', 'error')
+      return
+    }
 
     try {
+      setLoading(true)
       const response = await fetch('/api/cart/add', {
         method: 'POST',
         headers: {
@@ -99,14 +109,20 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         })
       })
 
-      if (response.ok) {
-        await refreshCart()
-      } else {
-        throw new Error('Failed to add to cart')
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to add to cart')
       }
+
+      showToast('Added to cart successfully!', 'success')
+      await refreshCart()
     } catch (error) {
       console.error('Add to cart error:', error)
-      alert('Failed to add item to cart')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add item to cart'
+      showToast(errorMessage, 'error')
+    } finally {
+      setLoading(false)
     }
   }
 
