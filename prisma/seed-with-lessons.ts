@@ -10,7 +10,7 @@ const prisma = new PrismaClient()
 const VOWEL_LESSONS = [
   {
     code: 'vowel-a',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 1,
     module: 'Vowels',
@@ -20,7 +20,7 @@ const VOWEL_LESSONS = [
   },
   {
     code: 'vowel-u',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 2,
     module: 'Vowels',
@@ -30,7 +30,7 @@ const VOWEL_LESSONS = [
   },
   {
     code: 'vowel-o',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 3,
     module: 'Vowels',
@@ -40,7 +40,7 @@ const VOWEL_LESSONS = [
   },
   {
     code: 'vowel-e',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 4,
     module: 'Vowels',
@@ -50,7 +50,7 @@ const VOWEL_LESSONS = [
   },
   {
     code: 'vowel-i',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 5,
     module: 'Vowels',
@@ -66,7 +66,7 @@ const VOWEL_LESSONS = [
 const CONSONANT_LESSONS = [
   {
     code: 'consonant-b',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 6,
     module: 'Consonants',
@@ -76,7 +76,7 @@ const CONSONANT_LESSONS = [
   },
   {
     code: 'consonant-k',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 7,
     module: 'Consonants',
@@ -86,7 +86,7 @@ const CONSONANT_LESSONS = [
   },
   {
     code: 'consonant-m',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 8,
     module: 'Consonants',
@@ -96,7 +96,7 @@ const CONSONANT_LESSONS = [
   },
   {
     code: 'consonant-n',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 9,
     module: 'Consonants',
@@ -106,7 +106,7 @@ const CONSONANT_LESSONS = [
   },
   {
     code: 'consonant-r',
-    type: 'CHARACTER_INTRO',
+    type: 'CHARACTER_INTRO' as const,
     difficulty: 1,
     order: 10,
     module: 'Consonants',
