@@ -11,14 +11,9 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const module = searchParams.get('module')
     const type = searchParams.get('type')
 
-    const where: any = {}
-    
-    if (module) {
-      where.module = module
-    }
+    const where: any = { isPublished: true }
     
     if (type) {
       where.type = type
@@ -27,28 +22,39 @@ export async function GET(request: NextRequest) {
     const lessons = await prisma.lesson.findMany({
       where,
       orderBy: [
-        { module: 'asc' },
         { order: 'asc' }
       ],
       select: {
         id: true,
-        title: true,
-        description: true,
-        content: true,
-        module: true,
+        code: true,
         type: true,
         order: true,
-        duration: true,
+        estimatedTime: true,
         isPublished: true,
-        videoUrl: true,
-        thumbnailUrl: true,
         createdAt: true,
       }
     })
 
+    // For now, return lessons with basic info
+    // In the future, we can add translations
+    const lessonsWithContent = lessons.map(lesson => ({
+      id: lesson.id,
+      title: lesson.code.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: `Learn ${lesson.code}`,
+      content: JSON.stringify({ code: lesson.code }), // Placeholder
+      module: 'BEGINNER',
+      type: lesson.type,
+      order: lesson.order,
+      duration: lesson.estimatedTime,
+      isPublished: lesson.isPublished,
+      videoUrl: null,
+      thumbnailUrl: null,
+      createdAt: lesson.createdAt,
+    }))
+
     return NextResponse.json({
-      lessons,
-      count: lessons.length
+      lessons: lessonsWithContent,
+      count: lessonsWithContent.length
     })
   } catch (error) {
     console.error('Error fetching lessons:', error)
