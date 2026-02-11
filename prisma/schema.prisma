@@ -7,21 +7,552 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================
+// FOUNDATIONAL ENTITIES
+// ============================================
+
+model Language {
+  id                String   @id @default(cuid())
+  code              String   @unique // 'en', 'rw', 'umw'
+  name              String   // 'English', 'Ikinyarwanda', 'Umwero'
+  displayName       String   // For UI
+  direction         String   @default("ltr") // 'ltr', 'rtl'
+  isActive          Boolean  @default(true)
+  isDefault         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  characterTranslations CharacterTranslation[]
+  lessonTranslations    LessonTranslation[]
+  stepTranslations      StepTranslation[]
+  contextTranslations   CulturalContextTranslation[]
+
+  @@index([code])
+  @@index([isActive, isDefault])
+  @@map("languages")
+}
+
+// ============================================
+// CHARACTER SYSTEM (Core of Umwero)
+// ============================================
+
+model Character {
+  id                String   @id @default(cuid())
+  
+  // Core Identity
+  umweroGlyph       String   @unique // The actual Umwero character: ", :, {, |, }
+  latinEquivalent   String   // 'a', 'u', 'o', 'e', 'i'
+  type              CharacterType // VOWEL, CONSONANT, LIGATURE, COMPOUND
+  
+  // Learning Metadata
+  difficulty        Int      @default(1) // 1-5
+  strokeCount       Int      @default(1)
+  order             Int      // Global learning sequence
+  
+  // Media Assets
+  glyphImageUrl     String?  // High-res PNG/SVG
+  audioUrl          String?  // Pronunciation
+  videoUrl          String?  // Stroke demonstration
+  
+  // Cultural Significance
+  symbolism         String?  @db.Text // What it represents
+  historicalNote    String?  @db.Text // Preservation context
+  
+  // System
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  // Relations
+  translations      CharacterTranslation[]
+  strokeData        StrokeData[]
+  lessons           Lesson[]
+  culturalContexts  CulturalContext[]
+  userAttempts      UserAttempt[]
+
+  @@index([type, order])
+  @@index([latinEquivalent])
+  @@index([isActive])
+  @@map("characters")
+}
+
+enum CharacterType {
+  VOWEL
+  CONSONANT
+  LIGATURE
+  COMPOUND
+  SPECIAL
+}
+
+model CharacterTranslation {
+  id             String   @id @default(cuid())
+  characterId    String
+  languageId     String
+  
+  // Translated Fields
+  name           String   // "Vowel A", "Igihango A"
+  pronunciation  String   // "/a/ as in father", "/a/ nka muri se"
+  meaning        String   @db.Text // "Represents cows", "Bisobanura inka"
+  description    String?  @db.Text // Extended explanation
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  character      Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  language       Language  @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, languageId])
+  @@index([characterId])
+  @@index([languageId])
+  @@map("character_translations")
+}
+
+// ============================================
+// STROKE ORDER SYSTEM
+// ============================================
+
+model StrokeData {
+  id           String   @id @default(cuid())
+  characterId  String
+  
+  // Stroke Definition
+  strokeNumber Int      // 1, 2, 3...
+  pathData     String   @db.Text // SVG path definition
+  direction    StrokeDirection
+  
+  // Animation
+  duration     Int      @default(1000) // milliseconds
+  easing       String   @default("ease-in-out")
+  
+  // Hints
+  hint         String?  // "Start from top-left"
+  
+  createdAt    DateTime @default(now())
+
+  // Relations
+  character    Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([characterId, strokeNumber])
+  @@index([characterId, strokeNumber])
+  @@map("stroke_data")
+}
+
+enum StrokeDirection {
+  TOP_TO_BOTTOM
+  BOTTOM_TO_TOP
+  LEFT_TO_RIGHT
+  RIGHT_TO_LEFT
+  CLOCKWISE
+  COUNTERCLOCKWISE
+  DIAGONAL
+}
+
+// ============================================
+// CULTURAL CONTEXT SYSTEM
+// ============================================
+
+model CulturalContext {
+  id            String   @id @default(cuid())
+  characterId   String
+  
+  // Context Type
+  contextType   ContextType
+  
+  // Content
+  icon          String?  // Material icon name
+  imageUrl      String?  // Supporting image
+  
+  // System
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  character     Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  translations  CulturalContextTranslation[]
+  examples      ContextExample[]
+
+  @@index([characterId, contextType])
+  @@index([isActive])
+  @@map("cultural_contexts")
+}
+
+enum ContextType {
+  ETYMOLOGY      // Word origin
+  CULTURAL_USE   // Traditional usage
+  PRESERVATION   // Endangered status
+  MEANING        // Symbolic meaning
+  HISTORY        // Historical context
+}
+
+model CulturalContextTranslation {
+  id              String   @id @default(cuid())
+  contextId       String
+  languageId      String
+  
+  // Translated Content
+  title           String
+  content         String   @db.Text
+  summary         String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  context         CulturalContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  language        Language        @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([contextId, languageId])
+  @@index([contextId])
+  @@index([languageId])
+  @@map("cultural_context_translations")
+}
+
+model ContextExample {
+  id              String   @id @default(cuid())
+  contextId       String
+  
+  // Example Word
+  wordUmwero      String   // Word in Umwero script
+  wordLatin       String   // Romanized version
+  wordEnglish     String   // English translation
+  
+  // Media
+  audioUrl        String?
+  icon            String?  // Material icon
+  
+  // Display
+  order           Int      @default(0)
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+
+  // Relations
+  context         CulturalContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+
+  @@index([contextId, order])
+  @@map("context_examples")
+}
+
+// ============================================
+// LESSON SYSTEM
+// ============================================
+
+model Lesson {
+  id              String   @id @default(cuid())
+  
+  // Core Identity
+  code            String   @unique // 'vowel-a', 'consonant-b'
+  type            LessonType
+  characterId     String?  // Primary character
+  
+  // Metadata
+  module          String   // 'Vowels', 'Consonants', 'Ligatures'
+  difficulty      Int      @default(1) // 1-5
+  order           Int      // Sequence in module
+  estimatedTime   Int      @default(15) // minutes
+  
+  // Prerequisites
+  prerequisiteIds String[] // Array of lesson IDs
+  
+  // Publishing
+  isPublished     Boolean  @default(false)
+  publishedAt     DateTime?
+  
+  // System
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  character       Character? @relation(fields: [characterId], references: [id])
+  translations    LessonTranslation[]
+  steps           LessonStep[]
+  progress        LessonProgress[]
+
+  @@index([type, module, order])
+  @@index([characterId])
+  @@index([isPublished])
+  @@map("lessons")
+}
+
+enum LessonType {
+  CHARACTER_INTRO
+  PRACTICE
+  REVIEW
+  ASSESSMENT
+  CULTURAL_DEEP_DIVE
+}
+
+model LessonTranslation {
+  id              String   @id @default(cuid())
+  lessonId        String
+  languageId      String
+  
+  // Translated Fields
+  title           String
+  description     String   @db.Text
+  objectives      String[] // Learning objectives
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  language        Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, languageId])
+  @@index([lessonId])
+  @@index([languageId])
+  @@map("lesson_translations")
+}
+
+// ============================================
+// LESSON STEP SYSTEM (Modular & Reusable)
+// ============================================
+
+model LessonStep {
+  id              String   @id @default(cuid())
+  lessonId        String
+  
+  // Step Identity
+  stepType        StepType
+  order           Int      // Sequence within lesson
+  
+  // Configuration (JSON for flexibility)
+  config          Json     // Type-specific configuration
+  
+  // Progression
+  isRequired      Boolean  @default(true)
+  passingScore    Int?     // For practice/assessment steps
+  
+  // System
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  translations    StepTranslation[]
+  attempts        UserAttempt[]
+
+  @@index([lessonId, order])
+  @@index([stepType])
+  @@map("lesson_steps")
+}
+
+enum StepType {
+  CHARACTER_OVERVIEW
+  CULTURAL_CONTEXT
+  PRONUNCIATION_GUIDE
+  STROKE_ORDER
+  PRACTICE_CANVAS
+  AI_COMPARISON
+  QUIZ
+  REVIEW
+  SUCCESS_CELEBRATION
+}
+
+model StepTranslation {
+  id              String   @id @default(cuid())
+  stepId          String
+  languageId      String
+  
+  // Translated Fields
+  title           String
+  instructions    String?  @db.Text
+  tips            String[] // Contextual hints
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  step            LessonStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  language        Language   @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, languageId])
+  @@index([stepId])
+  @@index([languageId])
+  @@map("step_translations")
+}
+
+// ============================================
+// USER PROGRESS & ATTEMPTS
+// ============================================
+
+model LessonProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  lessonId        String
+  
+  // Progress Tracking
+  status          ProgressStatus @default(NOT_STARTED)
+  currentStepId   String?
+  completedSteps  String[]  // Array of step IDs
+  
+  // Performance
+  bestScore       Int       @default(0)
+  attempts        Int       @default(0)
+  timeSpent       Int       @default(0) // seconds
+  
+  // Timestamps
+  startedAt       DateTime?
+  completedAt     DateTime?
+  lastAccessedAt  DateTime  @default(now())
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson          Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+  @@index([lessonId])
+  @@map("lesson_progress")
+}
+
+enum ProgressStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  MASTERED
+}
+
+model UserAttempt {
+  id              String   @id @default(cuid())
+  userId          String
+  stepId          String
+  characterId     String?
+  
+  // Attempt Data
+  attemptType     AttemptType
+  drawingData     String?  @db.Text // Base64 image
+  answer          Json?    // For quiz/assessment
+  
+  // AI Evaluation
+  aiScore         Int?     // 0-100
+  aiMetrics       Json?    // Detailed metrics
+  feedback        String?  @db.Text
+  
+  // Performance
+  timeSpent       Int      @default(0) // seconds
+  isCorrect       Boolean  @default(false)
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+
+  // Relations
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  step            LessonStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  character       Character? @relation(fields: [characterId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([stepId])
+  @@index([characterId])
+  @@map("user_attempts")
+}
+
+enum AttemptType {
+  DRAWING
+  QUIZ
+  PRONUNCIATION
+  WRITING
+}
+
+// ============================================
+// ACHIEVEMENT SYSTEM
+// ============================================
+
+model Achievement {
+  id              String   @id @default(cuid())
+  
+  // Achievement Identity
+  code            String   @unique // 'vowel-master', 'first-steps'
+  category        AchievementCategory
+  
+  // Requirements
+  requirement     Json     // Flexible requirement definition
+  points          Int      @default(0)
+  
+  // Display
+  icon            String?  // Material icon or image
+  color           String   @default("#5e2f17")
+  order           Int      @default(0)
+  
+  // System
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  userAchievements UserAchievement[]
+
+  @@index([category, order])
+  @@index([isActive])
+  @@map("achievements")
+}
+
+enum AchievementCategory {
+  LESSON_COMPLETION
+  PRACTICE_MASTERY
+  STREAK
+  CULTURAL_KNOWLEDGE
+  COMMUNITY
+}
+
+model UserAchievement {
+  id              String   @id @default(cuid())
+  userId          String
+  achievementId   String
+  
+  // Unlock Data
+  progress        Int      @default(0) // Percentage
+  isUnlocked      Boolean  @default(false)
+  unlockedAt      DateTime?
+  
+  // System
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement     Achievement  @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId, isUnlocked])
+  @@index([achievementId])
+  @@map("user_achievements")
+}
+
+// ============================================
+// USER SYSTEM (Existing, augmented)
+// ============================================
+
 model User {
-  id             String            @id @default(cuid())
-  email          String?
+  id              String   @id @default(cuid())
+  email           String   @unique
+  name            String
+  password        String
+  role            Role     @default(STUDENT)
+  
+  // Preferences
+  preferredLanguage String @default("en")
+  theme           String   @default("light")
+  
+  // Legacy fields for compatibility
   mobileNumber   String?           @unique
-  password       String?
   fullName       String?
   username       String?           @unique
   birthday       DateTime?
-  countryCode     String?            @default("RW") // Default to Rwanda, track diaspora
+  countryCode     String?            @default("RW")
   phoneNumber    String?
-  role           UserRole          @default(USER)
   avatar         String?
   bio            String?
   country        String?
-  language       String            @default("en")
   emailVerified  Boolean           @default(false)
   verificationToken String?
   verificationTokenExpiry DateTime?
@@ -31,16 +562,23 @@ model User {
   providerId     String?
   company        String?
   jobTitle       String?
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
   lastLoginAt    DateTime?
+  
+  // System
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  progress        LessonProgress[]
+  attempts        UserAttempt[]
+  achievements    UserAchievement[]
+  
+  // Legacy relations for compatibility
   certificates   Certificate[]
   comments       Comment[]
   discussions    Discussion[]
   donations      Donation[]
-  lessonProgress LessonProgress[]
   orders         Order[]
-  achievements   UserAchievement[]
   drawings       UserDrawing[]
   posts          CommunityPost[]
   postLikes      PostLike[]
@@ -59,133 +597,22 @@ model User {
   @@map("users")
 }
 
-model Lesson {
-  id            String           @id @default(cuid())
-  title         String
-  description   String?
-  content       String?
-  module        LessonModule     @default(BEGINNER)
-  type          LessonType       @default(VOWEL)
-  order         Int
-  duration      Int
-  videoUrl      String?
-  thumbnailUrl  String?
-  prerequisites String[]
-  isPublished   Boolean          @default(true)
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  progress      LessonProgress[]
-  quizzes       Quiz[]
-  userDrawings  UserDrawing[]
-
-  @@index([module, order])
-  @@index([type])
-  @@map("lessons")
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
 }
 
-model LessonProgress {
-  id          String    @id @default(cuid())
-  userId      String
-  lessonId    String
-  completed   Boolean   @default(false)
-  score       Int?
-  timeSpent   Int       @default(0)
-  attempts    Int       @default(0)
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  lesson      Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, lessonId])
-  @@index([userId])
-  @@index([lessonId])
-  @@index([completed])
-  @@map("lesson_progress")
+enum AuthProvider {
+  EMAIL
+  FACEBOOK
+  TWITTER
+  GOOGLE
 }
 
-model UserDrawing {
-  id          String   @id @default(cuid())
-  userId      String
-  lessonId    String?
-  vowel       String
-  umweroChar  String
-  drawingData String
-  aiScore     Int?
-  feedback    String?
-  isCorrect   Boolean  @default(false)
-  timeSpent   Int      @default(0)
-  createdAt   DateTime @default(now())
-  lesson      Lesson?  @relation(fields: [lessonId], references: [id])
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([lessonId])
-  @@index([vowel])
-  @@index([createdAt])
-  @@map("user_drawings")
-}
-
-model Quiz {
-  id           String        @id @default(cuid())
-  lessonId     String
-  title        String
-  description  String?
-  questions    String
-  passingScore Int           @default(70)
-  timeLimit    Int?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  attempts     QuizAttempt[]
-  lesson       Lesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  @@index([lessonId])
-  @@map("quizzes")
-}
-
-model QuizAttempt {
-  id        String   @id @default(cuid())
-  userId    String
-  quizId    String
-  answers   String
-  score     Int
-  passed    Boolean
-  timeSpent Int
-  createdAt DateTime @default(now())
-  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([quizId])
-  @@map("quiz_attempts")
-}
-
-model Achievement {
-  id               String            @id @default(cuid())
-  name             String            @unique
-  description      String
-  icon             String?
-  category         String
-  requirement      String
-  points           Int               @default(0)
-  isSecret         Boolean           @default(false)
-  createdAt        DateTime          @default(now())
-  userAchievements UserAchievement[]
-
-  @@map("achievements")
-}
-
-model UserAchievement {
-  id            String      @id @default(cuid())
-  userId        String
-  achievementId String
-  unlockedAt    DateTime    @default(now())
-  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, achievementId])
-  @@index([userId])
-  @@map("user_achievements")
-}
+// ============================================
+// LEGACY MODELS (Kept for compatibility)
+// ============================================
 
 model Certificate {
   id               String   @id @default(cuid())
@@ -305,21 +732,25 @@ model Donation {
   @@map("donations")
 }
 
-model ActivityLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  action     String
-  entityType String?
-  entityId   String?
-  metadata   String?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime @default(now())
+model UserDrawing {
+  id          String   @id @default(cuid())
+  userId      String
+  lessonId    String?
+  vowel       String
+  umweroChar  String
+  drawingData String
+  aiScore     Int?
+  feedback    String?
+  isCorrect   Boolean  @default(false)
+  timeSpent   Int      @default(0)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([action])
+  @@index([lessonId])
+  @@index([vowel])
   @@index([createdAt])
-  @@map("activity_logs")
+  @@map("user_drawings")
 }
 
 // Community Posts (Twitter-like)
@@ -441,31 +872,52 @@ enum DataSourceType {
   QUIZ_ANSWER
 }
 
-enum UserRole {
-  USER
-  PROFESSIONAL
-  ADMIN
-  TEACHER
+// Legacy Quiz system (kept for compatibility)
+model Quiz {
+  id           String        @id @default(cuid())
+  lessonId     String
+  title        String
+  description  String?
+  questions    String
+  passingScore Int           @default(70)
+  timeLimit    Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  attempts     QuizAttempt[]
+
+  @@index([lessonId])
+  @@map("quizzes")
 }
 
-enum AuthProvider {
-  EMAIL
-  FACEBOOK
-  TWITTER
-  GOOGLE
+model QuizAttempt {
+  id        String   @id @default(cuid())
+  userId    String
+  quizId    String
+  answers   String
+  score     Int
+  passed    Boolean
+  timeSpent Int
+  createdAt DateTime @default(now())
+  quiz      Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
 }
 
-enum LessonModule {
-  BEGINNER
-  INTERMEDIATE
-  ADVANCED
-}
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
 
-enum LessonType {
-  VOWEL
-  CONSONANT
-  WORD
-  SENTENCE
-  GRAMMAR
-  CULTURE
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("activity_logs")
 }

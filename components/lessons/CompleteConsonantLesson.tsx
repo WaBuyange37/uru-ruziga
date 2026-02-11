@@ -49,15 +49,37 @@ export function CompleteConsonantLesson({
   const [userDrawingImage, setUserDrawingImage] = useState<string>("")
   const [aiScore, setAiScore] = useState<number>(0)
   const [aiFeedback, setAiFeedback] = useState<string>("")
+  const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 })
   const { user } = useAuth()
 
-  // Initialize canvas
+  // Initialize canvas with responsive sizing
   useEffect(() => {
+    const updateCanvasSize = () => {
+      const canvas = canvasRef.current
+      if (!canvas) return
+
+      // Calculate responsive size
+      const container = canvas.parentElement
+      if (container) {
+        const size = Math.min(container.clientWidth, container.clientHeight, 600)
+        setCanvasSize({ width: size, height: size })
+        canvas.width = size
+        canvas.height = size
+        
+        // Redraw grid after resize
+        drawGrid()
+      }
+    }
+
+    updateCanvasSize()
+    window.addEventListener('resize', updateCanvasSize)
+    return () => window.removeEventListener('resize', updateCanvasSize)
+  }, [])
+
+  // Draw grid helper function
+  const drawGrid = () => {
     const canvas = canvasRef.current
     if (!canvas) return
-
-    canvas.width = 400
-    canvas.height = 400
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return
@@ -66,47 +88,73 @@ export function CompleteConsonantLesson({
     ctx.strokeStyle = '#E0E0E0'
     ctx.lineWidth = 1
     ctx.beginPath()
-    ctx.moveTo(200, 0)
-    ctx.lineTo(200, 400)
-    ctx.moveTo(0, 200)
-    ctx.lineTo(400, 200)
+    ctx.moveTo(canvas.width / 2, 0)
+    ctx.lineTo(canvas.width / 2, canvas.height)
+    ctx.moveTo(0, canvas.height / 2)
+    ctx.lineTo(canvas.width, canvas.height / 2)
     ctx.stroke()
-  }, [])
+  }
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  // Get coordinates from mouse or touch event
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+
+    const rect = canvas.getBoundingClientRect()
+    let clientX: number, clientY: number
+
+    if ('touches' in e) {
+      // Touch event
+      if (e.touches.length === 0) return null
+      clientX = e.touches[0].clientX
+      clientY = e.touches[0].clientY
+    } else {
+      // Mouse event
+      clientX = e.clientX
+      clientY = e.clientY
+    }
+
+    const x = (clientX - rect.left) * (canvas.width / rect.width)
+    const y = (clientY - rect.top) * (canvas.height / rect.height)
+
+    return { x, y }
+  }
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault() // Prevent scrolling on touch
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
+    const coords = getCoordinates(e)
+    if (!coords) return
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
     setIsDrawing(true)
     setHasDrawn(true)
 
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
-
     ctx.beginPath()
-    ctx.moveTo(x, y)
+    ctx.moveTo(coords.x, coords.y)
   }
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault() // Prevent scrolling on touch
     if (!isDrawing) return
 
     const canvas = canvasRef.current
     if (!canvas) return
 
-    const rect = canvas.getBoundingClientRect()
+    const coords = getCoordinates(e)
+    if (!coords) return
+
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
-    const x = (e.clientX - rect.left) * (canvas.width / rect.width)
-    const y = (e.clientY - rect.top) * (canvas.height / rect.height)
-
-    ctx.lineTo(x, y)
+    ctx.lineTo(coords.x, coords.y)
     ctx.strokeStyle = '#8B4513'
-    ctx.lineWidth = 4
+    // Responsive line width based on canvas size
+    ctx.lineWidth = Math.max(3, canvas.width / 100)
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
     ctx.stroke()
@@ -124,16 +172,7 @@ export function CompleteConsonantLesson({
     if (!ctx) return
 
     ctx.clearRect(0, 0, canvas.width, canvas.height)
-    
-    // Redraw grid
-    ctx.strokeStyle = '#E0E0E0'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(200, 0)
-    ctx.lineTo(200, 400)
-    ctx.moveTo(0, 200)
-    ctx.lineTo(400, 200)
-    ctx.stroke()
+    drawGrid()
 
     setShowComparison(false)
     setHasDrawn(false)
@@ -326,11 +365,15 @@ export function CompleteConsonantLesson({
                   <div className="bg-white rounded-lg border-2 border-[#8B4513] overflow-hidden relative aspect-square">
                     <canvas
                       ref={canvasRef}
-                      className="w-full h-full cursor-crosshair"
+                      className="w-full h-full cursor-crosshair touch-none"
                       onMouseDown={startDrawing}
                       onMouseMove={draw}
                       onMouseUp={stopDrawing}
                       onMouseLeave={stopDrawing}
+                      onTouchStart={startDrawing}
+                      onTouchMove={draw}
+                      onTouchEnd={stopDrawing}
+                      onTouchCancel={stopDrawing}
                     />
                   </div>
 
