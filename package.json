@@ -8,11 +8,11 @@
     "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed": "tsx prisma/seed-with-lessons.ts",
     "prisma:studio": "prisma studio"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed-with-lessons.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
