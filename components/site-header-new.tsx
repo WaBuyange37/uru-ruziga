@@ -46,10 +46,10 @@ export function SiteHeaderNew() {
         { href: "/games-and-quizzes", label: "gamesAndQuizzes" },
         { href: "/translate", label: "translate" },
         { href: "/calendar", label: "calendar" },
+        { href: "/gallery", label: "Ubufindo" },
       ],
     },
     { href: "/fund", label: "fundUs" },
-    { href: "/gallery", label: "gallery" },
   ]
 
   if (isAuthPage) {
