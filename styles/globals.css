@@ -1,11 +1,47 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-/* /home/nzela37/Kwizera/Projects/uru-ruziga/styles/globals.css */
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 243, 229, 171;
-  --background-end-rgb: 255, 255, 255;
+
+/* ========================================
+   DESIGN SYSTEM - SEMANTIC COLORS
+   ======================================== */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+    
+    --primary: 25 60% 35%;        /* Umwero brown #8B4513 */
+    --primary-foreground: 45 60% 90%;
+    
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 9%;
+    
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+    
+    --accent: 30 50% 55%;         /* Umwero accent #D2691E */
+    --accent-foreground: 0 0% 9%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 25 60% 35%;
+    
+    --radius: 0.5rem;
+    
+    /* Legacy support */
+    --foreground-rgb: 0, 0, 0;
+    --background-start-rgb: 243, 229, 171;
+    --background-end-rgb: 255, 255, 255;
+  }
 }
 
 body {

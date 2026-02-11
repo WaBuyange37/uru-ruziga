@@ -2,7 +2,7 @@
 
 import { useAuth } from "../app/contexts/AuthContext"
 import { usePathname } from "next/navigation"
-import { SiteHeaderNew } from "./site-header-new"
+import { SiteHeaderModern } from "./site-header-modern"
 import { SiteFooter } from "./site-footer"
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -14,7 +14,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex flex-col min-h-screen">
-      <SiteHeaderNew />
+      <SiteHeaderModern />
       <main className={`flex-grow overflow-auto w-full pb-16 sm:pb-0`}>
         {children}
       </main>
