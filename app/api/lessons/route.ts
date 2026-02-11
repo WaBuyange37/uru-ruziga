@@ -8,130 +8,6 @@ import { validateRequest, createLessonSchema } from '@/lib/validators'
 
 export const dynamic = 'force-dynamic'
 
-// Rich content mapping for lessons
-const LESSON_CONTENT: Record<string, any> = {
-  'vowel-a': {
-    vowel: 'a',
-    umwero: '"',
-    pronunciation: '/a/ as in "Abana"',
-    meaning: 'Inyambo Cow\'s head with Horns',
-    culturalNote: 'The character for "a" symbolizes the sacred Inyambo cows with their distinctive long horns. These cows are a symbol of Rwandan heritage and beauty.',
-    examples: [
-      { umwero: '"M"Z}', latin: 'amazi', english: 'water' },
-      { umwero: '"B"M}', latin: 'abami', english: 'Kings' },
-      { umwero: '"M"T"', latin: 'amata', english: 'milk' },
-      { umwero: '"B"NN:', latin: 'abantu', english: 'people' },
-    ],
-  },
-  'vowel-u': {
-    vowel: 'u',
-    umwero: ':',
-    pronunciation: '/u/ as in Umunyu or "rude"',
-    meaning: 'Represents Umugozi/umurunga',
-    culturalNote: 'A loop that ties together a relationship',
-    examples: [
-      { umwero: ':M:C{', latin: 'umuco', english: 'culture' },
-      { umwero: ':B:NN:', latin: 'ubuntu', english: 'humanity' },
-      { umwero: ':R:Z}G"', latin: 'uruziga', english: 'circle' },
-      { umwero: ':RGW"ND"', latin: 'urwanda', english: 'Rwanda' },
-    ],
-  },
-  'vowel-o': {
-    vowel: 'o',
-    umwero: '{',
-    pronunciation: '/o/ as in "note"',
-    meaning: '360 deg',
-    culturalNote: 'It holds 360deg. As other O which is circle mean O can change because of language',
-    examples: [
-      { umwero: '{R{H"', latin: 'Oroha', english: 'be flex' },
-      { umwero: 'B{R{G"', latin: 'boroga', english: 'scream' },
-      { umwero: '{NG||R"', latin: 'ongeera', english: 'increase' },
-      { umwero: 'H{ND"', latin: 'honda', english: 'beat' },
-    ],
-  },
-  'vowel-e': {
-    vowel: 'e',
-    umwero: '|',
-    pronunciation: '/e/ as "Emera" in "bed--english"',
-    meaning: 'E',
-    culturalNote: 'None.',
-    examples: [
-      { umwero: '|YY|', latin: 'enye', english: 'four/4' },
-      { umwero: '|r|K"N"', latin: 'erekana', english: 'show' },
-      { umwero: 'NN|G" "M"TKW}', latin: 'ntega amatwi', english: 'hear me' },
-      { umwero: 'T|R"', latin: 'tera', english: 'throw' },
-    ],
-  },
-  'vowel-i': {
-    vowel: 'i',
-    umwero: '}',
-    pronunciation: '/i/ as in "inyinya" or "machine--eng"',
-    meaning: 'long vowel',
-    culturalNote: '  ',
-    examples: [
-      { umwero: '}B}', latin: 'ibi', english: 'these things' },
-      { umwero: 'N} N}N}', latin: 'ni nini', english: 'it is big' },
-      { umwero: '}M}Z}', latin: 'imizi', english: 'roots' },
-      { umwero: '}M}B:', latin: 'imibu', english: 'mosquitos' },
-    ],
-  },
-  'consonant-b': {
-    consonant: 'b',
-    umwero: 'B',
-    pronunciation: '/b/',
-    meaning: 'Basic consonant B',
-    culturalNote: 'One of the fundamental consonants in Umwero',
-    examples: [
-      { umwero: 'B"B"', latin: 'baba', english: 'father' },
-      { umwero: 'B}B}', latin: 'bibi', english: 'bad' },
-    ],
-  },
-  'consonant-k': {
-    consonant: 'k',
-    umwero: 'K',
-    pronunciation: '/k/',
-    meaning: 'Basic consonant K',
-    culturalNote: 'One of the fundamental consonants in Umwero',
-    examples: [
-      { umwero: 'K}"', latin: 'kua', english: 'to fall' },
-      { umwero: 'K}', latin: 'ki', english: 'what' },
-    ],
-  },
-  'consonant-m': {
-    consonant: 'm',
-    umwero: 'M',
-    pronunciation: '/m/',
-    meaning: 'Basic consonant M',
-    culturalNote: 'One of the fundamental consonants in Umwero',
-    examples: [
-      { umwero: 'M"M"', latin: 'mama', english: 'mother' },
-      { umwero: ':M:C{', latin: 'umuco', english: 'culture' },
-    ],
-  },
-  'consonant-n': {
-    consonant: 'n',
-    umwero: 'N',
-    pronunciation: '/n/',
-    meaning: 'Basic consonant N',
-    culturalNote: 'One of the fundamental consonants in Umwero',
-    examples: [
-      { umwero: 'N}N}', latin: 'nini', english: 'big' },
-      { umwero: 'N"', latin: 'na', english: 'and/with' },
-    ],
-  },
-  'consonant-r': {
-    consonant: 'r',
-    umwero: 'R',
-    pronunciation: '/r/',
-    meaning: 'Basic consonant R',
-    culturalNote: 'One of the fundamental consonants in Umwero',
-    examples: [
-      { umwero: ':R:Z}G"', latin: 'uruziga', english: 'circle' },
-      { umwero: ':RGW"ND"', latin: 'urwanda', english: 'Rwanda' },
-    ],
-  },
-}
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -150,34 +26,35 @@ export async function GET(request: NextRequest) {
       ],
       select: {
         id: true,
-        code: true,
+        title: true,
+        description: true,
+        content: true,
+        module: true,
         type: true,
         order: true,
-        estimatedTime: true,
+        duration: true,
+        videoUrl: true,
+        thumbnailUrl: true,
         isPublished: true,
         createdAt: true,
       }
     })
 
-    // Map lessons with rich content
-    const lessonsWithContent = lessons.map(lesson => {
-      const richContent = LESSON_CONTENT[lesson.code] || { code: lesson.code }
-      
-      return {
-        id: lesson.id,
-        title: lesson.code.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        description: `Learn ${lesson.code}`,
-        content: JSON.stringify(richContent),
-        module: 'BEGINNER',
-        type: lesson.type,
-        order: lesson.order,
-        duration: lesson.estimatedTime,
-        isPublished: lesson.isPublished,
-        videoUrl: null,
-        thumbnailUrl: null,
-        createdAt: lesson.createdAt,
-      }
-    })
+    // Return lessons with their content
+    const lessonsWithContent = lessons.map(lesson => ({
+      id: lesson.id,
+      title: lesson.title,
+      description: lesson.description,
+      content: lesson.content, // Already JSON stringified in DB
+      module: lesson.module,
+      type: lesson.type,
+      order: lesson.order,
+      duration: lesson.duration,
+      isPublished: lesson.isPublished,
+      videoUrl: lesson.videoUrl,
+      thumbnailUrl: lesson.thumbnailUrl,
+      createdAt: lesson.createdAt,
+    }))
 
     return NextResponse.json({
       lessons: lessonsWithContent,

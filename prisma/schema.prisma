@@ -238,25 +238,30 @@ model ContextExample {
 }
 
 // ============================================
-// LESSON SYSTEM
+// LESSON SYSTEM (Compatible with old seed.ts)
 // ============================================
 
 model Lesson {
   id              String   @id @default(cuid())
   
-  // Core Identity
-  code            String   @unique // 'vowel-a', 'consonant-b'
-  type            LessonType
+  // Core Identity (old structure)
+  title           String
+  description     String?
+  content         String?  @db.Text // JSON stringified content with examples
+  module          LessonModule @default(BEGINNER)
+  type            LessonType @default(VOWEL)
+  order           Int
+  duration        Int      // minutes
+  videoUrl        String?
+  thumbnailUrl    String?
+  prerequisites   String[] // Array of lesson IDs
+  
+  // New schema fields (optional for compatibility)
+  code            String?  @unique // 'vowel-a', 'consonant-b'
   characterId     String?  // Primary character
-  
-  // Metadata
-  module          String   // 'Vowels', 'Consonants', 'Ligatures'
   difficulty      Int      @default(1) // 1-5
-  order           Int      // Sequence in module
-  estimatedTime   Int      @default(15) // minutes
-  
-  // Prerequisites
-  prerequisiteIds String[] // Array of lesson IDs
+  estimatedTime   Int?     // minutes (duplicate of duration for new schema)
+  prerequisiteIds String[] @default([]) // Array of lesson IDs (duplicate for new schema)
   
   // Publishing
   isPublished     Boolean  @default(false)
@@ -273,12 +278,25 @@ model Lesson {
   progress        LessonProgress[]
 
   @@index([type, module, order])
+  @@index([module, order])
   @@index([characterId])
   @@index([isPublished])
   @@map("lessons")
 }
 
+enum LessonModule {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
 enum LessonType {
+  VOWEL
+  CONSONANT
+  WORD
+  SENTENCE
+  GRAMMAR
+  CULTURE
   CHARACTER_INTRO
   PRACTICE
   REVIEW
@@ -387,19 +405,21 @@ model LessonProgress {
   userId          String
   lessonId        String
   
-  // Progress Tracking
+  // Progress Tracking (old structure)
+  completed       Boolean  @default(false)
+  score           Int?
+  timeSpent       Int      @default(0) // seconds
+  attempts        Int      @default(0)
+  completedAt     DateTime?
+  
+  // New schema fields (optional for compatibility)
   status          ProgressStatus @default(NOT_STARTED)
   currentStepId   String?
-  completedSteps  String[]  // Array of step IDs
-  
-  // Performance
+  completedSteps  String[]  @default([]) // Array of step IDs
   bestScore       Int       @default(0)
-  attempts        Int       @default(0)
-  timeSpent       Int       @default(0) // seconds
   
   // Timestamps
   startedAt       DateTime?
-  completedAt     DateTime?
   lastAccessedAt  DateTime  @default(now())
   
   createdAt       DateTime  @default(now())
@@ -411,6 +431,7 @@ model LessonProgress {
 
   @@unique([userId, lessonId])
   @@index([userId, status])
+  @@index([userId, completed])
   @@index([lessonId])
   @@map("lesson_progress")
 }
@@ -472,6 +493,8 @@ model Achievement {
   
   // Achievement Identity
   code            String   @unique // 'vowel-master', 'first-steps'
+  name            String   // Display name
+  description     String   // Description text
   category        AchievementCategory
   
   // Requirements
@@ -598,6 +621,7 @@ model User {
 }
 
 enum Role {
+  USER
   STUDENT
   TEACHER
   ADMIN

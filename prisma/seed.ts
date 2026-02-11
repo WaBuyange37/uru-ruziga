@@ -2,7 +2,7 @@
 // Fresh seed for clean Neon database
 // Creates 3 users: Kwizera (admin), Demo student, Test teacher
 
-import { PrismaClient, LessonModule, LessonType, UserRole } from '@prisma/client'
+import { PrismaClient, LessonModule, LessonType, Role } from '@prisma/client'
 import * as bcrypt from 'bcryptjs'
 const prisma = new PrismaClient()
 
@@ -172,50 +172,56 @@ const CONSONANT_LESSONS = [
 
 const ACHIEVEMENTS = [
   {
+    code: 'first-steps',
     name: 'First Steps',
     description: 'Complete your first vowel lesson',
     icon: '🎯',
-    category: 'completion',
+    category: 'LESSON_COMPLETION',
     requirement: JSON.stringify({ lessonsCompleted: 1 }),
     points: 10,
   },
   {
+    code: 'vowel-master',
     name: 'Vowel Master',
     description: 'Complete all 5 vowel lessons',
     icon: '🏆',
-    category: 'completion',
+    category: 'LESSON_COMPLETION',
     requirement: JSON.stringify({ vowelsCompleted: 5 }),
     points: 50,
   },
   {
+    code: 'dedicated-learner',
     name: 'Dedicated Learner',
     description: 'Practice for 1 hour total',
     icon: '⏰',
-    category: 'time',
+    category: 'PRACTICE_MASTERY',
     requirement: JSON.stringify({ totalMinutes: 60 }),
     points: 30,
   },
   {
+    code: 'perfect-score',
     name: 'Perfect Score',
     description: 'Get 100% on any lesson',
     icon: '⭐',
-    category: 'mastery',
+    category: 'PRACTICE_MASTERY',
     requirement: JSON.stringify({ perfectScore: true }),
     points: 40,
   },
   {
+    code: 'week-streak',
     name: 'Week Streak',
     description: 'Learn 7 days in a row',
     icon: '🔥',
-    category: 'streak',
+    category: 'STREAK',
     requirement: JSON.stringify({ streakDays: 7 }),
     points: 70,
   },
   {
+    code: 'artist',
     name: 'Artist',
     description: 'Practice canvas writing 10 times',
     icon: '🎨',
-    category: 'practice',
+    category: 'PRACTICE_MASTERY',
     requirement: JSON.stringify({ drawingsCount: 10 }),
     points: 25,
   },
@@ -231,9 +237,9 @@ const USERS = [
     username: 'kwizera',
     password: 'Mugix260',
     fullName: 'Kwizera Mugisha',
-    role: UserRole.ADMIN,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
+    role: Role.ADMIN,
     country: 'Rwanda',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       language: 'en',
+    language: 'en',
     bio: 'Creator of Umwero alphabet. Passionate about preserving Kinyarwanda language and culture.',
   },
   {
@@ -241,7 +247,7 @@ const USERS = [
     username: 'demo',
     password: 'demo123',
     fullName: 'Demo Student',
-    role: UserRole.USER,
+    role: Role.USER,
     country: 'Rwanda',
     language: 'en',
     bio: 'Demo account for testing the platform.',
@@ -251,7 +257,7 @@ const USERS = [
     username: 'teacher',
     password: 'teach123',
     fullName: 'Umwero Teacher',
-    role: UserRole.TEACHER,
+    role: Role.TEACHER,
     country: 'Rwanda',
     language: 'en',
     bio: 'Test teacher account for managing students and lessons.',
@@ -317,8 +323,16 @@ async function main() {
     const hashedPassword = await bcrypt.hash(userData.password, 10)
     const user = await prisma.user.create({
       data: {
-        ...userData,
+        email: userData.email,
+        username: userData.username,
+        fullName: userData.fullName,
         password: hashedPassword,
+        role: userData.role,
+        country: userData.country,
+        preferredLanguage: userData.language,
+        bio: userData.bio,
+        emailVerified: true,
+        provider: 'EMAIL',
       },
     })
     

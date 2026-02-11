@@ -38,8 +38,9 @@ export async function GET(request: NextRequest) {
         lesson: {
           select: {
             id: true,
-            code: true,
-            type: true
+            title: true,
+            type: true,
+            module: true
           }
         }
       },
@@ -112,10 +113,8 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Count completed lessons (status === COMPLETED or MASTERED)
-    const completedLessons = lessonProgress.filter(p => 
-      p.status === 'COMPLETED' || p.status === 'MASTERED'
-    ).length
+    // Count completed lessons (completed === true)
+    const completedLessons = lessonProgress.filter(p => p.completed).length
     
     const progressPercentage = totalLessons > 0 
       ? Math.round((completedLessons / totalLessons) * 100)
@@ -140,18 +139,18 @@ export async function GET(request: NextRequest) {
       },
       lessonProgress: lessonProgress.map(p => ({
         lesson: {
-          title: p.lesson.code.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Convert code to title
+          title: p.lesson.title,
           type: p.lesson.type,
-          module: 'BEGINNER' // Default module
+          module: p.lesson.module
         },
-        completed: p.status === 'COMPLETED' || p.status === 'MASTERED',
-        score: p.bestScore,
+        completed: p.completed,
+        score: p.score || 0,
         attempts: p.attempts
       })),
       achievements: {
         unlocked: userAchievements.filter(ua => ua.isUnlocked).map(ua => ({
-          name: ua.achievement.code, // Using code as name for now
-          description: 'Achievement unlocked',
+          name: ua.achievement.name,
+          description: ua.achievement.description,
           icon: ua.achievement.icon || '🏆',
           points: ua.achievement.points,
           unlockedAt: ua.unlockedAt
