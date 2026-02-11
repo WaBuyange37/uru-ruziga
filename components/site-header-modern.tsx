@@ -59,7 +59,7 @@ export function SiteHeaderModern() {
         { href: "/games-and-quizzes", label: "gamesAndQuizzes", icon: GamepadIcon },
         { href: "/translate", label: "translate", icon: Globe },
         { href: "/umwero-chat", label: "umweroChat", icon: MessageCircle },
-        { href: "/gallery", label: "Ubufindo", icon: CircleIcon },
+        { href: "/gallery", label: "Ubugeni", icon: CircleIcon },
       ],
     },
     { href: "/community", label: "community", icon: Users },
