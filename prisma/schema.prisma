@@ -535,7 +535,7 @@ model UserAchievement {
 model User {
   id              String   @id @default(cuid())
   email           String   @unique
-  name            String
+  name            String?
   password        String
   role            Role     @default(STUDENT)
   
@@ -545,8 +545,8 @@ model User {
   
   // Legacy fields for compatibility
   mobileNumber   String?           @unique
-  fullName       String?
-  username       String?           @unique
+  fullName       String
+  username       String            @unique
   birthday       DateTime?
   countryCode     String?            @default("RW")
   phoneNumber    String?
