@@ -7,11 +7,6 @@ import { getJwtSecret } from '@/lib/jwt'
 // Force dynamic rendering to avoid build-time evaluation
 export const dynamic = 'force-dynamic'
 
-if (!process.env.JWT_SECRET) {
-  throw new Error('JWT_SECRET environment variable is not set')
-}
-const JWT_SECRET = process.env.JWT_SECRET
-
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
@@ -36,15 +31,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Get lesson progress
+    // Get lesson progress (compatible with new schema)
     const lessonProgress = await prisma.lessonProgress.findMany({
       where: { userId: decoded.userId },
       include: {
         lesson: {
           select: {
-            title: true,
-            type: true,
-            module: true
+            id: true,
+            code: true,
+            type: true
           }
         }
       },
@@ -117,7 +112,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const completedLessons = lessonProgress.filter(p => p.completed).length
+    // Count completed lessons (status === COMPLETED or MASTERED)
+    const completedLessons = lessonProgress.filter(p => 
+      p.status === 'COMPLETED' || p.status === 'MASTERED'
+    ).length
+    
     const progressPercentage = totalLessons > 0 
       ? Math.round((completedLessons / totalLessons) * 100)
       : 0
@@ -140,16 +139,20 @@ export async function GET(request: NextRequest) {
         learningStreak
       },
       lessonProgress: lessonProgress.map(p => ({
-        lesson: p.lesson,
-        completed: p.completed,
-        score: p.score || 0,
+        lesson: {
+          title: p.lesson.code.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()), // Convert code to title
+          type: p.lesson.type,
+          module: 'BEGINNER' // Default module
+        },
+        completed: p.status === 'COMPLETED' || p.status === 'MASTERED',
+        score: p.bestScore,
         attempts: p.attempts
       })),
       achievements: {
-        unlocked: userAchievements.map(ua => ({
-          name: ua.achievement.name,
-          description: ua.achievement.description,
-          icon: ua.achievement.icon,
+        unlocked: userAchievements.filter(ua => ua.isUnlocked).map(ua => ({
+          name: ua.achievement.code, // Using code as name for now
+          description: 'Achievement unlocked',
+          icon: ua.achievement.icon || '🏆',
           points: ua.achievement.points,
           unlockedAt: ua.unlockedAt
         })),
