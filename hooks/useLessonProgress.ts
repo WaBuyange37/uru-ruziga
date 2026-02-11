@@ -1,91 +1,173 @@
-import { useState } from 'react'
+// hooks/useLessonProgress.ts
+// Custom hook for managing lesson progress with localStorage persistence
 
-interface SaveProgressOptions {
-  lessonId: string
-  completed?: boolean
-  score?: number
-}
+import { useState, useEffect, useCallback } from 'react'
+import type { LessonProgress, LessonProgressState, GlobalProgress } from '@/types/lesson-progress'
+
+const STORAGE_KEY = 'uruziga_lesson_progress'
 
 export function useLessonProgress() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [progressState, setProgressState] = useState<LessonProgressState>({})
+  const [isLoaded, setIsLoaded] = useState(false)
 
-  const saveProgress = async ({ lessonId, completed, score }: SaveProgressOptions) => {
-    setLoading(true)
-    setError(null)
-
+  // Load progress from localStorage on mount
+  useEffect(() => {
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Authentication required. Please log in.')
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) {
+        const parsed = JSON.parse(stored)
+        // Convert date strings back to Date objects
+        Object.keys(parsed).forEach(key => {
+          if (parsed[key].lastAccessed) {
+            parsed[key].lastAccessed = new Date(parsed[key].lastAccessed)
+          }
+        })
+        setProgressState(parsed)
       }
-
-      const response = await fetch(`/api/lessons/${lessonId}/progress`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          completed,
-          score,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save progress')
-      }
-
-      return data.progress
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to save progress'
-      setError(errorMessage)
-      throw new Error(errorMessage)
+    } catch (error) {
+      console.error('Error loading lesson progress:', error)
     } finally {
-      setLoading(false)
+      setIsLoaded(true)
     }
-  }
+  }, [])
 
-  const getProgress = async (lessonId: string) => {
-    setLoading(true)
-    setError(null)
+  // Save progress to localStorage whenever it changes
+  useEffect(() => {
+    if (isLoaded) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(progressState))
+      } catch (error) {
+        console.error('Error saving lesson progress:', error)
+      }
+    }
+  }, [progressState, isLoaded])
 
-    try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Authentication required. Please log in.')
+  // Get progress for a specific lesson
+  const getLessonProgress = useCallback((lessonId: string): LessonProgress | null => {
+    return progressState[lessonId] || null
+  }, [progressState])
+
+  // Update progress for a lesson
+  const updateLessonProgress = useCallback((lessonId: string, updates: Partial<LessonProgress>) => {
+    setProgressState(prev => ({
+      ...prev,
+      [lessonId]: {
+        ...prev[lessonId],
+        lessonId,
+        completed: false,
+        score: 0,
+        attempts: 0,
+        timeSpent: 0,
+        lastAccessed: new Date(),
+        ...updates,
+      }
+    }))
+  }, [])
+
+  // Mark lesson as completed
+  const completeLess = useCallback((lessonId: string, score: number) => {
+    setProgressState(prev => {
+      const existing = prev[lessonId] || {
+        lessonId,
+        completed: false,
+        score: 0,
+        attempts: 0,
+        timeSpent: 0,
+        lastAccessed: new Date(),
       }
 
-      const response = await fetch(`/api/lessons/${lessonId}/progress`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch progress')
+      return {
+        ...prev,
+        [lessonId]: {
+          ...existing,
+          completed: true,
+          score: Math.max(existing.score, score),
+          attempts: existing.attempts + 1,
+          lastAccessed: new Date(),
+        }
       }
+    })
+  }, [])
 
-      return data.progress
-    } catch (err: any) {
-      const errorMessage = err.message || 'Failed to fetch progress'
-      setError(errorMessage)
-      throw new Error(errorMessage)
-    } finally {
-      setLoading(false)
+  // Start a lesson (mark as in progress)
+  const startLesson = useCallback((lessonId: string) => {
+    setProgressState(prev => ({
+      ...prev,
+      [lessonId]: {
+        ...prev[lessonId],
+        lessonId,
+        completed: false,
+        score: prev[lessonId]?.score || 0,
+        attempts: (prev[lessonId]?.attempts || 0) + 1,
+        timeSpent: prev[lessonId]?.timeSpent || 0,
+        lastAccessed: new Date(),
+      }
+    }))
+  }, [])
+
+  // Add time spent on a lesson
+  const addTimeSpent = useCallback((lessonId: string, seconds: number) => {
+    setProgressState(prev => {
+      const existing = prev[lessonId]
+      if (!existing) return prev
+
+      return {
+        ...prev,
+        [lessonId]: {
+          ...existing,
+          timeSpent: existing.timeSpent + seconds,
+          lastAccessed: new Date(),
+        }
+      }
+    })
+  }, [])
+
+  // Calculate global progress
+  const getGlobalProgress = useCallback((totalLessons: number): GlobalProgress => {
+    const lessons = Object.values(progressState)
+    const completedLessons = lessons.filter(l => l.completed).length
+    const inProgressLessons = lessons.filter(l => !l.completed && l.attempts > 0).length
+    const totalTimeSpent = lessons.reduce((sum, l) => sum + l.timeSpent, 0)
+    const averageScore = lessons.length > 0
+      ? lessons.reduce((sum, l) => sum + l.score, 0) / lessons.length
+      : 0
+
+    return {
+      totalLessons,
+      completedLessons,
+      inProgressLessons,
+      percentageComplete: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+      totalTimeSpent,
+      averageScore: Math.round(averageScore),
     }
-  }
+  }, [progressState])
+
+  // Reset all progress (for testing)
+  const resetProgress = useCallback(() => {
+    setProgressState({})
+    localStorage.removeItem(STORAGE_KEY)
+  }, [])
+
+  // Check if lesson is locked based on prerequisites
+  const isLessonLocked = useCallback((lessonId: string, prerequisites: string[]): boolean => {
+    if (prerequisites.length === 0) return false
+    
+    return prerequisites.some(prereqId => {
+      const prereqProgress = progressState[prereqId]
+      return !prereqProgress || !prereqProgress.completed
+    })
+  }, [progressState])
 
   return {
-    saveProgress,
-    getProgress,
-    loading,
-    error,
+    progressState,
+    isLoaded,
+    getLessonProgress,
+    updateLessonProgress,
+    completeLesson: completeLess,
+    startLesson,
+    addTimeSpent,
+    getGlobalProgress,
+    resetProgress,
+    isLessonLocked,
   }
 }
-
