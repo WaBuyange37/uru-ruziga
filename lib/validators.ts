@@ -131,7 +131,7 @@ export const createDonationSchema = z.object({
 // ============================================
 
 export const changeRoleSchema = z.object({
-  role: z.enum(['USER', 'TEACHER', 'ADMIN']),
+  role: z.enum(['STUDENT', 'TEACHER', 'ADMIN']),
 })
 
 export const deleteUserSchema = z.object({

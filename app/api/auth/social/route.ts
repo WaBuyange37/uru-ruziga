@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           providerId: providerId,
           avatar: avatar,
           emailVerified: true, // Social auth emails are pre-verified
-          role: 'USER',
+          role: 'STUDENT',
           lastLoginAt: new Date()
         }
       })

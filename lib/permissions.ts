@@ -1,7 +1,7 @@
 // lib/permissions.ts
 // Role-based access control for Umwero Learning Platform
 
-export type UserRole = 'USER' | 'TEACHER' | 'ADMIN'
+export type UserRole = 'STUDENT' | 'TEACHER' | 'ADMIN'
 
 export interface Permission {
   canCreateLesson: boolean
@@ -58,7 +58,7 @@ export function getPermissions(role: UserRole): Permission {
         canModerateContent: true, // Can moderate their own content
       }
     
-    case 'USER':
+    case 'STUDENT':
     default:
       return {
         canCreateLesson: false,
@@ -134,7 +134,7 @@ export function getRoleDisplayName(role: UserRole): string {
       return 'Administrator'
     case 'TEACHER':
       return 'Teacher'
-    case 'USER':
+    case 'STUDENT':
       return 'Student'
     default:
       return 'User'
@@ -150,7 +150,7 @@ export function getRoleBadgeColor(role: UserRole): string {
       return 'bg-red-100 text-red-800 border-red-300'
     case 'TEACHER':
       return 'bg-blue-100 text-blue-800 border-blue-300'
-    case 'USER':
+    case 'STUDENT':
       return 'bg-green-100 text-green-800 border-green-300'
     default:
       return 'bg-gray-100 text-gray-800 border-gray-300'
@@ -166,7 +166,7 @@ export function getRoleIcon(role: UserRole): string {
       return '👑'
     case 'TEACHER':
       return '👨‍🏫'
-    case 'USER':
+    case 'STUDENT':
       return '👤'
     default:
       return '👤'

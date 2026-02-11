@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           providerId: userInfo.id,
           avatar: userInfo.picture,
           emailVerified: true,
-          role: 'USER',
+          role: 'STUDENT',
           lastLoginAt: new Date()
         }
       })

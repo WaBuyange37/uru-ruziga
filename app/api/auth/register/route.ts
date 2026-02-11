@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
         countryCode: countryCode || 'RW',
         provider: 'EMAIL',
         emailVerified: true, // Auto-verify for simplicity
-        role: 'USER'
+        role: 'STUDENT' // Default role for new users
       }
     })
 

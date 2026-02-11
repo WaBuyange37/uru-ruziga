@@ -211,7 +211,7 @@ export default function AdminDashboard() {
           <CardContent>
             <div className="text-2xl font-bold text-blue-700">{users.length}</div>
             <p className="text-xs text-blue-600 mt-1">
-              {users.filter(u => u.role === 'USER').length} students, 
+              {users.filter(u => u.role === 'STUDENT').length} students, 
               {users.filter(u => u.role === 'TEACHER').length} teachers
             </p>
           </CardContent>
