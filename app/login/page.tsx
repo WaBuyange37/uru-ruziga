@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,14 +10,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from 'next/link'
 import { CircleIcon, LogIn, Eye, EyeOff } from 'lucide-react'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const { login } = useAuth()
+  const searchParams = useSearchParams()
+  const { login, isAuthenticated } = useAuth()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirect = searchParams?.get('redirect') || '/dashboard'
+      router.push(redirect)
+    }
+  }, [isAuthenticated, router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -26,9 +35,11 @@ export default function LoginPage() {
 
     try {
       await login(identifier, password)
-      router.push('/dashboard')
+      // Redirect after successful login
+      const redirect = searchParams?.get('redirect') || '/dashboard'
+      router.push(redirect)
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please try again.')
+      setError(err.message || 'Login failed. Please check your credentials and try again.')
     } finally {
       setLoading(false)
     }
@@ -63,6 +74,7 @@ export default function LoginPage() {
                 onChange={(e) => setIdentifier(e.target.value)}
                 placeholder="Enter your username, email, or mobile"
                 required
+                autoComplete="username"
                 className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
@@ -79,6 +91,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   required
+                  autoComplete="current-password"
                   className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
@@ -131,5 +144,17 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E]">
+        <div className="h-12 w-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

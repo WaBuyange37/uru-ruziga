@@ -1,34 +1,32 @@
 "use client"
 
-import { useState, useEffect } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs"
+import { useState } from 'react'
 import { Button } from "../../components/ui/button"
 import { Input } from "../../components/ui/input"
 import { Textarea } from "../../components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card"
 import { Label } from "../../components/ui/label"
-import { MessageCircle, Calendar, Upload, Search, Trash2, MessageSquare, Video, PenTool, Loader2 } from 'lucide-react'
+import { MessageCircle, Search, Loader2 } from 'lucide-react'
 import { useDiscussions } from "../../hooks/useDiscussions"
 import { useAuth } from "../contexts/AuthContext"
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import { MediaUpload } from "../../components/discussions/MediaUpload"
+import { DiscussionCard } from "../../components/discussions/DiscussionCard"
 
 export default function CommunityPage() {
-  const [activeTab, setActiveTab] = useState("forum")
-
   return (
     <div className="min-h-screen bg-[#FFFFFF]">
       <section className="relative py-20 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
         <div className="container mx-auto text-center">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-[#8B4513]">
-            Join the Conversation, Share Your Knowledge, and Connect with Fellow Learners
+            Community Discussions
           </h1>
           <p className="text-xl text-[#D2691E] mb-8">
-            Explore a vibrant community where you can ask questions, participate in live workshops, and share your Umwero creations.
+            Join the conversation, share your knowledge, and connect with fellow learners. All discussions from the community appear here.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" className="gap-2" onClick={() => {
-              setActiveTab("forum")
               // Scroll to forum section after a brief delay
               setTimeout(() => {
                 const forumSection = document.getElementById('discussion-forum')
@@ -37,7 +35,7 @@ export default function CommunityPage() {
                 }
               }, 100)
             }}>
-              <MessageSquare className="h-5 w-5" />
+              <MessageCircle className="h-5 w-5" />
               Start a Discussion
             </Button>
           </div>
@@ -53,19 +51,8 @@ export default function CommunityPage() {
         </div>
       </section>
 
-      <div className="container mx-auto px-4 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-1 mb-8">
-            <TabsTrigger value="forum" className="gap-2">
-              <MessageCircle className="h-4 w-4" />
-              Discussion Forum
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="forum">
-            <DiscussionForum />
-          </TabsContent>
-        </Tabs>
+      <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <DiscussionForum />
       </div>
     </div>
   )
@@ -81,10 +68,17 @@ function DiscussionForum() {
     title: '',
     content: '',
     script: 'LATIN' as 'UMWERO' | 'LATIN',
-    category: ''
+    category: '',
+    mediaUrls: [] as string[]
   })
   const [formErrors, setFormErrors] = useState({ title: '', content: '' })
   const [submitting, setSubmitting] = useState(false)
+
+  // Show ALL discussions (not filtered by user)
+  const filteredDiscussions = discussions.filter(d =>
+    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    d.content.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const validateForm = () => {
     const errors = { title: '', content: '' }
@@ -121,30 +115,29 @@ function DiscussionForum() {
       title: formData.title,
       content: formData.content,
       script: formData.script,
-      category: formData.category || undefined
+      category: formData.category || undefined,
+      mediaUrls: formData.mediaUrls
     })
 
     setSubmitting(false)
 
     if (result) {
-      setFormData({ title: '', content: '', script: 'LATIN', category: '' })
+      setFormData({ title: '', content: '', script: 'LATIN', category: '', mediaUrls: [] })
       setShowForm(false)
+      // Refresh the discussions list to show the new post
+      await fetchDiscussions()
       alert('Discussion created successfully!')
     } else {
       alert('Failed to create discussion. Please try again.')
     }
   }
 
-  const filteredDiscussions = discussions.filter(d =>
-    d.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.content.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
   return (
     <div className="space-y-6" id="discussion-forum">
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl text-[#8B4513]">Discussion Forum</CardTitle>
+          <CardTitle className="text-2xl text-[#8B4513]">All Discussions</CardTitle>
+          <p className="text-sm text-[#D2691E]">View and participate in community discussions</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
@@ -236,6 +229,14 @@ function DiscussionForum() {
                 />
               </div>
 
+              <div>
+                <Label>Media (Optional)</Label>
+                <MediaUpload
+                  onMediaChange={(urls) => setFormData({ ...formData, mediaUrls: urls })}
+                  maxFiles={4}
+                />
+              </div>
+
               <div className="flex gap-2">
                 <Button type="submit" disabled={submitting} className="bg-[#8B4513] hover:bg-[#A0522D]">
                   {submitting ? (
@@ -278,61 +279,22 @@ function DiscussionForum() {
         <Card>
           <CardContent className="p-8 text-center">
             <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600">
-              {searchQuery ? 'No discussions found matching your search.' : 'No discussions yet. Be the first to start one!'}
+            <p className="text-gray-600 mb-2">
+              {searchQuery ? 'No discussions found matching your search.' : 'No discussions yet.'}
             </p>
+            <p className="text-sm text-[#D2691E] mb-4">
+              Be the first to start a conversation!
+            </p>
+            <Button onClick={() => setShowForm(true)} className="bg-[#8B4513] hover:bg-[#A0522D]">
+              Create First Discussion
+            </Button>
           </CardContent>
         </Card>
       )}
 
-      <div className="space-y-4">
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
         {filteredDiscussions.map((discussion) => (
-          <Card key={discussion.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <CardTitle className="text-xl text-[#8B4513] mb-2">{discussion.title}</CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span>By {discussion.user.fullName || discussion.user.username || 'Anonymous'}</span>
-                    <span>•</span>
-                    <span>{new Date(discussion.createdAt).toLocaleDateString()}</span>
-                    <span>•</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      discussion.script === 'umwero' 
-                        ? 'bg-purple-100 text-purple-800' 
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {discussion.script === 'umwero' ? 'ⵓⵎⵡⴻⵔⵓ' : 'Latin'}
-                    </span>
-                    {discussion.category && (
-                      <>
-                        <span>•</span>
-                        <span className="text-[#D2691E]">{discussion.category}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p 
-                className={`text-gray-700 whitespace-pre-wrap ${
-                  discussion.script === 'umwero' ? 'font-umwero text-2xl' : ''
-                }`}
-                style={discussion.script === 'umwero' ? { fontFamily: 'Umwero, monospace' } : {}}
-              >
-                {discussion.content}
-              </p>
-              <div className="flex items-center gap-4 mt-4 text-sm text-gray-600">
-                <span className="flex items-center gap-1">
-                  <MessageCircle className="h-4 w-4" />
-                  {discussion._count?.comments ?? 0} comments
-                </span>
-                <span>{discussion.views} views</span>
-                <span>{discussion.likesCount} likes</span>
-              </div>
-            </CardContent>
-          </Card>
+          <DiscussionCard key={discussion.id} discussion={discussion} />
         ))}
       </div>
     </div>

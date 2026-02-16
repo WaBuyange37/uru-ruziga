@@ -38,6 +38,7 @@ interface LessonData {
 
 export default function UnifiedLearnPage() {
   const { t } = useTranslation()
+  const [mounted, setMounted] = useState(false)
   const [progress, setProgress] = useState(0)
   const [searchQuery, setSearchQuery] = useState("")
   const [activeLesson, setActiveLesson] = useState<string | null>(null)
@@ -48,6 +49,11 @@ export default function UnifiedLearnPage() {
   const [consonantLessons, setConsonantLessons] = useState<LessonData[]>([])
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  // Handle client-side mounting to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Load lessons from API
   useEffect(() => {
@@ -105,10 +111,8 @@ export default function UnifiedLearnPage() {
   }
 
   const startLesson = (lessonId: string, type: 'vowel' | 'consonant') => {
-    setActiveLesson(lessonId)
-    const lessons = type === 'vowel' ? vowelLessons : consonantLessons
-    const index = lessons.findIndex(l => l.id === lessonId)
-    setCurrentLessonIndex(index >= 0 ? index : 0)
+    // Navigate to new single-page lesson workspace
+    window.location.href = `/lessons/${lessonId}`
   }
 
   const stopLesson = () => {
@@ -250,20 +254,22 @@ export default function UnifiedLearnPage() {
           <div className="flex items-center justify-center gap-2 mb-6">
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
               <Heart className="h-4 w-4 text-red-500" />
-              <span className="text-sm">Preserving Rwandan Heritage</span>
+              <span className="text-sm">{mounted ? "Preserving Rwandan Heritage" : "Preserving Rwandan Heritage"}</span>
             </Badge>
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
               <Globe className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">UNESCO Endangered Script</span>
+              <span className="text-sm">{mounted ? "UNESCO Endangered Script" : "UNESCO Endangered Script"}</span>
             </Badge>
           </div>
 
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-[#8B4513]">
-            {t("startYourUmweroJourneyToday")}
+            {mounted ? t("startYourUmweroJourneyToday") : "Start Your Umwero Journey Today"}
           </h1>
           <p className="text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto">
-            Learn the authentic Umwero script character by character. Each lesson reveals the deep cultural significance 
-            and helps preserve this endangered writing system for future generations.
+            {mounted 
+              ? "Learn the authentic Umwero script character by character. Each lesson reveals the deep cultural significance and helps preserve this endangered writing system for future generations."
+              : "Learn the authentic Umwero script character by character. Each lesson reveals the deep cultural significance and helps preserve this endangered writing system for future generations."
+            }
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -346,11 +352,11 @@ export default function UnifiedLearnPage() {
                   <div className="flex items-start gap-4">
                     <div className="text-4xl">🌍</div>
                     <div>
-                      <h3 className="text-xl font-semibold text-blue-800 mb-2">The Five Sacred Vowels</h3>
+                      <h3 className="text-xl font-semibold text-blue-800 mb-2">
+                        {mounted ? t("umweroVowels") : "Umwero Vowels"}
+                      </h3>
                       <p className="text-blue-700">
-                        Master the foundation of Umwero script. Each vowel carries profound cultural meaning and 
-                        represents essential elements of Rwandan heritage. Learn the proper pronunciation, stroke order, 
-                        and cultural significance of each character.
+                        {mounted ? t("learnVowelCharacters") : "Learn the 5 vowel characters and their cultural significance"}
                       </p>
                     </div>
                   </div>
@@ -381,10 +387,11 @@ export default function UnifiedLearnPage() {
                   <div className="flex items-start gap-4">
                     <div className="text-4xl">🎯</div>
                     <div>
-                      <h3 className="text-xl font-semibold text-amber-800 mb-2">Building Blocks of Words</h3>
+                      <h3 className="text-xl font-semibold text-amber-800 mb-2">
+                        {mounted ? t("umweroConsonants") : "Umwero Consonants"}
+                      </h3>
                       <p className="text-amber-700">
-                        Consonants form the structure of Umwero words. Learn how to combine them with vowels 
-                        to create meaningful expressions and preserve the linguistic heritage of Rwanda.
+                        {mounted ? t("masterConsonantCharacters") : "Master consonant characters and combinations"}
                       </p>
                     </div>
                   </div>
@@ -421,7 +428,7 @@ export default function UnifiedLearnPage() {
                       <p className="text-[#D2691E] text-sm mb-4">{video.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-[#8B4513] text-sm">{video.duration}</span>
-                        <Badge variant="outline">{t("educational")}</Badge>
+                        <Badge variant="outline">{mounted ? t("videoTutorials") : "Video"}</Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -438,11 +445,14 @@ export default function UnifiedLearnPage() {
           <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
             <CardContent className="p-8 text-center">
               <div className="text-5xl mb-4">🏛️</div>
-              <h3 className="text-2xl font-semibold text-amber-800 mb-3">Join the Cultural Movement</h3>
+              <h3 className="text-2xl font-semibold text-amber-800 mb-3">
+                {mounted ? "Join the Cultural Movement" : "Join the Cultural Movement"}
+              </h3>
               <p className="text-amber-700 leading-relaxed">
-                Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. 
-                Together, we can ensure this beautiful writing system continues to inspire future generations and maintains 
-                its place in the rich tapestry of African linguistic diversity.
+                {mounted 
+                  ? "Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. Together, we can ensure this beautiful writing system continues to inspire future generations and maintains its place in the rich tapestry of African linguistic diversity."
+                  : "Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. Together, we can ensure this beautiful writing system continues to inspire future generations and maintains its place in the rich tapestry of African linguistic diversity."
+                }
               </p>
             </CardContent>
           </Card>

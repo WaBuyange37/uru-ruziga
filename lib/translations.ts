@@ -12,12 +12,12 @@ export const translations = {
     gamesAndQuizzes: "Games & Quizzes",
     welcome: "Welcome",
     viewProfile: "View Profile",
-    
+
     // Languages
     english: "English",
     kinyarwanda: "Kinyarwanda",
     umwero: "Umwero",
-    
+
     // Main Navigation
     home: "Home",
     learn: "Learn",
@@ -49,7 +49,7 @@ export const translations = {
     contactEmail: "Contact via Email",
     total: "Total",
     umweroChat: "Umwero Chat",
-    
+
     // Gallery Page
     umweroGallery: "Umwero Gallery",
     searchPlaceholder: "Search products or resources...",
@@ -65,7 +65,7 @@ export const translations = {
     addToCart: "Add to Cart",
     noProductsFound: "No products found",
     productDescription: "This authentic Umwero product supports the preservation of Kinyarwanda culture and the development of the Umwero learning platform.",
-    
+
     // Learning Page
     startYourUmweroJourneyToday: "Start Your Umwero Journey Today",
     interactiveLessonsDescription: "Master the Umwero alphabet through interactive lessons, games, and cultural immersion",
@@ -84,7 +84,7 @@ export const translations = {
     introductionToUmweroTeaching: "Introduction to Umwero Teaching",
     watchIntroVideo: "Watch Intro Video",
     startLearning: "Start Learning",
-    
+
     // Course Modules
     beginner: "Beginner",
     umweroVowels: "Umwero Vowels",
@@ -120,7 +120,7 @@ export const translations = {
     practiceTypingUmwero: "Practice typing Umwero characters with our virtual keyboard",
     quizzes: "Quizzes",
     testYourKnowledge: "Test your knowledge with interactive quizzes",
-    
+
     // Footer Links
     about: "About",
     contact: "Contact",
@@ -133,7 +133,7 @@ export const translations = {
     supportUs: "Support Us",
     supportUmwero: "Support Umwero",
     cultureAndHistory: "Culture & History",
-    
+
     // Culture & History Page
     overview: "Overview",
     historyOfWriting: "History of Writing",
@@ -153,7 +153,7 @@ export const translations = {
     conclusion: "Conclusion",
     umweroImportance: "Umwero represents a bridge between tradition and modernity, preserving Kinyarwanda language for future generations.",
     learnMoreUmwero: "Learn More About Umwero",
-    
+
     // Home Page
     enterCircleOfKnowledge: "Enter the Circle of Knowledge",
     whereEveryLetterTellsStory: "Where Every Letter Tells a Story",
@@ -161,20 +161,20 @@ export const translations = {
     learnUmwero: "Learn Umwero",
     fundUruziga: "Fund Uruziga",
     exploreCalendar: "Explore Calendar",
-    
+
     // Features
     interactiveLessons: "Interactive lessons to master the Umwero alphabet",
     exploreAncientCalendar: "Explore ancient calendar systems",
     accessTools: "Translation and learning tools",
     learnThroughGames: "Learn through interactive games",
-    
+
     // Cultural Content
     culturalInsights: "Cultural Insights",
     didYouKnow: "Did you know?",
     umweroCircleMeaning: "Umwero's circle represents the eternal cycle of knowledge",
     languagePreservation: "Language Preservation",
     umweroRoleInPreservation: "Umwero preserves Kinyarwanda heritage",
-    
+
     // Umwero Movement
     umweroMovement: "The Umwero Movement",
     culturalRenaissance: "Cultural Renaissance",
@@ -193,13 +193,13 @@ export const translations = {
     joinUsInPreserving: "Join us in preserving Kinyarwanda culture",
     umweroMovementDescription: "A cultural renaissance preserving Kinyarwanda language",
     learnMoreAboutUmwero: "Learn More About Umwero",
-    
+
     // Support Section
     supportOurMission: "Support Our Mission",
     helpUsPreserve: "Help us preserve Kinyarwanda culture",
     yourContributionHelps: "Your contribution helps develop educational materials",
     donateNow: "Donate Now",
-    
+
     // Admin & Teacher Dashboard
     adminDashboard: "Admin Dashboard",
     teacherDashboard: "Teacher Dashboard",
@@ -258,19 +258,19 @@ export const translations = {
     myProgress: "My Progress",
     viewYourProgress: "View Your Progress",
     continueLearn: "Continue Learning",
-    
+
     // Footer Links
     continueLesson: "Continue Lesson",
     nextLesson: "Next Lesson",
     previousLesson: "Previous Lesson",
-    
+
     // Footer Links
-   
+
     connectWithFellowLearners: "Connect with fellow learners",
     joinDiscussion: "Join Discussion",
     shareProgress: "Share Progress",
-    
-    
+
+
     // Progress & Stats
     lessonsCompleted: "Lessons Completed",
     currentLevel: "Current Level",
@@ -278,7 +278,7 @@ export const translations = {
     learningStreak: "Learning Streak",
     continueYourJourney: "Continue Your Journey",
     yourAchievements: "Your Achievements",
-    
+
     // Canvas Practice
     practiceArea: "Practice Area",
     drawCharacterBelow: "Draw the character below",
@@ -290,9 +290,9 @@ export const translations = {
     goodEnough: "Good! Next Character",
     yourWriting: "Your Writing",
     correctForm: "Correct Form",
-    
+
     // Completion Messages
-    
+
     // Lesson Component - Vowel Lesson
     seeHowVowelUsed: "See how this vowel is used in Kinyarwanda",
     learningTip: "Learning Tip",
@@ -317,7 +317,7 @@ export const translations = {
     drawVeryGood: "Very good! Your writing is close to the reference.",
     drawExcellent: "Excellent! Your character is nearly perfect!",
     drawPerfect: "Outstanding! Perfect match!",
-    
+
     // Dashboard Statistics
     yourPermissions: "Your Permissions",
     comingSoon: "Coming soon",
@@ -375,27 +375,27 @@ export const translations = {
     errorOccurred: "An error occurred",
     tryAgainLater: "Please try again",
   },
-  
-    signup: "Sign Up",
-    login: "Log In",
-    donate: "Donate",
-    optionalMessage: "Optional Message",
-    submitDonation: "Submit Donation",
-    donationDescription: "Support Umwero development",
-    contactUs: "Contact Us",
-    becomeSponsor: "Become a Sponsor",
-    mobileMoneyPayment: "Mobile Money Payment",
-    mobileMoneyDescription: "Pay using MTN Mobile Money",
-    mobileMoneyStep1: "Step 1: Dial *182*1*1*0786375052#",
-    mobileMoneyStep2: "Step 2: Enter amount",
-    mobileMoneyStep3: "Step 3: Confirm payment",
-    mobileMoneyStep4: "Step 4: Send screenshot",
-    bronzeSponsor: "Bronze Sponsor",
-    silverSponsor: "Silver Sponsor",
-    goldSponsor: "Gold Sponsor",
-    sponsorshipLevel: "Sponsorship Level",
-    selectLevel: "Select Level",
-    applyForSponsorship: "Apply for Sponsorship",
+
+  signup: "Sign Up",
+  login: "Log In",
+  donate: "Donate",
+  optionalMessage: "Optional Message",
+  submitDonation: "Submit Donation",
+  donationDescription: "Support Umwero development",
+  contactUs: "Contact Us",
+  becomeSponsor: "Become a Sponsor",
+  mobileMoneyPayment: "Mobile Money Payment",
+  mobileMoneyDescription: "Pay using MTN Mobile Money",
+  mobileMoneyStep1: "Step 1: Dial *182*1*1*0786375052#",
+  mobileMoneyStep2: "Step 2: Enter amount",
+  mobileMoneyStep3: "Step 3: Confirm payment",
+  mobileMoneyStep4: "Step 4: Send screenshot",
+  bronzeSponsor: "Bronze Sponsor",
+  silverSponsor: "Silver Sponsor",
+  goldSponsor: "Gold Sponsor",
+  sponsorshipLevel: "Sponsorship Level",
+  selectLevel: "Select Level",
+  applyForSponsorship: "Apply for Sponsorship",
   rw: {
     // Navigation & Core
     settings: "Igenamiterere",
@@ -407,12 +407,12 @@ export const translations = {
     gamesAndQuizzes: "Imikino n'Ibizamini",
     welcome: "Murakaza neza",
     viewProfile: "Reba Umwirondoro",
-    
+
     // Languages
     english: "Icyongereza",
     kinyarwanda: "Ikinyarwanda",
     umwero: "Umwero",
-    
+
     // Main Navigation
     home: "Mu Bicumbi",
     learn: "Iga",
@@ -444,7 +444,7 @@ export const translations = {
     contactEmail: "Twandikire kuri Imeri",
     total: "Byose",
     umweroChat: "Ikiganiro cy'Umwero",
-    
+
     // Gallery Page (Kinyarwanda)
     umweroGallery: "Galeriya y'Umwero",
     searchPlaceholder: "Shakisha ibicuruzwa cyangwa ibikoresho...",
@@ -460,7 +460,7 @@ export const translations = {
     addToCart: "Kongera muri Karito",
     noProductsFound: "Nta bicuruzwa byabonetse",
     productDescription: "Ibicuruzwa by'Umwero bya nyacyo bifasha kurinda umuco nyarwanda no gukora ikoranabuhanga rya platform yo kwiga Umwero.",
-    
+
     // Footer Links
     about: "Ibyerekeye",
     contact: "Twandikire",
@@ -472,7 +472,7 @@ export const translations = {
     learningMaterials: "Ibikoresho byo Kwiga",
     supportUs: "Duterere Inkunga",
     cultureAndHistory: "Umuco n'Amateka",
-    
+
     // Culture & History Page (Kinyarwanda)
     overview: "Incamake",
     historyOfWriting: "Amateka y'Inyandiko",
@@ -493,8 +493,8 @@ export const translations = {
     conclusion: "Umwanzuro",
     umweroImportance: "Umwero uhagarariye ihuza hagati y'imigenzo n'ibihe bigezweho.",
     learnMoreUmwero: "Wige Byinshi kuri Umwero",
-    
-    
+
+
     // Home Page
     enterCircleOfKnowledge: "Injira mu Ruziga rw'Ubumenyi",
     whereEveryLetterTellsStory: "Aho Buri Nyuguti Ivuga Inkuru",
@@ -503,7 +503,7 @@ export const translations = {
     startLearning: "Tangira Kwiga",
     fundUruziga: "Tanga Inkunga kuri Uruziga",
     exploreCalendar: "Reba Kalendari",
-    
+
     // Features
     interactiveLessons: "Amasomo ashishikaje yo kwiga Umwero",
     exploreAncientCalendar: "Menya kalendari ya kera",
@@ -522,7 +522,7 @@ export const translations = {
     movementParticipationDescription: "Injira mu biga ibihumbi ku isi yose mu kubungabunga umuco w'Ikinyarwanda.",
     startLearningUmwero: "Tangira Kwiga Umwero",
     learnThroughGames: "Iga ukoresheje imikino",
-    
+
     // Cultural Content
     culturalInsights: "Ubumenyi bw'Umuco",
     didYouKnow: "Wari uzi ko?",
@@ -531,20 +531,20 @@ export const translations = {
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
     umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
-    
+
     // Umwero Movement
     umweroMovement: "Ihuriro ry'Umwero",
     joinUsInPreserving: "Dufashe kubungabunga umuco w'Ikinyarwanda",
     umweroMovementDescription: "Ihinduka ry'umuco ryo kubungabunga Ikinyarwanda",
     learnMoreAboutUmwero: "Menya Byinshi ku Mwero",
     videoTutorials: "Amasomo ya Video",
-    
+
     // Support Section
     supportOurMission: "Dufashe Kugera ku Ntego",
     helpUsPreserve: "Dufashe kubungabunga umuco w'Ikinyarwanda",
     yourContributionHelps: "Umusanzu wawe ufasha gutegura ibikoresho byo kwiga",
     donateNow: "Tanga Inkunga Ubu",
-    
+
     // Learning Section
     beginner: "Intangiriro",
     intermediate: "Hagati",
@@ -555,7 +555,7 @@ export const translations = {
     continueLesson: "Komeza Isomo",
     nextLesson: "Isomo Rikurikira",
     previousLesson: "Isomo Ryabanjirije",
-    
+
     // Lesson Titles
     introductionToUmweroCharacters: "Intangiriro y'Inyuguti z'Umwero",
     learnBasicShapesAndPrinciples: "Kwiga imiterere n'amahame y'ibanze",
@@ -573,7 +573,7 @@ export const translations = {
     practiceWritingSimpleSentences: "Kwiga kwandika interuro zoroshye",
     pronunciationGuide: "Uburyo bwo Kuvuga",
     learnCorrectPronunciation: "Kwiga kuvuga neza",
-    
+
     // Advanced Lessons
     advancedCharacterCombinations: "Guhuza Inyuguti mu Rwego Rwo Hejuru",
     learnToCombineCharacters: "Kwiga guhuza inyuguti",
@@ -584,7 +584,7 @@ export const translations = {
     umweroCalligraphy: "Ubuhanzi bw'Umwero",
     developHandwritingStyle: "Guteza imbere uburyo bwo kwandika",
     understandSymbolMeanings: "Gusobanukirwa ibisobanuro by'ibimenyetso",
-    
+
     // Learning Tools
     writtenCourses: "Amasomo Yanditse",
     practiceTools: "Ibikoresho byo Kwiga",
@@ -596,7 +596,7 @@ export const translations = {
     quizzes: "Ibizamini",
     testYourKnowledge: "Gerageza ubumenyi bwawe",
     openTool: "Fungura Igikoresho",
-    
+
     // Video Section
     watchIntroVideo: "Reba Video y'Intangiriro",
     watchNow: "Reba Ubu",
@@ -607,7 +607,7 @@ export const translations = {
     startUmweroJourney: "Tangira urugendo rw'Umwero",
     umweroBasicsPartTwo: "Ibanze ku Mwero - Igice cya Kabiri",
     continueUmweroLearning: "Iga Umwero",
-    
+
     // Dashboard
     yourProgress: "Iterambere Ryawe",
     searchLessons: "Shakisha amasomo...",
@@ -616,7 +616,7 @@ export const translations = {
     joinDiscussion: "Injira mu Biganiro",
     shareProgress: "Sangira Iterambere",
     scrollForMore: "Kanda hasi kugirango ubone ibindi",
-    
+
     // Progress & Stats
     lessonsCompleted: "Amasomo Yarangiye",
     currentLevel: "Urwego Rwawe",
@@ -624,7 +624,7 @@ export const translations = {
     learningStreak: "Iminsi Ukurikiranye",
     continueYourJourney: "Komeza Urugendo Rwawe",
     yourAchievements: "Ibyo Wageze kuri",
-    
+
     // Canvas Practice
     practiceArea: "Aho Wiga",
     drawCharacterBelow: "Andika inyuguti hepfo",
@@ -636,25 +636,25 @@ export const translations = {
     goodEnough: "Byiza! Inyuguti Ikurikira",
     yourWriting: "Icyo Wanditse",
     correctForm: "Uburyo Bukwiye",
-    
+
     // Completion Messages
     congratulations: "Amashongore!",
     characterCompleted: "Inyuguti Yarangiye!",
     lessonComplete: "Isomo Ryarangiye!",
     allVowelsCompleted: "Warangije inyajwi zose 5 z'Umwero!",
     continueToIntermediate: "Komeza ku Rwego Rwo Hagati",
-    
+
     // Error Messages
     accessDenied: "Ntabwo Wemerewe",
     pleaseLogIn: "Nyamuneka injira kugirango ubone ibipimo byawe",
     loading: "Gufungura...",
     loadingProgress: "Gufungura iterambere ryawe...",
-    
+
     // Miscellaneous
     days: "iminsi",
     minutes: "iminota",
     hours: "amasaha",
-    
+
     // Lesson Component - Vowel Lesson
     vowel: "Inyajwi",
     meaning: "Ibisobanuro",
@@ -686,7 +686,7 @@ export const translations = {
     drawExcellent: "Neza Cyane Sana! Inyuguti Yawe Ari Neza!",
     drawPerfect: "Byiza Cyane Sana! Huye N'izina!",
     comparisonFailed: "Gereranya Byanze. Nyamuneka Gerageza Obu.",
-    
+
     // Admin & Teacher Dashboard
     adminDashboard: "Ibipimo by'Umuyobozi",
     teacherDashboard: "Ibipimo by'Umwalimu",
@@ -787,7 +787,7 @@ export const translations = {
     translationToolsDesc: "Hindura hagati y'Umwero n'inyandiko za Latin",
     welcomeBack: "Murakaza neza",
     continueJourney: "Komeza urugendo rwawe rwo kwiga Umwero",
-    
+
     myProgress: "Iterambere Ryanjye",
     viewYourProgress: "Reba aho ugeze",
     continueLearn: "Iga",
@@ -826,33 +826,33 @@ export const translations = {
     sponsorshipLevel: "Urwego rw'Inkunga",
     selectLevel: "Hitamo Urwego",
     applyForSponsorship: "Saba Gutanga Inkunga",
-    
+
   },
-  
-    signup: "Iyandikishe",
-    login: "Injira",
-    donate: "Tanga",
-    optionalMessage: "Ubutumwa Butari Ngombwa",
-    submitDonation: "Ohereza Impano",
-    donationDescription: "Tanga inkunga",
-    contactUs: "Twandikire",
-    becomeSponsor: "Ba Umutanga Inkunga",
-    mobileMoneyPayment: "Kwishyura na Mobile Money",
-    mobileMoneyDescription: "Wishyure ukoresheje MTN Mobile Money",
-    mobileMoneyStep1: "Intambwe 1: Kanda *182*1*1*0786375052#",
-    mobileMoneyStep2: "Intambwe 2: Andika amafaranga",
-    mobileMoneyStep3: "Intambwe 3: Emeza kwishyura",
-    mobileMoneyStep4: "Intambwe 4: Ohereza ifoto",
-    bronzeSponsor: "Umutanga Inkunga wa Bronze",
-    silverSponsor: "Umutanga Inkunga wa Silver",
-    goldSponsor: "Umutanga Inkunga wa Gold",
-    sponsorshipLevel: "Urwego rw'Inkunga",
-    selectLevel: "Hitamo Urwego",
-    applyForSponsorship: "Saba Gutanga Inkunga",
+
+  signup: "Iyandikishe",
+  login: "Injira",
+  donate: "Tanga",
+  optionalMessage: "Ubutumwa Butari Ngombwa",
+  submitDonation: "Ohereza Impano",
+  donationDescription: "Tanga inkunga",
+  contactUs: "Twandikire",
+  becomeSponsor: "Ba Umutanga Inkunga",
+  mobileMoneyPayment: "Kwishyura na Mobile Money",
+  mobileMoneyDescription: "Wishyure ukoresheje MTN Mobile Money",
+  mobileMoneyStep1: "Intambwe 1: Kanda *182*1*1*0786375052#",
+  mobileMoneyStep2: "Intambwe 2: Andika amafaranga",
+  mobileMoneyStep3: "Intambwe 3: Emeza kwishyura",
+  mobileMoneyStep4: "Intambwe 4: Ohereza ifoto",
+  bronzeSponsor: "Umutanga Inkunga wa Bronze",
+  silverSponsor: "Umutanga Inkunga wa Silver",
+  goldSponsor: "Umutanga Inkunga wa Gold",
+  sponsorshipLevel: "Urwego rw'Inkunga",
+  selectLevel: "Hitamo Urwego",
+  applyForSponsorship: "Saba Gutanga Inkunga",
   um: {
     // NOTE: These are Kinyarwanda translations that will be converted to Umwero font
     // The useTranslation hook will automatically convert them
-    
+
     // Navigation & Core
     settings: "Igenamiterere",
     language: "Ururimi",
@@ -863,12 +863,12 @@ export const translations = {
     gamesAndQuizzes: "Imikino n'Ibizamini",
     welcome: "Murakaza neza",
     viewProfile: "Reba Umwirondoro",
-    
+
     // Languages
     english: "Icyongereza",
     kinyarwanda: "Ikinyarwanda",
-    umwero: "Umwero",
-    
+    umwero: ":ME|R{",
+
     // Main Navigation
     home: "Mu Bicumbi",
     learn: "Iga",
@@ -880,7 +880,7 @@ export const translations = {
     search: "Gushakisha...",
     community: "Umuryango",
     dashboard: "Ibipimo",
-    
+
     cart: "Igitebo",
     viewCart: "Reba Igitebo",
     cartEmpty: "Igitebo kiri ubusa",
@@ -901,7 +901,7 @@ export const translations = {
     contactEmail: "Twandikire kuri Imeri",
     total: "Byose",
     umweroChat: "Ikiganiro cy'Umwero",
-    
+
     // Gallery Page (Kinyarwanda)
     umweroGallery: "Galeriya y'Umwero",
     searchPlaceholder: "Shakisha ibicuruzwa cyangwa ibikoresho...",
@@ -918,7 +918,7 @@ export const translations = {
     addToCart: "Kongera muri Karito",
     noProductsFound: "Nta bicuruzwa byabonetse",
     productDescription: "Ibicuruzwa by'Umwero bya nyacyo bifasha kurinda umuco nyarwanda no gukora ikoranabuhanga rya platform yo kwiga Umwero.",
-    
+
     // Footer Links
     about: "Ibyerekeye",
     contact: "Twandikire",
@@ -930,8 +930,8 @@ export const translations = {
     learningMaterials: "Ibikoresho byo Kwiga",
     supportUs: "Duterere Inkunga",
     cultureAndHistory: "Umuco n'Amateka",
-    
-    
+
+
     // Culture & History Page (Umwero)
     overview: "Incamake",
     historyOfWriting: "Amateka y'Inyandiko",
@@ -952,8 +952,8 @@ export const translations = {
     umweroImportance: "Umwero uhagarariye ihuza hagati y'imigenzo n'ibihe bigezweho.",
     learnMoreUmwero: "Wige Byinshi kuri Umwero",
     // Home Page
-    
-    
+
+
     enterCircleOfKnowledge: "Injira mu Ruziga rw'Ubumenyi",
     whereEveryLetterTellsStory: "Aho Buri Nyuguti Ivuga Inkuru",
     coreFeatures: "Ibintu by'Ingenzi",
@@ -961,13 +961,13 @@ export const translations = {
     startLearning: "Tangira Kwiga",
     fundUruziga: "Tanga Inkunga kuri Uruziga",
     exploreCalendar: "Reba Kalendari",
-    
+
     // Features
     interactiveLessons: "Amasomo ashishikaje yo kwiga Umwero",
     exploreAncientCalendar: "Menya kalendari ya kera",
     accessTools: "Koresha ibikoresho byo kwiga",
     learnThroughGames: "Iga ukoresheje imikino",
-    
+
     // Cultural Content
     culturalInsights: "Ubumenyi bw'Umuco",
     didYouKnow: "Wari uzi ko",
@@ -976,7 +976,7 @@ export const translations = {
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
     umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
-    
+
     // Umwero Movement
     umweroMovement: "Ihuriro ry'Umwero",
     joinUsInPreserving: "Dufashe kubungabunga umuco w'Ikinyarwanda",
@@ -996,13 +996,13 @@ export const translations = {
     umweroMovementDescription: "Ihinduka ry'umuco ryo kubungabunga Ikinyarwanda",
     learnMoreAboutUmwero: "Menya Byinshi ku Mwero",
     videoTutorials: "Amasomo ya Video",
-    
+
     // Support Section
     supportOurMission: "Dufashe Kugera ku Ntego",
     helpUsPreserve: "Dufashe kubungabunga umuco w'Ikinyarwanda",
     yourContributionHelps: "Umusanzu wawe ufasha gutegura ibikoresho byo kwiga",
     donateNow: "Tanga Inkunga Ubu",
-    
+
     // Learning Section
     beginner: "Intangiriro",
     intermediate: "Hagati",
@@ -1013,7 +1013,7 @@ export const translations = {
     continueLesson: "Komeza Isomo",
     nextLesson: "Isomo Rikurikira",
     previousLesson: "Isomo Ryabanjirije",
-    
+
     // Lesson Titles
     introductionToUmweroCharacters: "Intangiriro y'Inyuguti z'Umwero",
     learnBasicShapesAndPrinciples: "Kwiga imiterere n'amahame y'ibanze",
@@ -1031,7 +1031,7 @@ export const translations = {
     practiceWritingSimpleSentences: "Kwiga kwandika interuro zoroshye",
     pronunciationGuide: "Uburyo bwo Kuvuga",
     learnCorrectPronunciation: "Kwiga kuvuga neza",
-    
+
     // Advanced Lessons
     advancedCharacterCombinations: "Guhuza Inyuguti mu Rwego Rwo Hejuru",
     learnToCombineCharacters: "Kwiga guhuza inyuguti",
@@ -1042,7 +1042,7 @@ export const translations = {
     umweroCalligraphy: "Ubuhanzi bw'Umwero",
     developHandwritingStyle: "Guteza imbere uburyo bwo kwandika",
     understandSymbolMeanings: "Gusobanukirwa ibisobanuro by'ibimenyetso",
-    
+
     // Learning Tools
     writtenCourses: "Amasomo Yanditse",
     practiceTools: "Ibikoresho byo Kwiga",
@@ -1054,7 +1054,7 @@ export const translations = {
     quizzes: "Ibizamini",
     testYourKnowledge: "Gerageza ubumenyi bwawe",
     openTool: "Fungura Igikoresho",
-    
+
     // Video Section
     watchIntroVideo: "Reba Video y'Intangiriro",
     watchNow: "Reba Ubu",
@@ -1065,7 +1065,7 @@ export const translations = {
     startUmweroJourney: "Tangira urugendo rw'Umwero",
     umweroBasicsPartTwo: "Ibanze ku Mwero - Igice cya Kabiri",
     continueUmweroLearning: "Iga Umwero",
-    
+
     // Dashboard
     yourProgress: "Iterambere Ryawe",
     searchLessons: "Shakisha amasomo",
@@ -1074,7 +1074,7 @@ export const translations = {
     joinDiscussion: "Injira mu Biganiro",
     shareProgress: "Sangira Iterambere",
     scrollForMore: "Kanda hasi kugirango ubone ibindi",
-    
+
     // Progress & Stats
     lessonsCompleted: "Amasomo Yarangiye",
     currentLevel: "Urwego Rwawe",
@@ -1082,7 +1082,7 @@ export const translations = {
     learningStreak: "Iminsi Ukurikiranye",
     continueYourJourney: "Komeza Urugendo Rwawe",
     yourAchievements: "Ibyo Wageze kuri",
-    
+
     // Canvas Practice
     practiceArea: "Aho Wiga",
     drawCharacterBelow: "Andika inyuguti hepfo",
@@ -1094,25 +1094,25 @@ export const translations = {
     goodEnough: "Byiza! Inyuguti Ikurikira",
     yourWriting: "Icyo Wanditse",
     correctForm: "Uburyo Bukwiye",
-    
+
     // Completion Messages
     congratulations: "Amashongore!",
     characterCompleted: "Inyuguti Yarangiye!",
     lessonComplete: "Isomo Ryarangiye!",
     allVowelsCompleted: "Warangije inyajwi zose 5 z'Umwero!",
     continueToIntermediate: "Komeza ku Rwego Rwo Hagati",
-    
+
     // Error Messages
     accessDenied: "Ntabwo Wemerewe",
     pleaseLogIn: "Nyamuneka injira kugirango ubone ibipimo byawe",
     loading: "Gufungura",
     loadingProgress: "Gufungura iterambere ryawe",
-    
+
     // Miscellaneous
     days: "iminsi",
     minutes: "iminota",
     hours: "amasaha",
-    
+
     // Lesson Component - Vowel Lesson
     vowel: "Inyajwi",
     meaning: "Ibisobanuro",
@@ -1144,7 +1144,7 @@ export const translations = {
     drawExcellent: "Neza Cyane Sana! Inyuguti Yawe Ari Neza!",
     drawPerfect: "Byiza Cyane Sana! Huye N'izina!",
     comparisonFailed: "Gereranya Byanze. Nyamuneka Gerageza Obu.",
-    
+
     // Admin & Teacher Dashboard
     adminDashboard: "Ibipimo by'Umuyobozi",
     teacherDashboard: "Ibipimo by'Umwalimu",
@@ -1231,10 +1231,10 @@ export const translations = {
     roleChangedSuccess: "Inshingano zahinduwe neza!",
     errorOccurred: "Habaye ikosa",
     tryAgainLater: "Nyamuneka gerageza nyuma",
-    
+
     // Miscellaneous
     allRightsReserved: "Uburenganzira bwose burarinzwe",
-    
+
     // Home Page - Additional (Umwero - will be converted from Kinyarwanda)
     welcomeToUmwero: "Murakaza neza kuri Urubuga rwo Kwiga Umwero",
     joinCommunity: "Injira mu muryango wacu kugirango wige Umwero kandi ubungabunga umuco w'Ikinyarwanda",

@@ -239,13 +239,19 @@ const UMWERO_MAP: { [key: string]: string } = {
   // Umweero numerals from 100 to hundred Decillions need to be looped for better  and shortter code
   //I will do it in next update, even these are more much lines
 
-  // Compound consonants (lowercase variants)
-  'mb': 'A', 'Mb': 'A', 
-  'nc': 'CC', 'Nc': 'CC',
-  'nd': 'ND', 'Nd': 'ND',
-  'nk': 'E', 'Nk': 'E',
-  'sh': 'HH', 'Sh': 'HH',
-  'pf': 'I', 'Pf': 'I',
+  // Space and punctuation
+  ' ': ' ',
+  '.': '.',
+  ',': ',',
+  '!': '!',
+  '?': '?',
+  ':': ':',
+  ';': ';',
+  '-': '-',
+  "'": "'",
+  '"': '"',
+  '(': '(',
+  ')': ')',
 }
 
 export function convertToUmwero(text: string): string {

@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -458,6 +459,9 @@ model UserAttempt {
   aiScore         Int?     // 0-100
   aiMetrics       Json?    // Detailed metrics
   feedback        String?  @db.Text
+  confidenceScore Float?   // AI confidence level 0-1
+  evaluationType  String?  // AI, VECTOR, HYBRID
+  uploadedImageUrl String? // Original uploaded image
   
   // Performance
   timeSpent       Int      @default(0) // seconds
@@ -600,6 +604,7 @@ model User {
   certificates   Certificate[]
   comments       Comment[]
   discussions    Discussion[]
+  discussionLikes DiscussionLike[]
   donations      Donation[]
   orders         Order[]
   drawings       UserDrawing[]
@@ -667,6 +672,7 @@ model Discussion {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   comments  Comment[]
+  likes     DiscussionLike[]
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -674,6 +680,21 @@ model Discussion {
   @@index([createdAt])
   @@index([script])
   @@map("discussions")
+}
+
+model DiscussionLike {
+  id           String     @id @default(cuid())
+  userId       String
+  discussionId String
+  createdAt    DateTime   @default(now())
+  
+  discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, discussionId])
+  @@index([userId])
+  @@index([discussionId])
+  @@map("discussion_likes")
 }
 
 model Comment {

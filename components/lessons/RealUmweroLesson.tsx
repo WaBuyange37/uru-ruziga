@@ -274,8 +274,8 @@ const VOWEL_LESSON = [
     meaning: 'Represents water and flow',
     culturalNote: 'Water symbolizes adaptability and continuous life force',
     examples: [
-      { umwero: '}A}', latin: 'ibi', meaning: 'these things' },
-      { umwero: '}N}', latin: 'ini', meaning: 'liver' },
+      { umwero: '}B}', latin: 'ibi', meaning: 'these things' },
+      { umwero: 'N}N}', latin: 'nini', meaning: 'big' },
     ],
     strokeGuide: [
       'Begin with a curved stroke',

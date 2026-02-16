@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../contexts/AuthContext'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,9 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import Link from 'next/link'
 import { CircleIcon, UserPlus, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
-  const { register } = useAuth()
+  const searchParams = useSearchParams()
+  const { register, isAuthenticated } = useAuth()
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -24,6 +25,14 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      const redirect = searchParams?.get('redirect') || '/dashboard'
+      router.push(redirect)
+    }
+  }, [isAuthenticated, router, searchParams])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -45,11 +54,19 @@ export default function SignupPage() {
       return
     }
 
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      return
+    }
+
     setLoading(true)
 
     try {
       await register(formData.fullName, formData.username, formData.email, formData.password)
-      router.push('/dashboard')
+      // Redirect after successful registration
+      const redirect = searchParams?.get('redirect') || '/dashboard'
+      router.push(redirect)
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.')
     } finally {
@@ -87,6 +104,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 placeholder="Enter your full name"
                 required
+                autoComplete="name"
                 className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
@@ -103,6 +121,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 placeholder="Choose a unique username"
                 required
+                autoComplete="username"
                 className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
               <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
@@ -122,6 +141,7 @@ export default function SignupPage() {
                 onChange={handleChange}
                 placeholder="your.email@example.com"
                 required
+                autoComplete="email"
                 className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
@@ -139,6 +159,7 @@ export default function SignupPage() {
                   onChange={handleChange}
                   placeholder="Create a strong password"
                   required
+                  autoComplete="new-password"
                   className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
@@ -169,6 +190,7 @@ export default function SignupPage() {
                   onChange={handleChange}
                   placeholder="Re-enter your password"
                   required
+                  autoComplete="new-password"
                   className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
@@ -227,5 +249,17 @@ export default function SignupPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E] p-3 sm:p-4 py-8">
+        <div className="h-12 w-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   )
 }

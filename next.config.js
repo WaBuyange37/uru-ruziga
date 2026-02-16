@@ -6,7 +6,7 @@ const nextConfig = {
   
   // Bypass TypeScript errors during build (remove once all translation keys are synced)
   typescript: {
-    ignoreBuildErrors: true,
+    // ignoreBuildErrors: true, // Enabled strict checking
   },
 
   // Ensure custom font files are served with correct headers

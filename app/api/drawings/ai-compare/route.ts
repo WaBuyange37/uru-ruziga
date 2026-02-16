@@ -9,26 +9,25 @@ interface ComparisonRequest {
 
 interface AIResponse {
   score: number;
+  shapeAccuracy: number;
+  strokeDirection: number;
+  proportionAccuracy: number;
   feedback: string;
+  improvementTips: string[];
   isCorrect: boolean;
-  details: {
-    shapeMatch: number;
-    strokeQuality: number;
-    proportions: number;
-    overallSimilarity: number;
-  };
+  confidence: number;
 }
 
 interface ComparisonResponse {
   score: number;
+  shapeAccuracy: number;
+  strokeDirection: number;
+  proportionAccuracy: number;
   feedback: string;
+  improvementTips: string[];
   isCorrect: boolean;
-  details: {
-    shapeMatch: number;
-    strokeQuality: number;
-    proportions: number;
-    overallSimilarity: number;
-  };
+  confidence: number;
+  evaluationType: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -52,42 +51,67 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create comparison prompt
-    const comparisonPrompt = `You are an expert at evaluating handwritten character drawings, especially for the Umwero writing system.
+    // Create enhanced evaluation prompt
+    const evaluationPrompt = `You are an expert Umwero writing instructor with deep understanding of Rwandan cultural heritage and the revolutionary Umwero script created by Kwizera Mugisha.
 
-Your task is to compare two images:
-1. The LEFT image shows the user's handwritten attempt at drawing the Umwero character for "${vowel}"
-2. The RIGHT image shows the correct reference form of the Umwero character
+Your task is to evaluate a student's handwritten attempt at drawing an Umwero character with human-like visual reasoning and cultural encouragement.
 
-Analyze the user's drawing against the reference and provide:
-1. A numerical score from 0-100 where:
-   - 0-20: Very poor match (incomplete, missing strokes, wrong shape)
-   - 21-40: Poor match (basic shape present but missing details or proportions off)
-   - 41-60: Fair match (recognizable but needs refinement, some strokes misplaced)
-   - 61-75: Good match (close to reference, minor differences in stroke weight or spacing)
-   - 76-85: Very good match (nearly perfect, only tiny imperfections)
-   - 86-100: Excellent match (nearly identical to reference)
+IMAGES PROVIDED:
+- LEFT: Student's handwritten attempt
+- RIGHT: Reference character for "${vowel}" (Umwero: ${umweroChar})
 
-2. Specific feedback on:
-   - Shape Match (how well the overall shape matches): 0-100
-   - Stroke Quality (line smoothness, weight consistency): 0-100
-   - Proportions (relative sizing of components): 0-100
-   - Overall Similarity: 0-100
+EVALUATION CRITERIA:
+1. **Shape Accuracy** (0-100): How closely the overall form matches the reference
+2. **Stroke Direction** (0-100): Correctness of stroke directions and order
+3. **Proportion Accuracy** (0-100): Proper sizing and spatial relationships
+4. **Overall Score** (0-100): Weighted combination of all factors
 
-3. Constructive feedback on what the user did well and what to improve
+SCORING GUIDELINES:
+- 0-10: Just a dot, empty canvas, or completely unrelated marks
+- 11-25: Basic attempt but missing fundamental structure
+- 26-40: Recognizable effort but major structural issues
+- 41-60: Getting closer - basic shape present but needs refinement
+- 61-75: Good attempt - minor issues with proportions or stroke quality
+- 76-85: Very good - nearly correct with small imperfections
+- 86-95: Excellent - almost perfect match to reference
+- 96-100: Perfect - indistinguishable from reference
 
-Respond ONLY with valid JSON in this exact format:
+CULTURAL ENCOURAGEMENT:
+- Connect learning to Rwandan cultural values
+- Mention the significance of preserving Kinyarwanda through Umwero
+- Encourage persistence as part of the cultural renaissance
+- Reference Kwizera Mugisha's vision when appropriate
+
+ANALYSIS APPROACH:
+1. First detect if the user actually drew something meaningful
+2. Analyze the structural components step by step
+3. Compare stroke directions and flow
+4. Evaluate proportions and spatial relationships
+5. Provide specific, actionable feedback
+6. Include culturally motivating encouragement
+
+RESPOND ONLY with valid JSON in this exact format:
 {
   "score": <number 0-100>,
-  "feedback": "<detailed feedback string>",
+  "shapeAccuracy": <number 0-100>,
+  "strokeDirection": <number 0-100>,
+  "proportionAccuracy": <number 0-100>,
+  "feedback": "<detailed culturally-aware feedback>",
+  "improvementTips": [
+    "<specific tip 1>",
+    "<specific tip 2>",
+    "<specific tip 3>"
+  ],
   "isCorrect": <true if score >= 75, false otherwise>,
-  "details": {
-    "shapeMatch": <number 0-100>,
-    "strokeQuality": <number 0-100>,
-    "proportions": <number 0-100>,
-    "overallSimilarity": <number 0-100>
-  }
-}`;
+  "confidence": <number 0-1 representing evaluation certainty>
+}
+
+IMPORTANT: 
+- If the drawing is just a dot or nearly empty, score must be below 10
+- Use visual similarity reasoning, not pattern matching
+- Provide human-like analysis that shows understanding of the learning process
+- Include at least 3 specific improvement tips
+- Make feedback encouraging and culturally relevant`;
 
     // Call Claude API with vision
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -106,7 +130,7 @@ Respond ONLY with valid JSON in this exact format:
             content: [
               {
                 type: 'text',
-                text: comparisonPrompt,
+                text: evaluationPrompt,
               },
               {
                 type: 'text',
@@ -171,9 +195,14 @@ Respond ONLY with valid JSON in this exact format:
     const result: AIResponse = JSON.parse(jsonMatch[0]);
     const comparisonResult: ComparisonResponse = {
       score: result.score,
+      shapeAccuracy: result.shapeAccuracy,
+      strokeDirection: result.strokeDirection,
+      proportionAccuracy: result.proportionAccuracy,
       feedback: result.feedback,
+      improvementTips: result.improvementTips,
       isCorrect: result.isCorrect,
-      details: result.details,
+      confidence: result.confidence,
+      evaluationType: 'AI'
     };
 
     return NextResponse.json(comparisonResult);

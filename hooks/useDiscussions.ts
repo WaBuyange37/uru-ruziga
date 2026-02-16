@@ -50,16 +50,24 @@ export function useDiscussions() {
       setLoading(true)
       setError(null)
       
+      console.log('🔍 Fetching discussions from /api/discussions...')
       const response = await fetch('/api/discussions')
       
+      console.log('📡 Response status:', response.status, response.statusText)
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch discussions')
+        throw new Error(`Failed to fetch discussions: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log('✅ Discussions fetched successfully:', {
+        count: data.discussions?.length || 0,
+        discussions: data.discussions
+      })
+      
       setDiscussions(data.discussions || [])
     } catch (err: any) {
-      console.error('Fetch discussions error:', err)
+      console.error('❌ Fetch discussions error:', err)
       setError(err.message)
     } finally {
       setLoading(false)

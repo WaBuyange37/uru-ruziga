@@ -9,7 +9,6 @@ import { Badge } from "../../components/ui/badge"
 import { useTranslation } from "../../hooks/useTranslation"
 import { 
   Send, 
-  Download, 
   Share2, 
   Camera, 
   Twitter, 
