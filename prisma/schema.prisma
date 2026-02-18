@@ -294,6 +294,7 @@ enum LessonModule {
 enum LessonType {
   VOWEL
   CONSONANT
+  LIGATURE
   WORD
   SENTENCE
   GRAMMAR
@@ -452,8 +453,14 @@ model UserAttempt {
   
   // Attempt Data
   attemptType     AttemptType
-  drawingData     String?  @db.Text // Base64 image
+  drawingData     String?  @db.Text // Base64 image (deprecated - use bucketUrls)
   answer          Json?    // For quiz/assessment
+  
+  // Bucket Storage URLs (NEW - replaces single image fields)
+  bucketUrls      Json?    // { handwriting: "url", canvas: "url", reference: "url" }
+  handwritingUrl  String?  // Direct handwriting image URL from bucket
+  canvasUrl       String?  // Canvas drawing URL from bucket
+  referenceUrl    String?  // Reference character image URL
   
   // AI Evaluation
   aiScore         Int?     // 0-100
@@ -461,7 +468,7 @@ model UserAttempt {
   feedback        String?  @db.Text
   confidenceScore Float?   // AI confidence level 0-1
   evaluationType  String?  // AI, VECTOR, HYBRID
-  uploadedImageUrl String? // Original uploaded image
+  uploadedImageUrl String? // Original uploaded image (legacy)
   
   // Performance
   timeSpent       Int      @default(0) // seconds
@@ -614,6 +621,11 @@ model User {
   chatMessages   ChatMessage[]
   trainingData   TrainingData[]
   cart           Cart?
+  
+  // NEW - Enhanced engagement relations
+  commentLikes     CommentLike[]     // Likes on discussion comments
+  postCommentLikes PostCommentLike[] // Likes on post comments
+  mediaFiles       MediaFile[]       // User's uploaded media files
 
   @@index([email])
   @@index([mobileNumber])
@@ -665,10 +677,21 @@ model Discussion {
   content   String    @db.Text // UTF-8, supports Umwero + Latin
   script    String    @default("latin") // "latin" | "umwero" | "mixed"
   category  String?
+  
+  // Enhanced Media Support (NEW)
   mediaUrls String[]  @default([]) // Supabase URLs for media
+  mediaTypes String[] @default([]) // ["image", "video", "audio"] - corresponds to mediaUrls
+  mediaMetadata Json? // Additional metadata for media files
+  
+  // Legacy fields
   isPinned  Boolean   @default(false)
   views     Int       @default(0)
   likesCount Int      @default(0)
+  
+  // Enhanced engagement
+  commentsCount Int   @default(0)
+  sharesCount   Int   @default(0)
+  
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   comments  Comment[]
@@ -679,6 +702,7 @@ model Discussion {
   @@index([category])
   @@index([createdAt])
   @@index([script])
+  @@index([isPinned])
   @@map("discussions")
 }
 
@@ -703,14 +727,27 @@ model Comment {
   discussionId String
   content      String    @db.Text // UTF-8, supports Umwero + Latin
   script       String    @default("latin") // "latin" | "umwero" | "mixed"
+  
+  // Enhanced Media Support for Comments (NEW)
+  mediaUrls    String[]  @default([]) // Supabase URLs for media in comments
+  mediaTypes   String[]  @default([]) // ["image", "video", "audio"]
+  mediaMetadata Json?    // Additional metadata for comment media
+  
+  // Engagement
+  likesCount   Int       @default(0)
+  
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
+  
+  // Relations
   discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
   user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes        CommentLike[] // NEW - comment likes
 
   @@index([userId])
   @@index([discussionId])
   @@index([script])
+  @@index([createdAt])
   @@map("comments")
 }
 
@@ -798,7 +835,7 @@ model UserDrawing {
   @@map("user_drawings")
 }
 
-// Community Posts (Twitter-like)
+// Community Posts (Twitter-like) - Enhanced
 model CommunityPost {
   id           String        @id @default(cuid())
   userId       String
@@ -806,17 +843,34 @@ model CommunityPost {
   language     String        @default("en") // en, rw, um
   latinText    String?       // Original Latin text
   umweroText   String?       // Translated Umwero text
-  imageUrl     String?       // Generated PNG image URL
+  
+  // Enhanced Media Support (IMPROVED)
+  imageUrl     String?       // Legacy single image URL (deprecated)
+  mediaUrls    String[]      // Multiple media URLs (images, videos, etc.)
+  mediaTypes   String[]      @default([]) // ["image", "video", "audio"] - corresponds to mediaUrls
+  mediaMetadata Json?        // { thumbnails: [], durations: [], sizes: [] }
+  
+  // Post Types & Features
   isChallenge  Boolean       @default(false)
   challengeType String?      // e.g., "translation", "writing", "quiz"
+  postType     PostType      @default(TEXT) // NEW - categorize posts
+  
+  // Engagement Metrics
   likesCount   Int           @default(0)
   commentsCount Int          @default(0)
   sharesCount  Int           @default(0)
   views        Int           @default(0)
+  
+  // Visibility & Moderation
   isPinned     Boolean       @default(false)
   isPublic     Boolean       @default(true)
+  isFeatured   Boolean       @default(false) // NEW - featured posts
+  
+  // Timestamps
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
+  
+  // Relations
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   likes        PostLike[]
   comments     PostComment[]
@@ -825,8 +879,23 @@ model CommunityPost {
   @@index([createdAt])
   @@index([isChallenge])
   @@index([isPinned])
+  @@index([isFeatured])
   @@index([language])
+  @@index([postType])
   @@map("community_posts")
+}
+
+// NEW - Post Type Enum
+enum PostType {
+  TEXT          // Regular text post
+  IMAGE         // Image-focused post
+  VIDEO         // Video post
+  AUDIO         // Audio post
+  CHALLENGE     // Learning challenge
+  TRANSLATION   // Translation exercise
+  HANDWRITING   // Handwriting practice share
+  CULTURAL      // Cultural content
+  ANNOUNCEMENT  // Official announcements
 }
 
 model PostLike {
@@ -851,16 +920,132 @@ model PostComment {
   language  String        @default("en") // en, rw, um
   latinText String?
   umweroText String?
+  
+  // Enhanced Media Support for Post Comments (NEW)
+  mediaUrls    String[]  @default([]) // Media in post comments
+  mediaTypes   String[]  @default([]) // ["image", "video", "audio"]
+  mediaMetadata Json?    // Additional metadata
+  
+  // Engagement
+  likesCount   Int       @default(0)
+  
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  
+  // Relations
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   post      CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  likes     PostCommentLike[] // NEW - post comment likes
 
   @@index([userId])
   @@index([postId])
   @@index([createdAt])
   @@index([language])
   @@map("post_comments")
+}
+
+// NEW - Comment Likes for Discussions
+model CommentLike {
+  id        String   @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([commentId])
+  @@map("comment_likes")
+}
+
+// NEW - Post Comment Likes for Community Posts
+model PostCommentLike {
+  id        String      @id @default(cuid())
+  userId    String
+  commentId String
+  createdAt DateTime    @default(now())
+  
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@index([commentId])
+  @@map("post_comment_likes")
+}
+
+// NEW - Comprehensive Media Management
+model MediaFile {
+  id            String      @id @default(cuid())
+  userId        String      // Owner of the media
+  
+  // File Information
+  filename      String      // Original filename
+  bucketPath    String      // Full path in Supabase bucket
+  publicUrl     String      // Public accessible URL
+  mimeType      String      // image/jpeg, video/mp4, etc.
+  fileSize      Int         // Size in bytes
+  
+  // Media Type & Category
+  mediaType     MediaType   // IMAGE, VIDEO, AUDIO, DOCUMENT
+  category      MediaCategory // HANDWRITING, CANVAS, PROFILE, POST, DISCUSSION, etc.
+  
+  // Metadata
+  metadata      Json?       // { width, height, duration, etc. }
+  thumbnailUrl  String?     // Thumbnail for videos/images
+  
+  // Usage Context
+  entityType    String?     // "user_attempt", "community_post", "discussion", etc.
+  entityId      String?     // ID of the related entity
+  
+  // Processing Status
+  status        MediaStatus @default(UPLOADED)
+  processedAt   DateTime?
+  
+  // System
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([mediaType, category])
+  @@index([entityType, entityId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("media_files")
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  AUDIO
+  DOCUMENT
+}
+
+enum MediaCategory {
+  HANDWRITING     // User handwriting samples
+  CANVAS          // Canvas drawings
+  REFERENCE       // Reference character images
+  PROFILE         // Profile pictures/avatars
+  POST            // Community post media
+  DISCUSSION      // Discussion media
+  COMMENT         // Comment media
+  LESSON          // Lesson-related media
+  CULTURAL        // Cultural context media
+  SYSTEM          // System-generated media
+}
+
+enum MediaStatus {
+  UPLOADING       // Currently being uploaded
+  UPLOADED        // Successfully uploaded
+  PROCESSING      // Being processed (thumbnails, etc.)
+  PROCESSED       // Processing complete
+  FAILED          // Upload/processing failed
+  DELETED         // Marked for deletion
 }
 
 // Chat Messages (for Umwero Chat)

@@ -40,11 +40,6 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
     backgroundColor: '#FFFFFF'
   })
 
-  const handleStartPractice = () => {
-    onModeChange('drawing')
-    clearCanvas()
-  }
-
   const handleEvaluate = async () => {
     const drawingData = getCanvasDataURL()
     if (!drawingData) return
@@ -176,160 +171,123 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
   }
 
   return (
-    <div className="sticky top-[200px]">
+    <div className="space-y-4">
       <Card className="border-2 border-[#8B4513] shadow-lg">
         <CardContent className="p-6">
-          {/* Idle State */}
-          {practiceMode === 'idle' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div 
-                  className="text-[120px] leading-none mb-4"
-                  style={{ fontFamily: "'UMWEROalpha', serif" }}
-                >
-                  {character.umwero}
-                </div>
-                <h3 className="text-xl font-semibold text-[#8B4513] mb-2">
-                  Ready to Practice?
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Draw the character on the canvas and get AI feedback
-                </p>
-                <Button
-                  onClick={handleStartPractice}
-                  size="lg"
-                  className="w-full bg-[#8B4513] hover:bg-[#A0522D] gap-2"
-                >
-                  <Sparkles className="h-5 w-5" />
-                  Start Practice
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Drawing State */}
-          {practiceMode === 'drawing' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-[#8B4513]">Practice Canvas</h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowReference(!showReference)}
-                    className="gap-2"
-                  >
-                    {showReference ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    {showReference ? 'Hide' : 'Show'} Guide
-                  </Button>
-                </div>
-              </div>
-
-              {/* Canvas Container */}
-              <div className="relative bg-white rounded-lg border-2 border-[#8B4513] overflow-hidden touch-none">
-                {/* Reference Character (Ghost Guide) */}
-                {showReference && (
-                  <div 
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-10"
-                    style={{ fontFamily: "'UMWEROalpha', serif" }}
-                  >
-                    <div className="text-[280px] leading-none">
-                      {character.umwero}
-                    </div>
-                  </div>
-                )}
-
-                {/* Drawing Canvas */}
-                <canvas
-                  ref={canvasRef}
-                  width={500}
-                  height={500}
-                  className="w-full cursor-crosshair touch-none"
-                  style={{ 
-                    maxHeight: '500px',
-                    touchAction: 'none' // Prevent scroll on touch
-                  }}
-                />
-              </div>
-
-              {/* Stroke Direction Reference Below Canvas */}
-              {character.strokeImageUrl && (
-                <div className="bg-[#FFF8DC] rounded-lg border-2 border-[#D2691E] p-4">
-                  <p className="text-sm font-semibold text-[#8B4513] mb-2">Stroke Direction Reference:</p>
-                  <div className="relative w-full aspect-square bg-white rounded overflow-hidden">
-                    <Image
-                      src={character.strokeImageUrl}
-                      alt="Stroke direction guide"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Controls */}
-              <div className="flex gap-2">
-                <Button
-                  onClick={undoStroke}
-                  variant="outline"
-                  disabled={strokes.length === 0}
-                  className="flex-1"
-                >
-                  Undo
-                </Button>
-                <Button
-                  onClick={clearCanvas}
-                  variant="outline"
-                  className="flex-1 gap-2"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                  Clear
-                </Button>
-              </div>
-
+          {/* Practice Header */}
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-xl font-semibold text-[#8B4513]">Practice Canvas</h3>
+            <div className="flex items-center gap-2">
               <Button
-                onClick={handleEvaluate}
-                disabled={strokes.length === 0}
-                className="w-full bg-green-600 hover:bg-green-700 gap-2"
-                size="lg"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowReference(!showReference)}
+                className="gap-2"
               >
-                <CheckCircle2 className="h-5 w-5" />
-                Evaluate My Drawing
+                {showReference ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showReference ? 'Hide' : 'Show'} Guide
               </Button>
             </div>
+          </div>
+
+          {/* Canvas Container */}
+          <div className="relative bg-white rounded-lg border-2 border-[#8B4513] overflow-hidden touch-none mb-4">
+            {/* Reference Character (Ghost Guide) */}
+            {showReference && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-10"
+                style={{ fontFamily: "'UMWEROalpha', serif" }}
+              >
+                <div className="text-[280px] leading-none">
+                  {character.umwero}
+                </div>
+              </div>
+            )}
+
+            {/* Drawing Canvas */}
+            <canvas
+              ref={canvasRef}
+              width={500}
+              height={500}
+              className="w-full cursor-crosshair touch-none select-none"
+              style={{ 
+                maxHeight: '400px',
+                touchAction: 'none',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none',
+                WebkitTouchCallout: 'none',
+                WebkitTapHighlightColor: 'transparent'
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+            />
+          </div>
+
+          {/* Canvas Controls */}
+          <div className="flex gap-2 mb-4">
+            <Button
+              onClick={undoStroke}
+              variant="outline"
+              disabled={strokes.length === 0}
+              className="flex-1"
+            >
+              Undo
+            </Button>
+            <Button
+              onClick={clearCanvas}
+              variant="outline"
+              className="flex-1 gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Clear
+            </Button>
+          </div>
+
+          {/* Evaluation Button */}
+          {practiceMode !== 'evaluating' && practiceMode !== 'complete' && (
+            <Button
+              onClick={handleEvaluate}
+              disabled={strokes.length === 0}
+              className="w-full bg-green-600 hover:bg-green-700 gap-2"
+              size="lg"
+            >
+              <CheckCircle2 className="h-5 w-5" />
+              Evaluate My Drawing
+            </Button>
           )}
 
           {/* Evaluating State */}
           {practiceMode === 'evaluating' && (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#8B4513] mx-auto mb-4"></div>
-              <p className="text-[#8B4513] text-lg">AI is evaluating your drawing...</p>
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto mb-4"></div>
+              <p className="text-[#8B4513]">AI is evaluating your drawing...</p>
             </div>
           )}
 
-          {/* Complete State */}
+          {/* Evaluation Results */}
           {practiceMode === 'complete' && evaluationResult && (
             <div className="space-y-4">
-              <div className={`text-center p-6 rounded-lg ${
+              <div className={`text-center p-4 rounded-lg ${
                 evaluationResult.passed 
                   ? 'bg-green-50 border-2 border-green-200' 
                   : 'bg-yellow-50 border-2 border-yellow-200'
               }`}>
-                <div className="text-6xl mb-4">
+                <div className="text-4xl mb-2">
                   {evaluationResult.passed ? '🎉' : '💪'}
                 </div>
-                <h3 className={`text-2xl font-bold mb-2 ${
+                <h3 className={`text-xl font-bold mb-2 ${
                   evaluationResult.passed ? 'text-green-800' : 'text-yellow-800'
                 }`}>
                   Score: {evaluationResult.score}%
                 </h3>
-                <p className={`mb-4 ${evaluationResult.passed ? 'text-green-700' : 'text-yellow-700'}`}>
+                <p className={`mb-3 ${evaluationResult.passed ? 'text-green-700' : 'text-yellow-700'}`}>
                   {evaluationResult.feedback}
                 </p>
 
                 {/* Strengths */}
                 {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (
-                  <div className="text-left mt-4 p-3 bg-white rounded-lg">
+                  <div className="text-left mt-3 p-3 bg-white rounded-lg">
                     <h4 className="font-semibold text-green-800 mb-2">✅ What you did well:</h4>
                     <ul className="space-y-1 text-sm text-green-700">
                       {evaluationResult.strengths.map((strength: string, idx: number) => (
@@ -396,6 +354,23 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
           )}
         </CardContent>
       </Card>
+
+      {/* Stroke Direction Reference Below Canvas */}
+      {character.strokeImageUrl && (
+        <Card className="bg-[#FFF8DC] border-2 border-[#D2691E]">
+          <CardContent className="p-4">
+            <p className="text-sm font-semibold text-[#8B4513] mb-3">Stroke Direction Reference:</p>
+            <div className="relative w-full aspect-square bg-white rounded overflow-hidden">
+              <Image
+                src={character.strokeImageUrl}
+                alt="Stroke direction guide"
+                fill
+                className="object-contain"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Photo Upload Modal */}
       <PhotoUploadModal

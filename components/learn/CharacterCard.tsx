@@ -1,13 +1,14 @@
 // components/learn/CharacterCard.tsx
 "use client"
 
-import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Play, Lock, CheckCircle, Clock, Star, Volume2 } from 'lucide-react'
+import { Play, Lock, CheckCircle, Clock, Star, Keyboard } from 'lucide-react'
 import Image from 'next/image'
+import { AudioPlayer } from './AudioPlayer'
+import { getAudioPath, getUmweroAscii } from '@/lib/audio-utils'
 
 interface CharacterCardProps {
   character: {
@@ -23,7 +24,7 @@ interface CharacterCardProps {
     difficulty: number
     order: number
     imageUrl: string
-    audioUrl: string
+    audioUrl?: string
   }
   progress?: {
     completed: boolean
@@ -36,15 +37,14 @@ interface CharacterCardProps {
 }
 
 export function CharacterCard({ character, progress, isLocked, onStart }: CharacterCardProps) {
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
-
-  const playPronunciation = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    const audio = new Audio(character.audioUrl)
-    setIsPlayingAudio(true)
-    audio.play()
-    audio.onended = () => setIsPlayingAudio(false)
-  }
+  // Get audio path from our mapping system
+  const audioPath = getAudioPath(character.vowel) || character.audioUrl
+  
+  // Get Umwero ASCII representation
+  const umweroAscii = getUmweroAscii(character.vowel)
+  
+  // Get the latin character for keyboard mapping
+  const latinChar = character.vowel.toLowerCase()
 
   const getStatusColor = () => {
     if (progress?.completed) return 'bg-green-100 text-green-700 border-green-300'
@@ -63,9 +63,14 @@ export function CharacterCard({ character, progress, isLocked, onStart }: Charac
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-4">
-            {/* Character Display */}
-            <div className="relative w-16 h-16 bg-gradient-to-br from-[#F3E5AB] to-[#D2691E] rounded-lg flex items-center justify-center">
-              <span className="text-4xl font-umwero text-[#8B4513]">{character.umwero}</span>
+            {/* Umwero Character Display - Large and Bold */}
+            <div className="relative w-20 h-20 bg-gradient-to-br from-[#F3E5AB] to-[#D2691E] rounded-xl flex items-center justify-center border-2 border-[#8B4513]">
+              <span 
+                className="text-5xl font-bold text-[#8B4513]" 
+                style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
+              >
+                {umweroAscii}
+              </span>
             </div>
             
             <div>
@@ -103,21 +108,45 @@ export function CharacterCard({ character, progress, isLocked, onStart }: Charac
         {/* Description */}
         <p className="text-sm text-gray-600 line-clamp-2">{character.description}</p>
 
-        {/* Pronunciation */}
+        {/* Keyboard Mapping */}
+        <div className="flex items-center justify-between bg-blue-50 p-3 rounded-lg border border-blue-200">
+          <div className="flex-1">
+            <p className="text-xs text-blue-700 font-medium mb-1">Keyboard Mapping</p>
+            <div className="flex items-center gap-2">
+              <span 
+                className="text-2xl font-bold text-blue-800"
+                style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
+              >
+                {umweroAscii}
+              </span>
+              <span className="text-blue-600">=</span>
+              <div className="bg-white border border-blue-300 rounded px-2 py-1">
+                <span className="text-sm font-mono text-blue-800">{latinChar}</span>
+              </div>
+              <span className="text-blue-600">=</span>
+              <div className="bg-white border border-blue-300 rounded px-2 py-1">
+                <span className="text-sm font-mono text-blue-800">ASCII {latinChar.charCodeAt(0)}</span>
+              </div>
+            </div>
+          </div>
+          <Keyboard className="h-5 w-5 text-blue-600" />
+        </div>
+
+        {/* Pronunciation with Audio */}
         <div className="flex items-center justify-between bg-[#F3E5AB] p-3 rounded-lg">
           <div className="flex-1">
             <p className="text-xs text-[#8B4513] font-medium">Pronunciation</p>
             <p className="text-sm text-[#D2691E]">{character.pronunciation}</p>
           </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-[#8B4513] hover:bg-[#D2691E] hover:text-white"
-            onClick={playPronunciation}
-            disabled={isLocked}
-          >
-            <Volume2 className={`h-4 w-4 ${isPlayingAudio ? 'animate-pulse' : ''}`} />
-          </Button>
+          {audioPath && (
+            <AudioPlayer
+              src={audioPath}
+              label="Hear Pronunciation"
+              size="md"
+              variant="ghost"
+              className="text-[#8B4513] hover:bg-[#D2691E] hover:text-white"
+            />
+          )}
         </div>
 
         {/* Progress Info */}
@@ -138,9 +167,9 @@ export function CharacterCard({ character, progress, isLocked, onStart }: Charac
         )}
 
         {/* Cultural Note Preview */}
-        <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-          <p className="text-xs text-blue-800 font-medium mb-1">Cultural Significance</p>
-          <p className="text-xs text-blue-700 line-clamp-2">{character.culturalNote}</p>
+        <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+          <p className="text-xs text-amber-800 font-medium mb-1">Cultural Significance</p>
+          <p className="text-xs text-amber-700 line-clamp-2">{character.culturalNote}</p>
         </div>
 
         {/* Action Button */}

@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '../ui/button'
-import { Image as ImageIcon, Video, X, Loader2, CheckCircle } from 'lucide-react'
+import { Image as ImageIcon, X, Loader2, CheckCircle } from 'lucide-react'
 
 interface MediaUploadProps {
   onMediaChange: (urls: string[]) => void
@@ -15,7 +15,6 @@ export function MediaUpload({ onMediaChange, maxFiles = 4 }: MediaUploadProps) {
   const [previews, setPreviews] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploaded, setUploaded] = useState(false)
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Auto-upload when files are selected
@@ -65,7 +64,6 @@ export function MediaUpload({ onMediaChange, maxFiles = 4 }: MediaUploadProps) {
     setMediaFiles(newFiles)
     setPreviews(newPreviews)
     setUploaded(false)
-    setUploadedUrls([])
     onMediaChange([]) // Clear uploaded URLs when removing files
   }
 
@@ -88,18 +86,40 @@ export function MediaUpload({ onMediaChange, maxFiles = 4 }: MediaUploadProps) {
         body: formData
       })
 
+      // Parse response regardless of status to get detailed error info
+      const data = await response.json()
+      
       if (!response.ok) {
-        throw new Error('Upload failed')
+        console.error('Upload API error:', data)
+        throw new Error(data.error || `Upload failed with status ${response.status}`)
       }
 
-      const data = await response.json()
+      // Handle successful response
       const urls = data.urls || []
-      setUploadedUrls(urls)
+      console.log('Upload successful:', data)
       setUploaded(true)
       onMediaChange(urls)
+      
+      // Show success message if provided
+      if (data.message) {
+        console.log('Upload message:', data.message)
+      }
     } catch (error) {
       console.error('Upload error:', error)
-      alert('Failed to upload media. Please try again.')
+      
+      // More specific error handling
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      
+      if (errorMessage.includes('Authentication required')) {
+        alert('Please log in to upload media.')
+      } else if (errorMessage.includes('Invalid file type')) {
+        alert('Please upload only images, videos, or audio files.')
+      } else if (errorMessage.includes('too large')) {
+        alert('File size too large. Please use files under 50MB.')
+      } else {
+        alert(`Failed to upload media: ${errorMessage}`)
+      }
+      
       setUploaded(false)
     } finally {
       setUploading(false)

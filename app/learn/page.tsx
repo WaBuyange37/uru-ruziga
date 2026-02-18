@@ -47,6 +47,7 @@ export default function UnifiedLearnPage() {
   // Lessons state
   const [vowelLessons, setVowelLessons] = useState<LessonData[]>([])
   const [consonantLessons, setConsonantLessons] = useState<LessonData[]>([])
+  const [ligatureLessons, setLigatureLessons] = useState<LessonData[]>([])
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -83,6 +84,14 @@ export default function UnifiedLearnPage() {
         setConsonantLessons(sorted)
       }
 
+      // Fetch ligatures (Ibihekane)
+      const ligaturesRes = await fetch('/api/lessons?type=LIGATURE', { headers })
+      if (ligaturesRes.ok) {
+        const data = await ligaturesRes.json()
+        const sorted = (data.lessons || []).sort((a: any, b: any) => a.order - b.order)
+        setLigatureLessons(sorted)
+      }
+
       // Calculate progress
       calculateProgress()
     } catch (error) {
@@ -110,7 +119,7 @@ export default function UnifiedLearnPage() {
     }
   }
 
-  const startLesson = (lessonId: string, type: 'vowel' | 'consonant') => {
+  const startLesson = (lessonId: string, type: 'vowel' | 'consonant' | 'ligature') => {
     // Navigate to new single-page lesson workspace
     window.location.href = `/lessons/${lessonId}`
   }
@@ -251,14 +260,22 @@ export default function UnifiedLearnPage() {
       <section className="relative py-16 px-4 md:px-6 lg:px-8">
         <div className="container mx-auto text-center max-w-5xl">
           {/* Cultural Badge */}
-          <div className="flex items-center justify-center gap-2 mb-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
               <Heart className="h-4 w-4 text-red-500" />
               <span className="text-sm">{mounted ? "Preserving Rwandan Heritage" : "Preserving Rwandan Heritage"}</span>
             </Badge>
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
               <Globe className="h-4 w-4 text-blue-500" />
-              <span className="text-sm">{mounted ? "UNESCO Endangered Script" : "UNESCO Endangered Script"}</span>
+              <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
+                {mounted ? "Endangered Alphabets Project" : "Endangered Alphabets Project"}
+              </a>
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
+              <BookOpen className="h-4 w-4 text-green-500" />
+              <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
+                {mounted ? "ScriptKeepers Initiative" : "ScriptKeepers Initiative"}
+              </a>
             </Badge>
           </div>
 
@@ -330,18 +347,29 @@ export default function UnifiedLearnPage() {
       <section className="py-8 px-4 md:px-6 lg:px-8">
         <div className="container mx-auto max-w-7xl">
           <Tabs defaultValue="vowels" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 gap-2 mb-8 h-auto bg-white/80 backdrop-blur p-2">
-              <TabsTrigger value="vowels" className="gap-2 data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <BookOpen className="h-4 w-4" />
-                <span>Vowels ({vowelLessons.length})</span>
+            <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 mb-8 h-auto bg-white/80 backdrop-blur p-2">
+              <TabsTrigger value="vowels" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
+                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Vowels</span>
+                <span className="sm:hidden">V</span>
+                <span className="hidden md:inline">({vowelLessons.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="consonants" className="gap-2 data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <BookOpen className="h-4 w-4" />
-                <span>Consonants ({consonantLessons.length})</span>
+              <TabsTrigger value="consonants" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
+                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Consonants</span>
+                <span className="sm:hidden">C</span>
+                <span className="hidden md:inline">({consonantLessons.length})</span>
               </TabsTrigger>
-              <TabsTrigger value="videos" className="gap-2 data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <Video className="h-4 w-4" />
-                <span>Videos</span>
+              <TabsTrigger value="ibihekane" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
+                <Trophy className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Ibihekane</span>
+                <span className="sm:hidden">I</span>
+                <span className="hidden md:inline">({ligatureLessons.length})</span>
+              </TabsTrigger>
+              <TabsTrigger value="videos" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
+                <Video className="h-3 w-3 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Videos</span>
+                <span className="sm:hidden">V</span>
               </TabsTrigger>
             </TabsList>
 
@@ -363,7 +391,7 @@ export default function UnifiedLearnPage() {
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {vowelLessons.map((lesson, index) => {
                   const charData = parseCharacterData(lesson)
                   if (!charData) return null
@@ -398,7 +426,7 @@ export default function UnifiedLearnPage() {
                 </CardContent>
               </Card>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {consonantLessons.map((lesson, index) => {
                   const charData = parseCharacterData(lesson)
                   if (!charData) return null
@@ -415,16 +443,51 @@ export default function UnifiedLearnPage() {
               </div>
             </TabsContent>
 
+            {/* Ibihekane (Ligatures) Tab */}
+            <TabsContent value="ibihekane" className="space-y-6">
+              <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="text-4xl">🧩</div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-purple-800 mb-2">
+                        {mounted ? "Ibihekane - Compound Characters" : "Ibihekane - Compound Characters"}
+                      </h3>
+                      <p className="text-purple-700">
+                        {mounted ? "Master advanced compound characters - the building blocks of complex Umwero writing" : "Master advanced compound characters - the building blocks of complex Umwero writing"}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {ligatureLessons.map((lesson, index) => {
+                  const charData = parseCharacterData(lesson)
+                  if (!charData) return null
+
+                  return (
+                    <CharacterCard
+                      key={lesson.id}
+                      character={charData}
+                      isLocked={consonantLessons.length === 0} // Unlock after consonants
+                      onStart={() => startLesson(lesson.id, 'ligature')}
+                    />
+                  )
+                })}
+              </div>
+            </TabsContent>
+
             {/* Videos Tab */}
             <TabsContent value="videos">
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                 {videoTutorials.map((video) => (
                   <Card key={video.id} className="bg-white border-[#8B4513] overflow-hidden">
                     <div className="aspect-video relative">
                       <VideoPlayer src={video.src} title={video.title} />
                     </div>
-                    <CardContent className="p-6">
-                      <h3 className="font-bold text-[#8B4513] mb-2 text-lg">{video.title}</h3>
+                    <CardContent className="p-4 md:p-6">
+                      <h3 className="font-bold text-[#8B4513] mb-2 text-base md:text-lg">{video.title}</h3>
                       <p className="text-[#D2691E] text-sm mb-4">{video.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-[#8B4513] text-sm">{video.duration}</span>

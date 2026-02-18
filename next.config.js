@@ -9,6 +9,20 @@ const nextConfig = {
     // ignoreBuildErrors: true, // Enabled strict checking
   },
 
+  // Configure external image domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
+  },
+
   // Ensure custom font files are served with correct headers
   async headers() {
     return [

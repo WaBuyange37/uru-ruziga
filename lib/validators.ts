@@ -85,6 +85,7 @@ export const createPostSchema = z.object({
   latinText: z.string().optional(),
   umweroText: z.string().optional(),
   imageUrl: z.string().url('Invalid image URL').optional(),
+  mediaUrls: z.array(z.string().url('Invalid media URL')).optional().default([]),
   isChallenge: z.boolean().optional().default(false),
   challengeType: z.string().optional(),
 })

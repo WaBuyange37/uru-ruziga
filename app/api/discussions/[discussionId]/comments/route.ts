@@ -15,10 +15,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { discussionId: string } }
+  { params }: { params: Promise<{ discussionId: string }> }
 ) {
   try {
-    const { discussionId } = params
+    const { discussionId } = await params
 
     // Rate limiting
     const rateLimitResponse = await withRateLimit(request, {
@@ -112,10 +112,10 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { discussionId: string } }
+  { params }: { params: Promise<{ discussionId: string }> }
 ) {
   try {
-    const { discussionId } = params
+    const { discussionId } = await params
 
     const comments = await prisma.comment.findMany({
       where: { discussionId },

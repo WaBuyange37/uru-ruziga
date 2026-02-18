@@ -1,97 +1,29 @@
 "use client";
-// /home/nzela37/Kwizera/Projects/uru-ruziga/app/page.tsx
+
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "../components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import {
   CircleIcon,
   BookOpen,
-  Calendar,
   Calculator,
   GamepadIcon,
   BarChart3,
   Settings,
   Heart,
-  MessageCircle,
   TrendingUp,
   Sparkles,
   Users,
+  Globe,
+  Target,
+  Play,
+  ArrowRight,
+  Star
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAuth } from "./contexts/AuthContext";
-import { useUmweroTranslation } from "../hooks/use-umwero-translation";
-
-interface CommunityPost {
-  id: string;
-  content: string;
-  language: string;
-  createdAt: string;
-  user: {
-    id: string;
-    fullName: string;
-    avatar?: string;
-  };
-  likes: { userId: string }[];
-  comments: any[];
-  _count?: {
-    likes: number;
-    comments: number;
-  };
-}
-
-interface Discussion {
-  id: string;
-  userId: string;
-  title: string;
-  content: string;
-  script: string;
-  category?: string;
-  mediaUrls?: string[];
-  createdAt: string;
-  user: {
-    id: string;
-    fullName: string;
-    username: string;
-    avatar?: string;
-  };
-  _count?: {
-    comments: number;
-  };
-  views: number;
-  likesCount: number;
-}
-
-interface CommunityItem {
-  id: string;
-  type: 'post' | 'discussion';
-  title?: string;
-  content: string;
-  language?: string;
-  script?: string;
-  category?: string;
-  createdAt: string;
-  user: {
-    id: string;
-    fullName: string;
-    username?: string;
-    avatar?: string;
-  };
-  likes?: { userId: string }[];
-  comments?: any[];
-  _count?: {
-    likes?: number;
-    comments: number;
-  };
-  views?: number;
-  likesCount?: number;
-}
 
 export default function Home() {
   const { t } = useTranslation();
@@ -99,8 +31,6 @@ export default function Home() {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
   const videoRefs = useRef<{ [key: string]: HTMLIFrameElement | null }>({});
   const [mounted, setMounted] = useState(false);
-  const [discussions, setDiscussions] = useState<Discussion[]>([]);
-  const [loadingDiscussions, setLoadingDiscussions] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -136,94 +66,63 @@ export default function Home() {
 
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-[#F3E5AB] flex items-center justify-center">
-        <div className="text-[#8B4513]">Loading...</div>
+      <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB] flex items-center justify-center">
+        <div className="text-[#8B4513] text-lg">Loading...</div>
       </div>
     );
   }
 
-  // If not authenticated, show login/signup options
+  // If not authenticated, show modern landing page
   if (!isAuthenticated) {
     return (
-      <div className="flex flex-col min-h-screen">
-        {/* Hero Section for Non-Authenticated Users */}
-        <section className="relative py-12 sm:py-16 md:py-20 px-4 bg-gradient-to-b from-[#F3E5AB] to-[#FFFFFF]">
+      <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+        {/* Hero Section */}
+        <section className="relative py-16 px-4 md:px-6 lg:px-8">
           <div className="container mx-auto text-center max-w-5xl">
-            <CircleIcon className="mx-auto h-16 w-16 sm:h-20 sm:w-20 md:h-24 md:w-24 mb-6 sm:mb-8 text-[#8B4513] animate-pulse" />
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-3 sm:mb-4 text-[#8B4513] px-2">
+            {/* Cultural Badge */}
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
+              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
+                <Heart className="h-4 w-4 text-red-500" />
+                <span className="text-sm">Preserving Rwandan Heritage</span>
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
+                <Globe className="h-4 w-4 text-blue-500" />
+                <span className="text-sm">Endangered Alphabets Project</span>
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
+                <Star className="h-4 w-4 text-yellow-500" />
+                <span className="text-sm">Cultural Renaissance</span>
+              </Badge>
+            </div>
+
+            <CircleIcon className="mx-auto h-20 w-20 md:h-24 md:w-24 mb-6 text-[#8B4513] animate-pulse" />
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-[#8B4513]">
               {t("welcomeToUmwero")}
             </h1>
-            <p className="text-base sm:text-lg md:text-xl text-[#D2691E] mb-6 sm:mb-8 px-4">
-              {t("joinCommunity")}
+            <p className="text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto">
+              Discover the revolutionary Umwero script and join a cultural movement preserving Rwandan heritage through authentic writing systems.
             </p>
 
-            {/* Founder's Quote - Verified Content */}
-            <Card className="bg-white/90 backdrop-blur-sm border-2 border-[#8B4513] shadow-xl mb-8 mx-4">
-              <CardContent className="p-6 sm:p-8">
-                <blockquote className="text-lg sm:text-xl italic text-[#8B4513] leading-relaxed">
+            {/* Founder's Quote */}
+            <Card className="bg-white/80 backdrop-blur border-[#8B4513] shadow-xl mb-8">
+              <CardContent className="p-6 md:p-8">
+                <blockquote className="text-lg md:text-xl italic text-[#8B4513] leading-relaxed">
                   "Every culture is protected by its language, and any language may be protected by its own writing system."
                 </blockquote>
-                <p className="text-sm sm:text-base text-[#D2691E] mt-4 font-semibold">
+                <p className="text-sm md:text-base text-[#D2691E] mt-4 font-semibold">
                   — Kwizera Mugisha, Founder of Umwero
                 </p>
               </CardContent>
             </Card>
 
-            {/* Three Cultural Pillars - Verified Content */}
-            <div className="mb-8">
-              <h2 className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-6">
-                Three Pillars of Rwandan Culture
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 px-4">
-                <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-                  <CardHeader className="text-center pb-3">
-                    <div className="text-5xl mb-3">🐄</div>
-                    <CardTitle className="text-xl text-[#8B4513]">In'ka</CardTitle>
-                    <CardDescription className="text-[#D2691E] font-semibold">Cattle</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-[#8B4513]">
-                      Symbol of wealth and prosperity. "In'ka ni Umunyarwanda" - A cow is Rwandan, helping mothers raise children.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-                  <CardHeader className="text-center pb-3">
-                    <div className="text-5xl mb-3">⭕</div>
-                    <CardTitle className="text-xl text-[#8B4513]">Imana</CardTitle>
-                    <CardDescription className="text-[#D2691E] font-semibold">God</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-[#8B4513]">
-                      The eternal circle - Hero na Herezo (Alpha and Omega). The circle has no beginning nor ending, representing divine continuity.
-                    </p>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-                  <CardHeader className="text-center pb-3">
-                    <div className="text-5xl mb-3">👑</div>
-                    <CardTitle className="text-xl text-[#8B4513]">Ingoma</CardTitle>
-                    <CardDescription className="text-[#D2691E] font-semibold">Throne/Kingdom</CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center">
-                    <p className="text-sm text-[#8B4513]">
-                      Cultural sovereignty and royal heritage. "Akami ka muntu ni umutima we" - The kingdom of a person is in their heart.
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4 px-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 size="lg"
                 asChild
-                className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] w-full sm:w-auto shadow-lg"
+                className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all"
               >
                 <Link href="/signup">
-                  <Sparkles className="mr-2 h-5 w-5" />
+                  <Sparkles className="h-5 w-5" />
                   {t("getStarted")}
                 </Link>
               </Button>
@@ -231,74 +130,180 @@ export default function Home() {
                 size="lg"
                 variant="outline"
                 asChild
-                className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] w-full sm:w-auto"
+                className="gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]"
               >
-                <Link href="/login">{t("alreadyHaveAccount")}</Link>
+                <Link href="/login">
+                  <ArrowRight className="h-5 w-5" />
+                  {t("alreadyHaveAccount")}
+                </Link>
               </Button>
             </div>
           </div>
         </section>
 
-        {/* Preview Features */}
-        <section className="py-12 sm:py-16 md:py-20 px-4 bg-[#FFFFFF]">
-          <div className="container mx-auto max-w-7xl">
-            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8 sm:mb-12 text-[#8B4513] px-4">
-              {t("whatYouGetAccess")}
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+        {/* Three Cultural Pillars */}
+        <section className="py-16 px-4 md:px-6 lg:px-8">
+          <div className="container mx-auto max-w-6xl">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#8B4513] mb-4">
+                Three Pillars of Rwandan Culture
+              </h2>
+              <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
+                Understanding the foundational elements that shape Rwandan identity and inspire the Umwero script
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-xl transition-all">
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4">🐄</div>
+                  <CardTitle className="text-2xl text-blue-800">In'ka</CardTitle>
+                  <CardDescription className="text-blue-600 font-semibold">Cattle</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-blue-700 leading-relaxed">
+                    Symbol of wealth and prosperity. "In'ka ni Umunyarwanda" - A cow is Rwandan, helping mothers raise children.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-xl transition-all">
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4">⭕</div>
+                  <CardTitle className="text-2xl text-purple-800">Imana</CardTitle>
+                  <CardDescription className="text-purple-600 font-semibold">God</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-purple-700 leading-relaxed">
+                    The eternal circle - Hero na Herezo (Alpha and Omega). The circle has no beginning nor ending, representing divine continuity.
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-xl transition-all">
+                <CardHeader className="text-center pb-4">
+                  <div className="text-6xl mb-4">👑</div>
+                  <CardTitle className="text-2xl text-amber-800">Ingoma</CardTitle>
+                  <CardDescription className="text-amber-600 font-semibold">Throne/Kingdom</CardDescription>
+                </CardHeader>
+                <CardContent className="text-center">
+                  <p className="text-amber-700 leading-relaxed">
+                    Cultural sovereignty and royal heritage. "Akami ka muntu ni umutima we" - The kingdom of a person is in their heart.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Preview */}
+        <section className="py-16 px-4 md:px-6 lg:px-8 bg-white/50">
+          <div className="container mx-auto max-w-6xl">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-[#8B4513] mb-4">
+                {t("whatYouGetAccess")}
+              </h2>
+              <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
+                Comprehensive tools and resources for mastering the Umwero script
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
-                    <BookOpen className="h-5 w-5" />
+                  <div className="flex items-center justify-between mb-2">
+                    <BookOpen className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
+                    <Badge variant="outline" className="text-xs">Essential</Badge>
+                  </div>
+                  <CardTitle className="text-[#8B4513] text-lg">
                     {t("interactiveLessonsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm">
+                  <p className="text-[#D2691E] text-sm leading-relaxed">
                     {t("interactiveLessonsDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+
+              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
-                    <BarChart3 className="h-5 w-5" />
+                  <div className="flex items-center justify-between mb-2">
+                    <BarChart3 className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
+                    <Badge variant="outline" className="text-xs">Analytics</Badge>
+                  </div>
+                  <CardTitle className="text-[#8B4513] text-lg">
                     {t("trackProgressTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm">
+                  <p className="text-[#D2691E] text-sm leading-relaxed">
                     {t("trackProgressDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+
+              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
-                    <GamepadIcon className="h-5 w-5" />
+                  <div className="flex items-center justify-between mb-2">
+                    <GamepadIcon className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
+                    <Badge variant="outline" className="text-xs">Fun</Badge>
+                  </div>
+                  <CardTitle className="text-[#8B4513] text-lg">
                     {t("funGamesTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm">
+                  <p className="text-[#D2691E] text-sm leading-relaxed">
                     {t("funGamesDesc")}
                   </p>
                 </CardContent>
               </Card>
-              <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
+
+              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-[#8B4513] text-base sm:text-lg">
-                    <Calculator className="h-5 w-5" />
+                  <div className="flex items-center justify-between mb-2">
+                    <Calculator className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
+                    <Badge variant="outline" className="text-xs">Tools</Badge>
+                  </div>
+                  <CardTitle className="text-[#8B4513] text-lg">
                     {t("translationToolsTitle")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm">
+                  <p className="text-[#D2691E] text-sm leading-relaxed">
                     {t("translationToolsDesc")}
                   </p>
                 </CardContent>
               </Card>
             </div>
+          </div>
+        </section>
+
+        {/* Call to Action */}
+        <section className="py-16 px-4 md:px-6 lg:px-8">
+          <div className="container mx-auto max-w-4xl">
+            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+              <CardContent className="p-8 text-center">
+                <div className="text-5xl mb-4">🏛️</div>
+                <h3 className="text-2xl md:text-3xl font-semibold text-amber-800 mb-4">
+                  Join the Cultural Movement
+                </h3>
+                <p className="text-amber-700 leading-relaxed mb-6 max-w-2xl mx-auto">
+                  Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. Start your journey today and become part of this important cultural renaissance.
+                </p>
+                <Button
+                  size="lg"
+                  asChild
+                  className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg"
+                >
+                  <Link href="/signup">
+                    <Sparkles className="h-5 w-5" />
+                    Begin Your Journey
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         </section>
       </div>

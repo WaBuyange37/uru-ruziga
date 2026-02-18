@@ -29,7 +29,7 @@ function SignupForm() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const redirect = searchParams?.get('redirect') || '/dashboard'
+      const redirect = searchParams?.get('redirect') || '/'
       router.push(redirect)
     }
   }, [isAuthenticated, router, searchParams])
@@ -65,7 +65,7 @@ function SignupForm() {
     try {
       await register(formData.fullName, formData.username, formData.email, formData.password)
       // Redirect after successful registration
-      const redirect = searchParams?.get('redirect') || '/dashboard'
+      const redirect = searchParams?.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.')

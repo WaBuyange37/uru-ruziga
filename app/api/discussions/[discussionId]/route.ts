@@ -13,10 +13,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { discussionId: string } }
+  { params }: { params: Promise<{ discussionId: string }> }
 ) {
   try {
-    const { discussionId } = params
+    const { discussionId } = await params
 
     // Increment view count
     await prisma.discussion.update({
@@ -78,10 +78,10 @@ export async function GET(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { discussionId: string } }
+  { params }: { params: Promise<{ discussionId: string }> }
 ) {
   try {
-    const { discussionId } = params
+    const { discussionId } = await params
 
     // Authentication
     const token = request.headers.get('authorization')?.replace('Bearer ', '')

@@ -10,6 +10,15 @@
 }
 
 @font-face {
+  font-family: 'UMWEROalpha';
+  src: url('/UMWEROalpha.woff') format('woff'),
+       url('/Umwero.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
   font-family: 'UmweroPUA';
   src: url('/UMWEROPUAnumbers.otf') format('opentype');
   font-weight: normal;

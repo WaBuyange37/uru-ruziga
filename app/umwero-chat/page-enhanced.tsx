@@ -165,7 +165,7 @@ export default function UmweroChatPage() {
       const words = umweroText.split(' ')
       let line = ''
       let y = umweroBoxY + 140
-      const lineHeight = fontSize + 30
+      const lineHeight = fontSize + 40
 
       for (let word of words) {
         const testLine = line + word + ' '

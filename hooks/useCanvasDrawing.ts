@@ -227,20 +227,54 @@ export function useCanvasDrawing(options: UseCanvasDrawingOptions = {}) {
     if (!canvas) return
 
     // Pointer events (works for mouse, touch, and stylus)
-    canvas.addEventListener('pointerdown', startDrawing as any)
-    canvas.addEventListener('pointermove', continueDrawing as any)
-    canvas.addEventListener('pointerup', stopDrawing)
-    canvas.addEventListener('pointerleave', stopDrawing)
+    const handlePointerDown = (e: PointerEvent) => {
+      e.preventDefault()
+      canvas.setPointerCapture(e.pointerId)
+      startDrawing(e)
+    }
+
+    const handlePointerMove = (e: PointerEvent) => {
+      e.preventDefault()
+      continueDrawing(e)
+    }
+
+    const handlePointerUp = (e: PointerEvent) => {
+      e.preventDefault()
+      canvas.releasePointerCapture(e.pointerId)
+      stopDrawing()
+    }
+
+    const handlePointerCancel = (e: PointerEvent) => {
+      e.preventDefault()
+      canvas.releasePointerCapture(e.pointerId)
+      stopDrawing()
+    }
 
     // Prevent default touch behavior
-    canvas.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false })
-    canvas.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false })
+    const preventTouch = (e: TouchEvent) => {
+      e.preventDefault()
+    }
+
+    canvas.addEventListener('pointerdown', handlePointerDown)
+    canvas.addEventListener('pointermove', handlePointerMove)
+    canvas.addEventListener('pointerup', handlePointerUp)
+    canvas.addEventListener('pointercancel', handlePointerCancel)
+    canvas.addEventListener('pointerleave', stopDrawing)
+
+    // Prevent default touch behavior to avoid scrolling
+    canvas.addEventListener('touchstart', preventTouch, { passive: false })
+    canvas.addEventListener('touchmove', preventTouch, { passive: false })
+    canvas.addEventListener('touchend', preventTouch, { passive: false })
 
     return () => {
-      canvas.removeEventListener('pointerdown', startDrawing as any)
-      canvas.removeEventListener('pointermove', continueDrawing as any)
-      canvas.removeEventListener('pointerup', stopDrawing)
+      canvas.removeEventListener('pointerdown', handlePointerDown)
+      canvas.removeEventListener('pointermove', handlePointerMove)
+      canvas.removeEventListener('pointerup', handlePointerUp)
+      canvas.removeEventListener('pointercancel', handlePointerCancel)
       canvas.removeEventListener('pointerleave', stopDrawing)
+      canvas.removeEventListener('touchstart', preventTouch)
+      canvas.removeEventListener('touchmove', preventTouch)
+      canvas.removeEventListener('touchend', preventTouch)
     }
   }, [startDrawing, continueDrawing, stopDrawing])
 

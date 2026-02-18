@@ -23,7 +23,7 @@ function LoginForm() {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      const redirect = searchParams?.get('redirect') || '/dashboard'
+      const redirect = searchParams?.get('redirect') || '/'
       router.push(redirect)
     }
   }, [isAuthenticated, router, searchParams])
@@ -36,7 +36,7 @@ function LoginForm() {
     try {
       await login(identifier, password)
       // Redirect after successful login
-      const redirect = searchParams?.get('redirect') || '/dashboard'
+      const redirect = searchParams?.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials and try again.')

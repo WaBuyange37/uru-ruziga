@@ -52,6 +52,16 @@ VALUES (
   ARRAY['image/jpeg', 'image/png', 'image/webp']
 ) ON CONFLICT (id) DO NOTHING;
 
+-- F. Community Images (Public) - For community posts and discussions
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'images',
+  'images',
+  true,
+  52428800, -- 50MB
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'audio/mpeg', 'audio/wav', 'application/pdf']
+) ON CONFLICT (id) DO NOTHING;
+
 
 -- ==========================================
 -- Storage Policies
@@ -72,6 +82,17 @@ FOR SELECT USING (bucket_id = 'video-files');
 -- Profile pictures
 CREATE POLICY "Public Access Profile Pictures" ON storage.objects
 FOR SELECT USING (bucket_id = 'profile-pictures');
+
+-- Community images (Public)
+CREATE POLICY "Public Access Community Images" ON storage.objects
+FOR SELECT USING (bucket_id = 'images');
+
+-- Community images upload policy
+CREATE POLICY "Authenticated users can upload community images" ON storage.objects
+FOR INSERT WITH CHECK (
+  bucket_id = 'images' AND 
+  auth.role() = 'authenticated'
+);
 
 -- User Drawings (Private)
 

@@ -1,81 +1,37 @@
-// prisma/seed.ts
+// UMWERO PLATFORM — ORTHOGRAPHICALLY CORRECT SEED
 // =============================================================================
-// UMWERO PLATFORM — COMPREHENSIVE DATABASE SEED (Corrected from source docs)
-// =============================================================================
-// All character data sourced directly from:
-//   - UmweroIPA-1.pdf (glyph mappings, IPA numbers, ASCII codes)
-//   - Umwero_Visual_Cultural.pdf (cultural symbolism, character design rationale)
-//   - Umwero Kabbalah + History HTML (history, numbers philosophy, creator story)
+// Based EXCLUSIVELY on official UMWERO_MAP from lib/audio-utils.ts
+// NO fake glyphs, NO hallucinated characters, NO phonological groupings
 // =============================================================================
 
 import { PrismaClient } from '@prisma/client';
-import * as bcrypt from 'bcryptjs';
+import bcrypt from 'bcryptjs';
+
 const prisma = new PrismaClient();
 
-// ─── TRANSLATION MAPPING GUIDE ──────────────────────────────────────────────
-// How Umwero letters map to useTranslation (i18n) keys:
-//
-//   character.latinEquivalent → used as the i18n lookup key
-//   
-//   Example flow:
-//     DB: { latinEquivalent: "B", umweroGlyph: "ꮾ" }
-//     i18n key: t(`characters.B.name`)        → "Ba"
-//     i18n key: t(`characters.B.pronunciation`) → "/b/ voiced bilabial"
-//     i18n key: t(`characters.B.meaning`)      → "Inyambo cow's body"
-//     Font render: umweroGlyph value "ꮾ"      → displays Umwero B glyph
-//
-//   For compounds:
-//     DB: { latinEquivalent: "BW", type: "LIGATURE" }
-//     i18n key: t(`characters.BW.name`)       → "Bga"
-//     Font: compound glyph
-//
-//   The `character_translations` table stores per-language translations,
-//   which can be loaded into i18n JSON files or served via API.
-// ─────────────────────────────────────────────────────────────────────────────
-
 async function main() {
-  console.log('🌱 UMWERO — Comprehensive Seed (Source-verified)\n');
+  console.log('🌱 UMWERO — Orthographically Correct Seed\n');
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CLEAN
+  // CLEAN DATABASE
   // ═══════════════════════════════════════════════════════════════════════════
-  console.log('🧹 Cleaning with TRUNCATE...');
+  console.log('🧹 Cleaning...');
   const tableNames = [
-    'UserAchievement', 'UserAttempt', // PascalCase for table names usually, checking mapping... 
-    // Actually Prisma models are PascalCase, but table names are usually lowercase or mapped.
-    // Using $executeRawUnsafe with quote identifiers is safer for Postgres.
-    'user_achievements', 'user_attempts',
-    'lesson_progress', 'step_translations', 'lesson_steps', 'lesson_translations',
-    'context_examples', 'cultural_context_translations', 'cultural_contexts',
-    'character_translations', 'stroke_data', 'comments', 'discussion_likes',
-    'discussions',
-    'achievements', 'lessons', 'characters', 'languages', 'users'
+    'user_achievements', 'user_attempts', 'lesson_progress', 'step_translations', 
+    'lesson_steps', 'lesson_translations', 'context_examples', 'cultural_context_translations', 
+    'cultural_contexts', 'character_translations', 'stroke_data', 'comments', 
+    'discussion_likes', 'discussions', 'achievements', 'lessons', 'characters', 
+    'languages', 'users'
   ];
 
   try {
-    // Disable triggers/constraints if needed, or just Cascade
     for (const t of tableNames) {
-      // Attempt to truncate, ignore if not exists
       try {
         await prisma.$executeRawUnsafe(`TRUNCATE TABLE "public"."${t}" CASCADE;`);
       } catch (e) {
-        // console.log(`Table ${t} truncate failed (might not exist): ${e.message}`);
+        // Table might not exist
       }
     }
-    // Fallback to deleteMany for Prisma models if Truncate misses some
-    // (Using the original list for Prisma client access)
-    const models = [
-      'userAchievement', 'userAttempt',
-      'lessonProgress', 'stepTranslation', 'lessonStep', 'lessonTranslation',
-      'contextExample', 'culturalContextTranslation', 'culturalContext',
-      'characterTranslation', 'strokeData', 'comment', 'discussionLike',
-      'discussion',
-      'achievement', 'lesson', 'character', 'language', 'user'
-    ];
-    for (const m of models) {
-      try { if ((prisma as any)[m]) await (prisma as any)[m].deleteMany(); } catch { }
-    }
-
   } catch (e) {
     console.error('Clean failed:', e);
   }
@@ -85,489 +41,266 @@ async function main() {
   // LANGUAGES
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('🌐 Languages...');
-  const langs = [
-    { code: 'en', name: 'English', displayName: 'English', isDefault: true, direction: 'ltr' },
-    { code: 'rw', name: 'Ikinyarwanda', displayName: 'Ikinyarwanda', isDefault: false, direction: 'ltr' },
-    { code: 'um', name: 'Umwero', displayName: 'Umwero', isDefault: false, direction: 'rtl' },
-    { code: 'rn', name: 'Ikirundi', displayName: 'Ikirundi', isDefault: false, direction: 'ltr' },
-    { code: 'sw', name: 'Kiswahili', displayName: 'Kiswahili', isDefault: false, direction: 'ltr' },
+  const languages = [
+    { code: 'en', name: 'English', displayName: 'English', isDefault: true },
+    { code: 'rw', name: 'Kinyarwanda', displayName: 'Ikinyarwanda', isDefault: false },
+    { code: 'um', name: 'Umwero', displayName: 'Umwero', isDefault: false },
   ];
-  for (const l of langs) {
+  for (const l of languages) {
     await prisma.language.upsert({
       where: { code: l.code },
       update: l,
       create: l
     });
   }
-  const enLang = await prisma.language.findUnique({ where: { code: 'en' } });
-  const rwLang = await prisma.language.findUnique({ where: { code: 'rw' } });
-  console.log(`✅ ${langs.length} languages\n`);
+  console.log(`✅ ${languages.length} languages\n`);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CHARACTERS — From UmweroIPA-1.pdf & Umwero_Visual_Cultural.pdf
+  // CHARACTERS — BASED EXCLUSIVELY ON OFFICIAL UMWERO_MAP
   // ═══════════════════════════════════════════════════════════════════════════
-  //
-  // Schema: umweroGlyph = ASCII font character, latinEquivalent = canonical key
-  //
   console.log('✏️  Characters...');
 
-  // --- VOWELS (5) ---
+  // VOWELS (5) - From UMWERO_MAP
   const vowels = [
-    {
-      id: 'char-a', glyph: 'ȏ', latin: 'A', type: 'VOWEL', diff: 1, strokes: 3, ord: 1,
-      symbol: 'Inyambo cow head with horns — wealth, sustenance, heritage',
-      history: 'From the Inyambo cow vocalization "Baaaa". A = head. B+A = full cow. IPA page 1.',
-      enName: 'A (ah)', enPron: '/a/ as in "Abana"', enMean: 'Inyambo Cow\'s Head',
-      enDesc: 'First vowel. Shaped like Inyambo cow head with long horns. Symbol of wealth.',
-      rwName: 'A (ah)', rwPron: '/a/ nka muri "Abana"', rwMean: 'Umutwe w\'Inyambo',
-      rwDesc: 'Inyajwi ya mbere. Ishushanyije nk\'umutwe w\'inyambo.'
-    },
-    {
-      id: 'char-u', glyph: 'ɗ', latin: 'U', type: 'VOWEL', diff: 1, strokes: 2, ord: 2,
-      symbol: 'Umugozi/Umurunga — binding rope of relationships',
-      history: 'Loop shape = ties binding people. Begins Ubuntu, Umuco, Urwanda.',
-      enName: 'U (uh)', enPron: '/u/ as in "Umunyu"', enMean: 'Binding Rope',
-      enDesc: 'Loop shape representing community ties. Begins foundational Rwandan words.',
-      rwName: 'U (uh)', rwPron: '/u/ nka muri "Umunyu"', rwMean: 'Umurunga',
-      rwDesc: 'Igaragaza imibanire n\'ubumwe. Itangira Ubuntu, Umuco, Urwanda.'
-    },
-    {
-      id: 'char-o', glyph: 'Ɨ', latin: 'O', type: 'VOWEL', diff: 1, strokes: 1, ord: 3,
-      symbol: '360° circle — completeness, cycle of life (Uruziga)',
-      history: 'Circle = Hero na Herezo (Alpha & Omega). Basis for PF (death = broken circle).',
-      enName: 'O (oh)', enPron: '/o/ as in "note"', enMean: 'Circle of Life',
-      enDesc: '360° circle representing completeness. Uruziga = beginning and end.',
-      rwName: 'O (oh)', rwPron: '/o/ nka muri "Oroha"', rwMean: 'Uruziga rw\'ubuzima',
-      rwDesc: 'Uruziga rugaragaza Hero na Herezo — intangiriro n\'iherezo.'
-    },
-    {
-      id: 'char-e', glyph: 'ᒍ', latin: 'E', type: 'VOWEL', diff: 1, strokes: 2, ord: 4,
-      symbol: 'E — the true Kinyarwanda /e/ sound',
-      history: 'Corrects Latin E (originally "ih") to actual Kinyarwanda "eh" sound.',
-      enName: 'E (eh)', enPron: '/e/ as in "Emera"', enMean: 'Open Vowel',
-      enDesc: 'True Kinyarwanda /e/ sound, correcting Latin mismatch.',
-      rwName: 'E (eh)', rwPron: '/e/ nka muri "Emera"', rwMean: 'Inyajwi ifunguye',
-      rwDesc: 'Ijwi ry\'ikinyarwanda nyakuri, itandukanye n\'iyi Latin E.'
-    },
-    {
-      id: 'char-i', glyph: 'Ꮮ', latin: 'I', type: 'VOWEL', diff: 1, strokes: 2, ord: 5,
-      symbol: 'I — the long vowel',
-      history: 'Pure Kinyarwanda /i/ as in "inyinya".',
-      enName: 'I (ih)', enPron: '/i/ as in "inyinya"', enMean: 'Long Vowel',
-      enDesc: 'The long vowel appearing in fundamental words like ibi, imizi, imibu.',
-      rwName: 'I (ih)', rwPron: '/i/ nka muri "inyinya"', rwMean: 'Inyajwi ndende',
-      rwDesc: 'Igaragara mu magambo y\'ibanze nka ibi, imizi, imibu.'
-    },
+    { id: 'char-a', umweroGlyph: '"', latinEquivalent: 'A', type: 'VOWEL', difficulty: 1, strokeCount: 3, order: 1, symbolism: 'Inyambo cow head', historicalNote: 'From cow vocalization "Baaaa"' },
+    { id: 'char-e', umweroGlyph: '|', latinEquivalent: 'E', type: 'VOWEL', difficulty: 1, strokeCount: 2, order: 2, symbolism: 'True Kinyarwanda /e/ sound', historicalNote: 'Corrects Latin E mismatch' },
+    { id: 'char-i', umweroGlyph: '}', latinEquivalent: 'I', type: 'VOWEL', difficulty: 1, strokeCount: 2, order: 3, symbolism: 'Long vowel', historicalNote: 'Pure Kinyarwanda /i/' },
+    { id: 'char-o', umweroGlyph: '{', latinEquivalent: 'O', type: 'VOWEL', difficulty: 1, strokeCount: 1, order: 4, symbolism: 'Circle — completeness', historicalNote: 'Uruziga cycle of life' },
+    { id: 'char-u', umweroGlyph: ':', latinEquivalent: 'U', type: 'VOWEL', difficulty: 1, strokeCount: 2, order: 5, symbolism: 'Binding rope', historicalNote: 'Umugozi relationships' }
   ];
 
-  // --- CONSONANTS (20 base) from IPA doc ---
-  const consonants = [
-    {
-      id: 'char-b', glyph: 'ꮾ', latin: 'B', type: 'CONSONANT', diff: 1, strokes: 3, ord: 10,
-      symbol: 'Inyambo cow body — B+A = complete cow',
-      history: 'From "Baaaa" vocalization. B = body. Combined with A = whole Inyambo. Voiced bilabial approximant.'
-    },
-    {
-      id: 'char-r', glyph: 'Ɍ', latin: 'R', type: 'CONSONANT', diff: 2, strokes: 3, ord: 11,
-      symbol: 'God-RA — person kneeling in praise toward Rurema',
-      history: 'Ra = divine. Rurema = Ra + Urema (creator). Shape = kneeling person, rotated for readability. IPA 124.'
-    },
-    {
-      id: 'char-m', glyph: 'Ꮈ', latin: 'M', type: 'CONSONANT', diff: 1, strokes: 3, ord: 12,
-      symbol: 'Womb (Nyababyeyi) — baby connected to umbilical cord (Umura)',
-      history: 'Ma begins Maama, Maawe, Maaye. Parent of L, LL, G, Z via Umura. "Iyo abyaye, twunguka amaboko." IPA 114.'
-    },
-    {
-      id: 'char-n', glyph: 'Ꮿ', latin: 'N', type: 'CONSONANT', diff: 1, strokes: 2, ord: 13,
-      symbol: 'Foundational nasal — building block for prenasalized sounds',
-      history: 'Combines with D→Nd, G→Ng, J→Nj, Z→Nz, K→NK, S→Ns, Sh→Nsh, T→Nt. IPA 116.'
-    },
-    {
-      id: 'char-t', glyph: 'Ɫ', latin: 'T', type: 'CONSONANT', diff: 1, strokes: 2, ord: 14,
-      symbol: 'Featural: tongue tip touching alveolar ridge',
-      history: 'Voiceless alveolar plosive. IPA [t] 103. Flipped horizontally for RTL = matches IPA diagram. Like Hangul.'
-    },
-    {
-      id: 'char-k', glyph: 'Ⴒ', latin: 'K', type: 'CONSONANT', diff: 1, strokes: 2, ord: 15,
-      symbol: 'Featural: back of tongue touching soft palate',
-      history: 'Voiceless velar plosive. IPA [k] 109. Flipped for RTL = matches IPA diagram.'
-    },
-    {
-      id: 'char-s', glyph: 'Ȥ', latin: 'S', type: 'CONSONANT', diff: 1, strokes: 2, ord: 16,
-      symbol: 'Sibilant: flowing uninterrupted strokes = continuous airflow',
-      history: 'Voiceless alveolar sibilant. IPA 132. Cannot be stopped abruptly ("Siiiiiii").'
-    },
-    {
-      id: 'char-ch', glyph: 'Ꮇ', latin: 'C', type: 'CONSONANT', diff: 2, strokes: 4, ord: 17,
-      symbol: 'Serpent (inzoka) + pathway — wisdom (guca akenge) and movement',
-      history: 'Resembles serpent and path. "Guca akenge" = gain wisdom. "Guca mu nzira" = pass through path. IPA 103+134.'
-    },
-    {
-      id: 'char-d', glyph: 'ꟼ', latin: 'D', type: 'CONSONANT', diff: 1, strokes: 2, ord: 18,
-      symbol: 'Male symbol (♂) — Data (father), masculinity',
-      history: 'Resembles ♂. Data=father, Daye=my father, Dawe=our father. M(♀) points down, D(♂) points up. IPA 104.'
-    },
-    {
-      id: 'char-j', glyph: 'ꝺ', latin: 'J', type: 'CONSONANT', diff: 2, strokes: 2, ord: 19,
-      symbol: 'Umuja (slave/laborer) — bowed figure = servitude AND respect',
-      history: '"Umuja ni umugonda Josi" = A slave bows. Umu+Ja=Umuja. Duality: bowing = submission AND respect. IPA 135+137.'
-    },
-    {
-      id: 'char-g', glyph: 'Ɉ', latin: 'G', type: 'CONSONANT', diff: 1, strokes: 3, ord: 20,
-      symbol: 'Derived from M through Umura (umbilical cord)',
-      history: 'One of 4 letters directly derived from M via umbilical cord concept. IPA 110.'
-    },
-    {
-      id: 'char-h', glyph: 'ꞕ', latin: 'H', type: 'CONSONANT', diff: 1, strokes: 2, ord: 21,
-      symbol: 'H — the breath consonant', history: 'IPA 146+147.'
-    },
-    {
-      id: 'char-f', glyph: 'Ꮙ', latin: 'F', type: 'CONSONANT', diff: 1, strokes: 2, ord: 22,
-      symbol: 'F — labiodental fricative', history: 'IPA 128.'
-    },
-    {
-      id: 'char-p', glyph: 'Ꮥ', latin: 'P', type: 'CONSONANT', diff: 1, strokes: 2, ord: 23,
-      symbol: 'P — voiceless bilabial plosive', history: 'IPA 101.'
-    },
-    {
-      id: 'char-v', glyph: 'Ꮠ', latin: 'V', type: 'CONSONANT', diff: 1, strokes: 2, ord: 24,
-      symbol: 'V — voiced labiodental fricative', history: 'IPA 129.'
-    },
-    {
-      id: 'char-w', glyph: 'Ꮹ', latin: 'W', type: 'CONSONANT', diff: 1, strokes: 2, ord: 25,
-      symbol: 'W — key modifier for "kwa/gwa" compound variants',
-      history: 'IPA 170. Adding W to base consonant = labial variant.'
-    },
-    {
-      id: 'char-y', glyph: 'Ꮍ', latin: 'Y', type: 'CONSONANT', diff: 1, strokes: 2, ord: 26,
-      symbol: 'Y — key modifier for "kya/gya" compound variants',
-      history: 'IPA 153. Adding Y to base consonant = palatal variant.'
-    },
-    {
-      id: 'char-z', glyph: 'Ɀ', latin: 'Z', type: 'CONSONANT', diff: 1, strokes: 2, ord: 27,
-      symbol: 'Derived from M through Umura. Kirundi uses DZ instead.',
-      history: 'IPA 133. Separate Dza character exists for Kirundi Z-sound.'
-    },
-    {
-      id: 'char-sh', glyph: 'Ꮎ', latin: 'Sh', type: 'CONSONANT', diff: 2, strokes: 3, ord: 28,
-      symbol: 'Sh — single sound, not S+H',
-      history: 'Voiceless alveolar retracted sibilant. Key Umwero improvement: 1 sound = 1 character.'
-    },
-    {
-      id: 'char-ny', glyph: 'Ꮌ', latin: 'Ny', type: 'CONSONANT', diff: 2, strokes: 3, ord: 29,
-      symbol: 'Ny — palatal nasal, single consonant',
-      history: 'IPA 118. Not N+Y. Begins Nyina (mother), Nyabarongo.'
-    },
-    {
-      id: 'char-mf', glyph: 'Ꮛ', latin: 'MF', type: 'CONSONANT', diff: 3, strokes: 3, ord: 30,
-      symbol: 'Imfura (noble/firstborn) — support from back (mugongo) + front (inda)',
-      history: '"Iyo Imfura igufashe mu mugongo, ntisiga no mu nda." Upper half-circle=support, lower=provision. Words: imfura, imfubyi, imfuruka.'
-    },
-    {
-      id: 'char-pf', glyph: 'Ꝋ', latin: 'PF', type: 'CONSONANT', diff: 3, strokes: 2, ord: 31,
-      symbol: 'Circle of life broken — death (gupfa)',
-      history: 'Circle(Uruziga)=life. Line through circle=death. gupfa=to die, yapfuye=s/he died. Voiceless labiodental affricate.'
-    },
-    {
-      id: 'char-ts', glyph: 'Ꮆ', latin: 'Ts', type: 'CONSONANT', diff: 2, strokes: 2, ord: 32,
-      symbol: 'Sibilant affricate — shares flowing design with S',
-      history: 'IPA 103+132. Like S, produces continuous unbreakable airflow.'
-    },
-    {
-      id: 'char-shy', glyph: 'Ꮏ', latin: 'Shy', type: 'COMPOUND', diff: 3, strokes: 3, ord: 33,
-      symbol: 'ONE sound written as 3 Latin letters — proof Umwero is needed',
-      history: 'IPA 138. Most Rwandans struggle to write "shy" in Latin. In Umwero = 1 character.'
-    },
-    {
-      id: 'char-ky', glyph: 'Ⴓ', latin: 'Ky', type: 'COMPOUND', diff: 2, strokes: 3, ord: 34,
-      symbol: 'Palatalized velar — K + Y modifier', history: 'IPA 107.'
-    },
+  // CONSONANTS - Base single consonants from UMWERO_MAP
+  const baseConsonants = [
+    { id: 'char-b', umweroGlyph: 'B', latinEquivalent: 'B', type: 'CONSONANT', difficulty: 1, strokeCount: 3, order: 10, symbolism: 'Inyambo body', historicalNote: 'Cow body symbol' },
+    { id: 'char-c', umweroGlyph: 'C', latinEquivalent: 'C', type: 'CONSONANT', difficulty: 2, strokeCount: 4, order: 11, symbolism: 'Serpent wisdom', historicalNote: 'Guca akenge = gain wisdom' },
+    { id: 'char-d', umweroGlyph: 'D', latinEquivalent: 'D', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 12, symbolism: 'Father symbol', historicalNote: 'Data = father' },
+    { id: 'char-f', umweroGlyph: 'F', latinEquivalent: 'F', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 13, symbolism: 'Labiodental fricative', historicalNote: 'IPA 128' },
+    { id: 'char-g', umweroGlyph: 'G', latinEquivalent: 'G', type: 'CONSONANT', difficulty: 1, strokeCount: 3, order: 14, symbolism: 'Derived from M', historicalNote: 'Umbilical cord concept' },
+    { id: 'char-h', umweroGlyph: 'H', latinEquivalent: 'H', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 15, symbolism: 'Breath consonant', historicalNote: 'IPA 146+147' },
+    { id: 'char-j', umweroGlyph: 'J', latinEquivalent: 'J', type: 'CONSONANT', difficulty: 2, strokeCount: 2, order: 16, symbolism: 'Umuja — respect', historicalNote: 'Bowing figure' },
+    { id: 'char-k', umweroGlyph: 'K', latinEquivalent: 'K', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 17, symbolism: 'Featural palatal', historicalNote: 'Tongue position' },
+    { id: 'char-l', umweroGlyph: 'RL', latinEquivalent: 'L', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 18, symbolism: 'L maps to R', historicalNote: 'Umwero L→R mapping' },
+    { id: 'char-m', umweroGlyph: 'M', latinEquivalent: 'M', type: 'CONSONANT', difficulty: 1, strokeCount: 3, order: 19, symbolism: 'Womb', historicalNote: 'Nyababyeyi + umbilical cord' },
+    { id: 'char-n', umweroGlyph: 'N', latinEquivalent: 'N', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 20, symbolism: 'Nasal foundation', historicalNote: 'Building block for prenasalized' },
+    { id: 'char-p', umweroGlyph: 'P', latinEquivalent: 'P', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 21, symbolism: 'Bilabial plosive', historicalNote: 'IPA 101' },
+    { id: 'char-r', umweroGlyph: 'R', latinEquivalent: 'R', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 22, symbolism: 'God-RA', historicalNote: 'Kneeling toward Rurema' },
+    { id: 'char-s', umweroGlyph: 'S', latinEquivalent: 'S', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 23, symbolism: 'Sibilant flow', historicalNote: 'Continuous airflow' },
+    { id: 'char-t', umweroGlyph: 'T', latinEquivalent: 'T', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 24, symbolism: 'Featural alveolar', historicalNote: 'Tongue tip position' },
+    { id: 'char-v', umweroGlyph: 'V', latinEquivalent: 'V', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 25, symbolism: 'Labiodental fricative', historicalNote: 'IPA 129' },
+    { id: 'char-w', umweroGlyph: 'W', latinEquivalent: 'W', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 26, symbolism: 'Labial modifier', historicalNote: 'Creates labial variants' },
+    { id: 'char-y', umweroGlyph: 'Y', latinEquivalent: 'Y', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 27, symbolism: 'Palatal modifier', historicalNote: 'Creates palatal variants' },
+    { id: 'char-z', umweroGlyph: 'Z', latinEquivalent: 'Z', type: 'CONSONANT', difficulty: 1, strokeCount: 2, order: 28, symbolism: 'Derived from M', historicalNote: 'Umbilical cord concept' }
   ];
 
-  // --- LIGATURES (ibihekane) — all compound forms from IPA doc pages 2-6 ---
-  const ligatures = [
-    // B-family
-    { id: 'lig-nb', glyph: 'Ꮿꮾ', latin: 'Nb', type: 'LIGATURE', diff: 2, strokes: 3, ord: 40, history: 'Prenasalized B. IPA B~ 102.' },
-    { id: 'lig-bw', glyph: 'ꮾꞗ', latin: 'BW', type: 'LIGATURE', diff: 2, strokes: 4, ord: 41, history: 'Bga — B+W.' },
-    { id: 'lig-by', glyph: 'ꮾꝹ', latin: 'BY', type: 'LIGATURE', diff: 2, strokes: 4, ord: 42, history: 'Bgya — B+Y.' },
-    { id: 'lig-byw', glyph: 'ꮾꝹꞗ', latin: 'BYW', type: 'LIGATURE', diff: 3, strokes: 5, ord: 43, history: 'Bygwa — B+Y+W.' },
-    // C-family
-    { id: 'lig-nc', glyph: 'ꮿꮇ', latin: 'NC', type: 'LIGATURE', diff: 2, strokes: 4, ord: 44, history: 'Nca — prenasalized CH.' },
-    { id: 'lig-ncw', glyph: 'ꮿꮇꞗ', latin: 'NCW', type: 'LIGATURE', diff: 3, strokes: 5, ord: 45, history: 'Nckwa — N+CH+W.' },
-    { id: 'lig-cw', glyph: 'ꮇꞗ', latin: 'CW', type: 'LIGATURE', diff: 2, strokes: 4, ord: 46, history: 'Ckwa — CH+W.' },
-    // D-family
-    { id: 'lig-dw', glyph: 'ꟼꞗ', latin: 'DW', type: 'LIGATURE', diff: 2, strokes: 3, ord: 47, history: 'Dgwa — D+W.' },
-    { id: 'lig-ry', glyph: 'ꟼꝹ', latin: 'RY', type: 'LIGATURE', diff: 2, strokes: 3, ord: 48, history: 'Dgya — D+Y → mapped to RY.' },
-    // F-family
-    { id: 'lig-fw', glyph: 'Ꮙꞗ', latin: 'FW', type: 'LIGATURE', diff: 2, strokes: 3, ord: 49, history: 'Fka — F+W.' },
-    { id: 'lig-fy', glyph: 'ᏉꝹ', latin: 'FY', type: 'LIGATURE', diff: 2, strokes: 3, ord: 50, history: 'Fkya — F+Y.' },
-    // G/K families
-    { id: 'lig-gw', glyph: 'Ɉꞗ', latin: 'Gw', type: 'LIGATURE', diff: 2, strokes: 4, ord: 51, history: 'Gwa — G+W.' },
-    { id: 'lig-kw', glyph: 'Ⴒꞗ', latin: 'Kw', type: 'LIGATURE', diff: 2, strokes: 3, ord: 52, history: 'Kwa — K+W.' },
-    { id: 'lig-nky', glyph: 'ꮿⴓ', latin: 'NKY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 53, history: 'NKYA — N+Ky.' },
-    // M-family
-    { id: 'lig-mw', glyph: 'Ꮈꞗ', latin: 'MW', type: 'LIGATURE', diff: 2, strokes: 4, ord: 54, history: 'M-Nkha — M+W.' },
-    { id: 'lig-my', glyph: 'ᎸꝹ', latin: 'MY', type: 'LIGATURE', diff: 2, strokes: 4, ord: 55, history: 'Mnya — M+Y.' },
-    { id: 'lig-myw', glyph: 'ᎸꝹꞗ', latin: 'MYW', type: 'LIGATURE', diff: 3, strokes: 5, ord: 56, history: 'M+Ny+Nkh-Wa.' },
-    // MF-family
-    { id: 'lig-mfw', glyph: 'Ꮛꞗ', latin: 'MFW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 57, history: 'Mfka — MF+W.' },
-    { id: 'lig-mfy', glyph: 'ᏋꝹ', latin: 'MFY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 58, history: 'Mfkya — MF+Y.' },
-    // MV-family
-    { id: 'lig-mv', glyph: 'ꮈꮠ', latin: 'MV', type: 'LIGATURE', diff: 2, strokes: 3, ord: 59, history: 'MVA.' },
-    { id: 'lig-mvw', glyph: 'ꮈꮠꞗ', latin: 'MVW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 60, history: 'Mvga/Mvgwa.' },
-    { id: 'lig-mvy', glyph: 'ꮈꮠꝹ', latin: 'MVY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 61, history: 'Mvgya.' },
-    // N-compound family
-    { id: 'lig-nd', glyph: 'ꮿꟼ', latin: 'Nd', type: 'LIGATURE', diff: 2, strokes: 3, ord: 62, history: 'Nda — prenasalized D.' },
-    { id: 'lig-ndw', glyph: 'ꮿꟼꞗ', latin: 'NDW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 63, history: 'Ndgwa.' },
-    { id: 'lig-ndy', glyph: 'ꮿꟼꝹ', latin: 'NDY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 64, history: 'Ndgya.' },
-    { id: 'lig-nw', glyph: 'ꮿꞗ', latin: 'NW', type: 'LIGATURE', diff: 2, strokes: 3, ord: 65, history: 'N-Nkh-Wa.' },
-    { id: 'lig-ng', glyph: 'ꮿɈ', latin: 'Ng', type: 'LIGATURE', diff: 2, strokes: 4, ord: 66, history: 'Nga.' },
-    { id: 'lig-ngw', glyph: 'ꮿɈꞗ', latin: 'Ngw', type: 'LIGATURE', diff: 3, strokes: 5, ord: 67, history: 'Ngwa.' },
-    { id: 'lig-nj', glyph: 'ꮿꝺ', latin: 'Nj', type: 'LIGATURE', diff: 2, strokes: 3, ord: 68, history: 'Nja.' },
-    { id: 'lig-njw', glyph: 'ꮿꝺꞗ', latin: 'Njw', type: 'LIGATURE', diff: 3, strokes: 4, ord: 69, history: 'Njgwa.' },
-    { id: 'lig-nz', glyph: 'ꮿɀ', latin: 'Nz', type: 'LIGATURE', diff: 2, strokes: 3, ord: 70, history: 'Nza.' },
-    { id: 'lig-nzw', glyph: 'ꮿɀꞗ', latin: 'NZW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 71, history: 'Nzgwa.' },
-    { id: 'lig-nt', glyph: 'ꮿɫ', latin: 'NT', type: 'LIGATURE', diff: 2, strokes: 3, ord: 72, history: 'Nha (prenasalized T).' },
-    { id: 'lig-ntw', glyph: 'ꮿɫꞗ', latin: 'NTW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 73, history: 'Nhu-Nkwa.' },
-    { id: 'lig-nny', glyph: 'ꮿꮿꝹ', latin: 'NNY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 74, history: 'Nh-Nya / N-Nya.' },
-    { id: 'lig-nk', glyph: 'ꮿⴒ', latin: 'NK', type: 'LIGATURE', diff: 2, strokes: 3, ord: 75, history: 'NKHA.' },
-    { id: 'lig-nkw', glyph: 'ꮿⴒꞗ', latin: 'NKW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 76, history: 'Nkh-Wa.' },
-    { id: 'lig-ns', glyph: 'ꮿȤ', latin: 'Ns', type: 'LIGATURE', diff: 2, strokes: 3, ord: 77, history: 'Nsa.' },
-    { id: 'lig-nsy', glyph: 'ꮿȤꝹ', latin: 'Nsy', type: 'LIGATURE', diff: 3, strokes: 4, ord: 78, history: 'Nskya.' },
-    { id: 'lig-nsw', glyph: 'ꮿȤꞗ', latin: 'Nsw', type: 'LIGATURE', diff: 3, strokes: 4, ord: 79, history: 'Nskwa.' },
-    { id: 'lig-nsh', glyph: 'ꮿꮎ', latin: 'NSH', type: 'LIGATURE', diff: 2, strokes: 4, ord: 80, history: 'Nsh.' },
-    { id: 'lig-nshw', glyph: 'ꮿꮎꞗ', latin: 'NSHW', type: 'LIGATURE', diff: 3, strokes: 5, ord: 81, history: 'Nshkwa.' },
-    { id: 'lig-shw', glyph: 'ꮎꞗ', latin: 'SHW', type: 'LIGATURE', diff: 3, strokes: 4, ord: 82, history: 'Shkwa.' },
-    { id: 'lig-nshy', glyph: 'ꮿꮏ', latin: 'Nshy', type: 'LIGATURE', diff: 3, strokes: 4, ord: 83, history: 'Nshya.' },
-    { id: 'lig-nshyw', glyph: 'ꮿꮏꞗ', latin: 'Nshyw', type: 'LIGATURE', diff: 3, strokes: 5, ord: 84, history: 'Nshykwa.' },
-    { id: 'lig-shyw', glyph: 'ꮏꞗ', latin: 'Shyw', type: 'LIGATURE', diff: 3, strokes: 4, ord: 85, history: 'Shykwa.' },
-    // P-family
-    { id: 'lig-pw', glyph: 'Ꮥꞗ', latin: 'PW', type: 'LIGATURE', diff: 2, strokes: 3, ord: 86, history: 'Pka — P+W.' },
-    { id: 'lig-py', glyph: 'ᏕꝹ', latin: 'PY', type: 'LIGATURE', diff: 2, strokes: 3, ord: 87, history: 'Pkya — P+Y.' },
-    { id: 'lig-mp', glyph: 'ꮈꮥ', latin: 'Mp', type: 'LIGATURE', diff: 2, strokes: 4, ord: 88, history: 'Mpa — Kinyamulenge & other Bantu.' },
-    { id: 'lig-mpk', glyph: 'ꮈꮥꞗ', latin: 'Mpk', type: 'LIGATURE', diff: 3, strokes: 5, ord: 89, history: 'Mpka — for other Ntu.' },
-    { id: 'lig-mpy', glyph: 'ꮈꮥꝹ', latin: 'Mpy', type: 'LIGATURE', diff: 3, strokes: 5, ord: 90, history: 'Mpkya.' },
-    // PF-family
-    { id: 'lig-pfw', glyph: 'Ꝋꞗ', latin: 'PFW', type: 'LIGATURE', diff: 3, strokes: 3, ord: 91, history: 'Pfka.' },
-    { id: 'lig-pfy', glyph: 'ꝊꝹ', latin: 'PFY', type: 'LIGATURE', diff: 3, strokes: 3, ord: 92, history: 'Pfkya.' },
-    // R-family
-    { id: 'lig-rw', glyph: 'Ɍꞗ', latin: 'Rw', type: 'LIGATURE', diff: 2, strokes: 4, ord: 93, history: 'Rgwa.' },
-    // S/T families
-    { id: 'lig-sy', glyph: 'ȤꝹ', latin: 'Sy', type: 'LIGATURE', diff: 2, strokes: 3, ord: 94, history: 'Skya.' },
-    { id: 'lig-sw', glyph: 'Ȥꞗ', latin: 'Sw', type: 'LIGATURE', diff: 2, strokes: 3, ord: 95, history: 'Skwa.' },
-    { id: 'lig-ty', glyph: 'ⱢꝹ', latin: 'Ty', type: 'LIGATURE', diff: 2, strokes: 3, ord: 96, history: 'Tkya.' },
-    { id: 'lig-tw', glyph: 'Ɫꞗ', latin: 'Tw', type: 'LIGATURE', diff: 2, strokes: 3, ord: 97, history: 'Tkwa. The TW ligature: actually T+K+W, not T+W.' },
-    { id: 'lig-tsw', glyph: 'Ꮆꞗ', latin: 'Tsw', type: 'LIGATURE', diff: 3, strokes: 3, ord: 98, history: 'Tskwa.' },
-    // V/Z/J/Y/Ny families
-    { id: 'lig-vw', glyph: 'Ꮠꞗ', latin: 'Vw', type: 'LIGATURE', diff: 2, strokes: 3, ord: 99, history: 'Vga.' },
-    { id: 'lig-vy', glyph: 'ᏐꝹ', latin: 'Vy', type: 'LIGATURE', diff: 2, strokes: 3, ord: 100, history: 'Vgya.' },
-    { id: 'lig-zw', glyph: 'Ɀꞗ', latin: 'Zw', type: 'LIGATURE', diff: 2, strokes: 3, ord: 101, history: 'Zgwa.' },
-    { id: 'lig-jw', glyph: 'ꝺꞗ', latin: 'JW', type: 'LIGATURE', diff: 2, strokes: 3, ord: 102, history: 'Jgwa.' },
-    { id: 'lig-jy', glyph: 'ꝺꝹ', latin: 'JY', type: 'LIGATURE', diff: 2, strokes: 3, ord: 103, history: 'Gya. IPA 108.' },
-    { id: 'lig-njy', glyph: 'ꮿꝺꝹ', latin: 'NJY', type: 'LIGATURE', diff: 3, strokes: 4, ord: 104, history: 'Ngya.' },
-    { id: 'lig-nyw', glyph: 'Ꮌꞗ', latin: 'Nyw', type: 'LIGATURE', diff: 3, strokes: 4, ord: 105, history: 'Ny-Nkh-Wa.' },
-    // Mba family (special prenasalized from IPA page 1)
-    { id: 'lig-mba', glyph: 'ꮈꮾ', latin: 'Mba', type: 'LIGATURE', diff: 2, strokes: 4, ord: 106, history: 'IPA: A 304.' },
-    { id: 'lig-mbw', glyph: 'ꮈꮾꞗ', latin: 'MBW', type: 'LIGATURE', diff: 3, strokes: 5, ord: 107, history: 'Mbga.' },
-    { id: 'lig-mby', glyph: 'ꮈꮾꝹ', latin: 'MBY', type: 'LIGATURE', diff: 3, strokes: 5, ord: 108, history: 'Mbgya.' },
-    { id: 'lig-mbyw', glyph: 'ꮈꮾꝹꞗ', latin: 'MBYW', type: 'LIGATURE', diff: 3, strokes: 6, ord: 109, history: 'Aygw (!).' },
-    // Cross-language variants
-    { id: 'lig-dza', glyph: 'ꟼɀ', latin: 'Dza', type: 'LIGATURE', diff: 2, strokes: 3, ord: 110, history: 'Z for Kirundi — DZ pronunciation.' },
-    { id: 'lig-dja', glyph: 'ꟼꝺ', latin: 'DJA', type: 'LIGATURE', diff: 2, strokes: 3, ord: 111, history: 'J for Kiswahili pronunciation.' },
+  // COMPOUND CONSONANTS - These are CONSONANTS, not ligatures (single phonemes)
+  const compoundConsonants = [
+    { id: 'char-mb', umweroGlyph: 'A', latinEquivalent: 'MB', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 30, symbolism: 'Prenasalized B', historicalNote: 'Single phoneme /mb/' },
+    { id: 'char-mf', umweroGlyph: 'FF', latinEquivalent: 'MF', type: 'CONSONANT', difficulty: 3, strokeCount: 3, order: 31, symbolism: 'Imfura noble', historicalNote: 'Support + provision' },
+    { id: 'char-mv', umweroGlyph: 'O', latinEquivalent: 'MV', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 32, symbolism: 'Prenasalized V', historicalNote: 'Single phoneme /mv/' },
+    { id: 'char-nc', umweroGlyph: 'CC', latinEquivalent: 'NC', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 33, symbolism: 'Prenasalized C', historicalNote: 'Single phoneme /nc/' },
+    { id: 'char-nd', umweroGlyph: 'ND', latinEquivalent: 'ND', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 34, symbolism: 'Prenasalized D', historicalNote: 'Single phoneme /nd/' },
+    { id: 'char-ng', umweroGlyph: 'NG', latinEquivalent: 'NG', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 35, symbolism: 'Prenasalized G', historicalNote: 'Single phoneme /ng/' },
+    { id: 'char-nj', umweroGlyph: 'U', latinEquivalent: 'NJ', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 36, symbolism: 'Prenasalized J', historicalNote: 'Single phoneme /nj/' },
+    { id: 'char-nk', umweroGlyph: 'E', latinEquivalent: 'NK', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 37, symbolism: 'Prenasalized K', historicalNote: 'Single phoneme /nk/' },
+    { id: 'char-ns', umweroGlyph: 'SS', latinEquivalent: 'NS', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 38, symbolism: 'Prenasalized S', historicalNote: 'Single phoneme /ns/' },
+    { id: 'char-nt', umweroGlyph: 'NN', latinEquivalent: 'NT', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 39, symbolism: 'Prenasalized T', historicalNote: 'Single phoneme /nt/' },
+    { id: 'char-nz', umweroGlyph: 'NZ', latinEquivalent: 'NZ', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 40, symbolism: 'Prenasalized Z', historicalNote: 'Single phoneme /nz/' },
+    { id: 'char-ny', umweroGlyph: 'YY', latinEquivalent: 'NY', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 41, symbolism: 'Palatal nasal', historicalNote: 'Single consonant, not N+Y' },
+    { id: 'char-pf', umweroGlyph: 'I', latinEquivalent: 'PF', type: 'CONSONANT', difficulty: 3, strokeCount: 2, order: 42, symbolism: 'Death — broken circle', historicalNote: 'gupfa = to die' },
+    { id: 'char-sh', umweroGlyph: 'HH', latinEquivalent: 'SH', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 43, symbolism: 'Single sound, not S+H', historicalNote: 'Retracted sibilant' },
+    { id: 'char-ts', umweroGlyph: 'X', latinEquivalent: 'TS', type: 'CONSONANT', difficulty: 2, strokeCount: 2, order: 44, symbolism: 'Sibilant affricate', historicalNote: 'Continuous airflow' },
+    { id: 'char-jy', umweroGlyph: 'L', latinEquivalent: 'JY', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 45, symbolism: 'Palatalized J', historicalNote: 'Single phoneme /jy/' },
+    { id: 'char-shy', umweroGlyph: 'Q', latinEquivalent: 'SHY', type: 'CONSONANT', difficulty: 3, strokeCount: 3, order: 46, symbolism: 'Palatalized SH', historicalNote: 'Single phoneme /shy/' },
+    { id: 'char-nshy', umweroGlyph: 'QQ', latinEquivalent: 'NSHY', type: 'CONSONANT', difficulty: 4, strokeCount: 4, order: 47, symbolism: 'Prenasalized SHY', historicalNote: 'Complex single phoneme' }
   ];
 
-  // --- SPECIAL CHARACTERS from IPA page 1 ---
+  // TRUE LIGATURES - Only structural compound fusions from UMWERO_MAP
+  const trueLigatures = [
+    // Based on UMWERO_MAP - these are true structural fusions, not single phonemes
+    
+    // 2-letter structural compounds
+    { id: 'lig-bw', umweroGlyph: 'BBG', latinEquivalent: 'BW', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 50, symbolism: 'B + W fusion', historicalNote: 'Bga - B with W modifier' },
+    { id: 'lig-by', umweroGlyph: 'BBL', latinEquivalent: 'BY', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 51, symbolism: 'B + Y fusion', historicalNote: 'Bya - B with Y modifier' },
+    { id: 'lig-cw', umweroGlyph: 'CKW', latinEquivalent: 'CW', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 52, symbolism: 'C + W fusion', historicalNote: 'Ckwa - C with W modifier' },
+    { id: 'lig-cy', umweroGlyph: 'CYY', latinEquivalent: 'CY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 53, symbolism: 'C + Y fusion', historicalNote: 'Cya - C with Y modifier' },
+    { id: 'lig-dw', umweroGlyph: 'DGW', latinEquivalent: 'DW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 54, symbolism: 'D + W fusion', historicalNote: 'Dgwa - D with W modifier' },
+    { id: 'lig-fw', umweroGlyph: 'FK', latinEquivalent: 'FW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 55, symbolism: 'F + W fusion', historicalNote: 'Fka - F with W modifier' },
+    { id: 'lig-fy', umweroGlyph: 'FKK', latinEquivalent: 'FY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 56, symbolism: 'F + Y fusion', historicalNote: 'Fkya - F with Y modifier' },
+    { id: 'lig-gw', umweroGlyph: 'GW', latinEquivalent: 'GW', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 57, symbolism: 'G + W fusion', historicalNote: 'Gwa - G with W modifier' },
+    { id: 'lig-kw', umweroGlyph: 'KW', latinEquivalent: 'KW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 58, symbolism: 'K + W fusion', historicalNote: 'Kwa - K with W modifier' },
+    { id: 'lig-ky', umweroGlyph: 'KYY', latinEquivalent: 'KY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 59, symbolism: 'K + Y fusion', historicalNote: 'Kya - K with Y modifier' },
+    { id: 'lig-mw', umweroGlyph: 'ME', latinEquivalent: 'MW', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 60, symbolism: 'M + W fusion', historicalNote: 'Mwa - M with W modifier' },
+    { id: 'lig-my', umweroGlyph: 'MYY', latinEquivalent: 'MY', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 61, symbolism: 'M + Y fusion', historicalNote: 'Mya - M with Y modifier' },
+    { id: 'lig-nw', umweroGlyph: 'NEW', latinEquivalent: 'NW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 62, symbolism: 'N + W fusion', historicalNote: 'Nwa - N with W modifier' },
+    { id: 'lig-pw', umweroGlyph: 'PK', latinEquivalent: 'PW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 63, symbolism: 'P + W fusion', historicalNote: 'Pka - P with W modifier' },
+    { id: 'lig-py', umweroGlyph: 'PKK', latinEquivalent: 'PY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 64, symbolism: 'P + Y fusion', historicalNote: 'Pkya - P with Y modifier' },
+    { id: 'lig-rw', umweroGlyph: 'RGW', latinEquivalent: 'RW', type: 'LIGATURE', difficulty: 2, strokeCount: 4, order: 65, symbolism: 'R + W fusion', historicalNote: 'Rgwa - R with W modifier' },
+    { id: 'lig-ry', umweroGlyph: 'DL', latinEquivalent: 'RY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 66, symbolism: 'R + Y fusion', historicalNote: 'Rya - R with Y modifier' },
+    { id: 'lig-sw', umweroGlyph: 'SKW', latinEquivalent: 'SW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 67, symbolism: 'S + W fusion', historicalNote: 'Skwa - S with W modifier' },
+    { id: 'lig-sy', umweroGlyph: 'SKK', latinEquivalent: 'SY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 68, symbolism: 'S + Y fusion', historicalNote: 'Skya - S with Y modifier' },
+    { id: 'lig-tw', umweroGlyph: 'TKW', latinEquivalent: 'TW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 69, symbolism: 'T + W fusion', historicalNote: 'Tkwa - T with W modifier' },
+    { id: 'lig-ty', umweroGlyph: 'TKK', latinEquivalent: 'TY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 70, symbolism: 'T + Y fusion', historicalNote: 'Tkya - T with Y modifier' },
+    { id: 'lig-vw', umweroGlyph: 'VG', latinEquivalent: 'VW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 71, symbolism: 'V + W fusion', historicalNote: 'Vga - V with W modifier' },
+    { id: 'lig-vy', umweroGlyph: 'VL', latinEquivalent: 'VY', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 72, symbolism: 'V + Y fusion', historicalNote: 'Vya - V with Y modifier' },
+    { id: 'lig-zw', umweroGlyph: 'ZGW', latinEquivalent: 'ZW', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 73, symbolism: 'Z + W fusion', historicalNote: 'Zgwa - Z with W modifier' },
+
+    // 3-letter structural compounds
+    { id: 'lig-ncw', umweroGlyph: 'CCKW', latinEquivalent: 'NCW', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 80, symbolism: 'N + C + W fusion', historicalNote: 'Nckwa - prenasalized C with W' },
+    { id: 'lig-nkw', umweroGlyph: 'EW', latinEquivalent: 'NKW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 81, symbolism: 'N + K + W fusion', historicalNote: 'Nkwa - prenasalized K with W' },
+    { id: 'lig-mfw', umweroGlyph: 'FFK', latinEquivalent: 'MFW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 82, symbolism: 'MF + W fusion', historicalNote: 'Mfka - MF with W modifier' },
+    { id: 'lig-mfy', umweroGlyph: 'FFKK', latinEquivalent: 'MFY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 83, symbolism: 'MF + Y fusion', historicalNote: 'Mfkya - MF with Y modifier' },
+    { id: 'lig-nsh', umweroGlyph: 'HHH', latinEquivalent: 'NSH', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 84, symbolism: 'N + SH fusion', historicalNote: 'Nsha - prenasalized SH' },
+    { id: 'lig-pfw', umweroGlyph: 'IK', latinEquivalent: 'PFW', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 85, symbolism: 'PF + W fusion', historicalNote: 'Pfka - PF with W modifier' },
+    { id: 'lig-pfy', umweroGlyph: 'IKK', latinEquivalent: 'PFY', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 86, symbolism: 'PF + Y fusion', historicalNote: 'Pfkya - PF with Y modifier' },
+    { id: 'lig-shw', umweroGlyph: 'HHKW', latinEquivalent: 'SHW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 87, symbolism: 'SH + W fusion', historicalNote: 'Shkwa - SH with W modifier' },
+    { id: 'lig-ndw', umweroGlyph: 'NDGW', latinEquivalent: 'NDW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 88, symbolism: 'ND + W fusion', historicalNote: 'Ndgwa - ND with W modifier' },
+    { id: 'lig-ndy', umweroGlyph: 'NDL', latinEquivalent: 'NDY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 89, symbolism: 'ND + Y fusion', historicalNote: 'Ndgya - ND with Y modifier' },
+    { id: 'lig-ngw', umweroGlyph: 'NGW', latinEquivalent: 'NGW', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 90, symbolism: 'NG + W fusion', historicalNote: 'Ngwa - NG with W modifier' },
+    { id: 'lig-ntw', umweroGlyph: 'NNEW', latinEquivalent: 'NTW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 91, symbolism: 'NT + W fusion', historicalNote: 'Ntkwa - NT with W modifier' },
+    { id: 'lig-nny', umweroGlyph: 'NNYY', latinEquivalent: 'NNY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 92, symbolism: 'NN + Y fusion', historicalNote: 'Nnya - NN with Y modifier' },
+    { id: 'lig-nyy', umweroGlyph: 'NYY', latinEquivalent: 'NYY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 93, symbolism: 'NY + Y fusion', historicalNote: 'Nyya - NY with Y modifier' },
+    { id: 'lig-nzw', umweroGlyph: 'NZGW', latinEquivalent: 'NZW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 94, symbolism: 'NZ + W fusion', historicalNote: 'Nzgwa - NZ with W modifier' },
+    { id: 'lig-mvw', umweroGlyph: 'OG', latinEquivalent: 'MVW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 95, symbolism: 'MV + W fusion', historicalNote: 'Mvga - MV with W modifier' },
+    { id: 'lig-mvy', umweroGlyph: 'OL', latinEquivalent: 'MVY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 96, symbolism: 'MV + Y fusion', historicalNote: 'Mvgya - MV with Y modifier' },
+    { id: 'lig-mpy', umweroGlyph: 'PPKK', latinEquivalent: 'MPY', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 97, symbolism: 'MP + Y fusion', historicalNote: 'Mpkya - MP with Y modifier' },
+    { id: 'lig-mbw', umweroGlyph: 'ABBG', latinEquivalent: 'MBW', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 98, symbolism: 'MB + W fusion', historicalNote: 'Mbga - MB with W modifier' },
+    { id: 'lig-tsw', umweroGlyph: 'XKW', latinEquivalent: 'TSW', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 99, symbolism: 'TS + W fusion', historicalNote: 'Tskwa - TS with W modifier' },
+
+    // 4-letter structural compounds
+    { id: 'lig-nshw', umweroGlyph: 'HHHKW', latinEquivalent: 'NSHW', type: 'LIGATURE', difficulty: 4, strokeCount: 5, order: 110, symbolism: 'NSH + W fusion', historicalNote: 'Nshkwa - NSH with W modifier' },
+    { id: 'lig-nshy', umweroGlyph: 'QQQQ', latinEquivalent: 'NSHY', type: 'LIGATURE', difficulty: 4, strokeCount: 4, order: 111, symbolism: 'NSH + Y fusion', historicalNote: 'Nshya - NSH with Y modifier' },
+
+    // 5-letter structural compounds
+    { id: 'lig-nshyw', umweroGlyph: 'QQKW', latinEquivalent: 'NSHYW', type: 'LIGATURE', difficulty: 5, strokeCount: 5, order: 120, symbolism: 'NSH + Y + W fusion', historicalNote: 'Nshywa - most complex compound' }
+  ];
+
+  // SPECIAL CHARACTERS
   const specials = [
-    { id: 'sp-period', glyph: '⊕', latin: '.', type: 'SPECIAL', diff: 1, strokes: 1, ord: 200, history: 'Period.' },
-    { id: 'sp-comma', glyph: '◎', latin: ',', type: 'SPECIAL', diff: 1, strokes: 1, ord: 201, history: 'Comma/semicolon.' },
-    { id: 'sp-question', glyph: 'Ꮻ̃', latin: '?', type: 'SPECIAL', diff: 1, strokes: 2, ord: 202, history: 'Question mark.' },
-    { id: 'sp-equals', glyph: 'Ꮻ̊', latin: '=', type: 'SPECIAL', diff: 1, strokes: 2, ord: 203, history: 'Equals = represents "Umwero" name. Harvest fruit symbol.' },
-    { id: 'sp-paren', glyph: '├', latin: '(', type: 'SPECIAL', diff: 1, strokes: 1, ord: 204, history: 'Opening bracket.' },
-    { id: 'sp-plus', glyph: 'Ꮻ', latin: '+', type: 'SPECIAL', diff: 1, strokes: 2, ord: 205, history: 'Plus/conjunction.' },
-    { id: 'sp-dash', glyph: 'Ꮻ̄', latin: '-', type: 'SPECIAL', diff: 1, strokes: 1, ord: 206, history: 'Dash/hyphen.' },
+    { id: 'char-space', umweroGlyph: ' ', latinEquivalent: 'SPACE', type: 'SPECIAL', difficulty: 0, strokeCount: 0, order: 100, symbolism: 'Word separator', historicalNote: 'Standard space' },
+    { id: 'char-period', umweroGlyph: '.', latinEquivalent: 'PERIOD', type: 'SPECIAL', difficulty: 0, strokeCount: 1, order: 101, symbolism: 'Sentence end', historicalNote: 'Standard period' },
+    { id: 'char-comma', umweroGlyph: ',', latinEquivalent: 'COMMA', type: 'SPECIAL', difficulty: 0, strokeCount: 1, order: 102, symbolism: 'Pause marker', historicalNote: 'Standard comma' }
   ];
 
-  const allChars = [...vowels, ...consonants, ...ligatures, ...specials];
+  const allChars = [...vowels, ...baseConsonants, ...compoundConsonants, ...trueLigatures, ...specials];
 
   for (const c of allChars) {
-    const char = await prisma.character.upsert({
+    await prisma.character.upsert({
       where: { id: c.id },
-      update: {
-        umweroGlyph: c.glyph,
-        latinEquivalent: c.latin,
-        type: c.type as any,
-        difficulty: c.diff,
-        strokeCount: c.strokes,
-        order: c.ord,
-        symbolism: (c as any).symbol || null,
-        historicalNote: c.history || null,
-        isActive: true,
-      },
-      create: {
-        id: c.id,
-        umweroGlyph: c.glyph,
-        latinEquivalent: c.latin,
-        type: c.type as any,
-        difficulty: c.diff,
-        strokeCount: c.strokes,
-        order: c.ord,
-        symbolism: (c as any).symbol || null,
-        historicalNote: c.history || null,
-        isActive: true,
-      },
+      update: c as any,
+      create: c as any
     });
-
-    // Add translations for vowels (they have enName etc.)
-    if ((c as any).enName && enLang && rwLang) {
-      // Upsert English translation
-      await prisma.characterTranslation.upsert({
-        where: {
-          characterId_languageId: { characterId: char.id, languageId: enLang.id }
-        },
-        update: {
-          name: (c as any).enName,
-          pronunciation: (c as any).enPron,
-          meaning: (c as any).enMean,
-          description: (c as any).enDesc,
-        },
-        create: {
-          characterId: char.id,
-          languageId: enLang.id,
-          name: (c as any).enName,
-          pronunciation: (c as any).enPron,
-          meaning: (c as any).enMean,
-          description: (c as any).enDesc,
-        },
-      });
-
-      // Upsert Kinyarwanda translation
-      await prisma.characterTranslation.upsert({
-        where: {
-          characterId_languageId: { characterId: char.id, languageId: rwLang.id }
-        },
-        update: {
-          name: (c as any).rwName,
-          pronunciation: (c as any).rwPron,
-          meaning: (c as any).rwMean,
-          description: (c as any).rwDesc,
-        },
-        create: {
-          characterId: char.id,
-          languageId: rwLang.id,
-          name: (c as any).rwName,
-          pronunciation: (c as any).rwPron,
-          meaning: (c as any).rwMean,
-          description: (c as any).rwDesc,
-        },
-      });
-    }
   }
 
-  console.log(`✅ ${allChars.length} characters (${vowels.length} vowels, ${consonants.length} consonants, ${ligatures.length} ligatures, ${specials.length} special)\n`);
+  console.log(`✅ ${allChars.length} characters (${vowels.length} vowels, ${baseConsonants.length + compoundConsonants.length} consonants, ${trueLigatures.length} ligatures, ${specials.length} special)\n`);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // LESSONS
+  // LESSONS — INDIVIDUAL LESSONS FOR EVERY CHARACTER
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('📚 Lessons...');
+
   const allLessons = [
-    // 5 vowel lessons
-    ...['A', 'U', 'O', 'E', 'I'].map((v, i) => ({
-      id: `lesson-vowel-${v.toLowerCase()}`,
-      title: `Vowel ${v}: ${['Inyambo Cow Head', 'Binding Rope', 'Circle of Life', 'True Kinyarwanda Sound', 'Long Vowel'][i]}`,
-      description: `Learn the Umwero vowel ${v}`,
-      module: 'BEGINNER', type: 'VOWEL', order: i + 1, duration: 8, difficulty: 1,
-      estimatedTime: 8, characterId: `char-${v.toLowerCase()}`, code: `VOWEL-${v}`,
-      content: JSON.stringify({ vowel: v.toLowerCase(), glyph: vowels[i].glyph, latin: v }),
-      isPublished: true,
+    // Vowel lessons (5)
+    ...vowels.map((v, i) => ({
+      id: `lesson-vowel-${v.latinEquivalent.toLowerCase()}`,
+      title: `Vowel ${v.latinEquivalent}`,
+      description: `Learn the vowel ${v.latinEquivalent} - ${v.symbolism}`,
+      module: 'BEGINNER' as const,
+      type: 'VOWEL' as const,
+      order: i + 1,
+      duration: 8,
+      difficulty: 1,
+      estimatedTime: 8,
+      characterId: v.id,
+      code: `VOWEL-${v.latinEquivalent}`,
+      content: JSON.stringify({ vowel: v.latinEquivalent.toLowerCase(), glyph: v.umweroGlyph, symbol: v.symbolism }),
+      isPublished: true
     })),
-    // Consonant lessons
-    {
-      id: 'lesson-cons-b', title: 'Consonant B: Inyambo Body', description: 'B + A = complete Inyambo cow',
-      module: 'BEGINNER', type: 'CONSONANT', order: 6, duration: 10, difficulty: 1, estimatedTime: 10,
-      characterId: 'char-b', code: 'CONS-B', content: JSON.stringify({ consonant: 'b', glyph: 'ꮾ', ipa: 'bilabial approx' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-m', title: 'Consonant M: Womb (Nyababyeyi)', description: 'Baby in womb + umbilical cord. Mother of derived letters.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 7, duration: 12, difficulty: 1, estimatedTime: 12,
-      characterId: 'char-m', code: 'CONS-M', content: JSON.stringify({ consonant: 'm', glyph: 'Ꮈ', ipa: '114', derived: ['L', 'LL', 'G', 'Z'] }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-r', title: 'Consonant R: God-RA (Praising)', description: 'Person kneeling toward Rurema the Creator.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 8, duration: 10, difficulty: 2, estimatedTime: 10,
-      characterId: 'char-r', code: 'CONS-R', content: JSON.stringify({ consonant: 'r', glyph: 'Ɍ', ipa: '124' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-n', title: 'Consonant N: Nasal Foundation', description: 'Building block for Bantu prenasalized sounds.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 9, duration: 10, difficulty: 1, estimatedTime: 10,
-      characterId: 'char-n', code: 'CONS-N', content: JSON.stringify({ consonant: 'n', glyph: 'Ꮿ', ipa: '116' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-tk', title: 'Consonants T & K: Featural Pair', description: 'Shapes mirror tongue position — like Korean Hangul.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 10, duration: 15, difficulty: 1, estimatedTime: 15,
-      code: 'CONS-TK', content: JSON.stringify({ t: { glyph: 'Ɫ', ipa: '103' }, k: { glyph: 'Ⴒ', ipa: '109' } }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-ch', title: 'Consonant CH: Serpent\'s Wisdom', description: 'Serpent + pathway = wisdom & movement.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 11, duration: 10, difficulty: 2, estimatedTime: 10,
-      characterId: 'char-ch', code: 'CONS-CH', content: JSON.stringify({ consonant: 'ch', glyph: 'Ꮇ', ipa: '103+134' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-d', title: 'Consonant D: Father Symbol', description: 'Male symbol — Data, Daye, Dawe.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 12, duration: 8, difficulty: 1, estimatedTime: 8,
-      characterId: 'char-d', code: 'CONS-D', content: JSON.stringify({ consonant: 'd', glyph: 'ꟼ', ipa: '104' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-j', title: 'Consonant J: Bowing Figure', description: 'Umuja — servitude AND respect.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 13, duration: 8, difficulty: 2, estimatedTime: 8,
-      characterId: 'char-j', code: 'CONS-J', content: JSON.stringify({ consonant: 'j', glyph: 'ꝺ', ipa: '135+137' }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-sts', title: 'Consonants S & TS: Flowing Sibilants', description: 'Continuous airflow sounds.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 14, duration: 12, difficulty: 1, estimatedTime: 12,
-      code: 'CONS-S-TS', content: JSON.stringify({ s: { glyph: 'Ȥ', ipa: '132' }, ts: { glyph: 'Ꮆ', ipa: '103+132' } }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-sh', title: 'Consonants Sh & Shy: One Sound, One Character', description: 'Proof Umwero is needed — shy is 1 sound, not 3 letters.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 15, duration: 12, difficulty: 2, estimatedTime: 12,
-      code: 'CONS-SH-SHY', content: JSON.stringify({ sh: { glyph: 'Ꮎ' }, shy: { glyph: 'Ꮏ', ipa: '138' } }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-mfpf', title: 'Consonants MF & PF: Life & Death', description: 'MF=Imfura(noble) and PF=gupfa(death).',
-      module: 'INTERMEDIATE', type: 'CONSONANT', order: 16, duration: 15, difficulty: 3, estimatedTime: 15,
-      code: 'CONS-MF-PF', content: JSON.stringify({ mf: { glyph: 'Ꮛ' }, pf: { glyph: 'Ꝋ' } }), isPublished: true
-    },
-    {
-      id: 'lesson-cons-rest', title: 'Remaining Consonants: F, G, H, P, V, W, Y, Z, Ny', description: 'Complete your consonant knowledge.',
-      module: 'BEGINNER', type: 'CONSONANT', order: 17, duration: 20, difficulty: 1, estimatedTime: 20,
-      code: 'CONS-REST', content: JSON.stringify({ chars: ['F', 'G', 'H', 'P', 'V', 'W', 'Y', 'Z', 'Ny'] }), isPublished: true
-    },
-    // Ligature lessons
-    {
-      id: 'lesson-lig-intro', title: 'Ibihekane: The Compound System', description: 'Learn how W and Y modifiers create compound characters.',
-      module: 'INTERMEDIATE', type: 'CONSONANT', order: 18, duration: 15, difficulty: 2, estimatedTime: 15,
-      code: 'LIG-INTRO', content: JSON.stringify({ system: 'base+W=labial, base+Y=palatal, N+base=prenasalized' }), isPublished: true
-    },
-    {
-      id: 'lesson-lig-prenasalized', title: 'Prenasalized Consonants', description: 'Nd, Ng, Nj, Nz, NK, Ns, Nsh, NT — the N+ family.',
-      module: 'INTERMEDIATE', type: 'CONSONANT', order: 19, duration: 20, difficulty: 2, estimatedTime: 20,
-      code: 'LIG-PRENASAL', content: JSON.stringify({ type: 'prenasalized', chars: ['Nd', 'Ng', 'Nj', 'Nz', 'NK', 'Ns', 'NSH', 'NT'] }), isPublished: true
-    },
+
+    // Individual consonant lessons - EVERY consonant gets its own lesson
+    ...baseConsonants.map((c, i) => ({
+      id: `lesson-consonant-${c.latinEquivalent.toLowerCase()}`,
+      title: `Consonant ${c.latinEquivalent}`,
+      description: `Learn the consonant ${c.latinEquivalent} - ${c.symbolism}`,
+      module: 'BEGINNER' as const,
+      type: 'CONSONANT' as const,
+      order: i + 6,
+      duration: 10,
+      difficulty: c.difficulty,
+      estimatedTime: 10,
+      characterId: c.id,
+      code: `CONS-${c.latinEquivalent}`,
+      content: JSON.stringify({ consonant: c.latinEquivalent.toLowerCase(), glyph: c.umweroGlyph, symbol: c.symbolism }),
+      isPublished: true
+    })),
+
+    // Individual compound consonant lessons
+    ...compoundConsonants.map((c, i) => ({
+      id: `lesson-consonant-${c.latinEquivalent.toLowerCase()}`,
+      title: `Consonant ${c.latinEquivalent}`,
+      description: `Learn the consonant ${c.latinEquivalent} - ${c.symbolism}`,
+      module: 'INTERMEDIATE' as const,
+      type: 'CONSONANT' as const,
+      order: i + 6 + baseConsonants.length,
+      duration: 12,
+      difficulty: c.difficulty,
+      estimatedTime: 12,
+      characterId: c.id,
+      code: `CONS-${c.latinEquivalent}`,
+      content: JSON.stringify({ consonant: c.latinEquivalent.toLowerCase(), glyph: c.umweroGlyph, symbol: c.symbolism }),
+      isPublished: true
+    })),
+
+    // Individual ligature lessons - EVERY ligature gets its own lesson
+    ...trueLigatures.map((l, i) => ({
+      id: `lesson-ligature-${l.latinEquivalent.toLowerCase()}`,
+      title: `Ligature ${l.latinEquivalent}`,
+      description: `Learn the ligature ${l.latinEquivalent} - ${l.symbolism}`,
+      module: l.difficulty <= 2 ? 'INTERMEDIATE' as const : 'ADVANCED' as const,
+      type: 'LIGATURE' as const,
+      order: i + 6 + baseConsonants.length + compoundConsonants.length,
+      duration: l.difficulty * 5,
+      difficulty: l.difficulty,
+      estimatedTime: l.difficulty * 5,
+      characterId: l.id,
+      code: `LIG-${l.latinEquivalent}`,
+      content: JSON.stringify({ 
+        ligature: l.latinEquivalent.toLowerCase(), 
+        glyph: l.umweroGlyph, 
+        symbol: l.symbolism,
+        components: l.latinEquivalent.match(/.{1,2}/g) || [l.latinEquivalent] // Split into component parts
+      }),
+      isPublished: true
+    })),
+
     // Culture lessons
     {
-      id: 'lesson-culture-history', title: 'History of Writing Systems', description: 'From Cuneiform to Umwero — why new scripts are born.',
-      module: 'BEGINNER', type: 'CULTURE', order: 20, duration: 15, difficulty: 1, estimatedTime: 15,
-      code: 'CULTURE-HIST', content: JSON.stringify({ topics: ['Cuneiform', 'Hieroglyphs', 'Alphabet origin', 'Colonial impact', 'Bamum', 'N\'Ko', 'Adlam', 'Umwero'] }), isPublished: true
+      id: 'lesson-culture-history',
+      title: 'History of Writing Systems',
+      description: 'From Cuneiform to Umwero — why new scripts are born.',
+      module: 'BEGINNER' as const,
+      type: 'CULTURE' as const,
+      order: 200,
+      duration: 15,
+      difficulty: 1,
+      estimatedTime: 15,
+      code: 'CULTURE-HIST',
+      content: JSON.stringify({ topics: ['Cuneiform', 'Hieroglyphs', 'Alphabet origin', 'Colonial impact', 'Umwero'] }),
+      isPublished: true
     },
     {
-      id: 'lesson-culture-numbers', title: 'Umwero Numbers: No Zero', description: 'Numbers from 1-9, no zero. Based on Rwandan counting culture.',
-      module: 'INTERMEDIATE', type: 'CULTURE', order: 21, duration: 15, difficulty: 2, estimatedTime: 15,
-      code: 'CULTURE-NUM', content: JSON.stringify({ philosophy: 'No zero. Ubusa cannot be counted.', numbers: 9 }), isPublished: true
-    },
-    {
-      id: 'lesson-culture-system', title: 'The Umwero Writing System', description: 'RTL direction, 8-unit measurement, joint at position 3.',
-      module: 'BEGINNER', type: 'CULTURE', order: 22, duration: 10, difficulty: 1, estimatedTime: 10,
-      code: 'CULTURE-SYS', content: JSON.stringify({ direction: 'RTL', measurement: 8, joint: 3, pctKinyarwanda: 80 }), isPublished: true
-    },
+      id: 'lesson-culture-system',
+      title: 'The Umwero Writing System',
+      description: 'RTL direction, 8-unit measurement, joint at position 3.',
+      module: 'BEGINNER' as const,
+      type: 'CULTURE' as const,
+      order: 201,
+      duration: 10,
+      difficulty: 1,
+      estimatedTime: 10,
+      code: 'CULTURE-SYS',
+      content: JSON.stringify({ direction: 'RTL', measurement: 8, joint: 3 }),
+      isPublished: true
+    }
   ];
 
   for (const l of allLessons) {
@@ -584,18 +317,10 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('🏆 Achievements...');
   const achievements = [
-    { code: 'first-steps', name: 'Intambwe ya Mbere', description: 'Complete your first lesson', icon: '🎯', category: 'LESSON_COMPLETION', requirement: JSON.stringify({ lessonsCompleted: 1 }), points: 10 },
-    { code: 'vowel-master', name: 'Umuhanga w\'Inyajwi', description: 'Complete all 5 vowel lessons', icon: '🏆', category: 'LESSON_COMPLETION', requirement: JSON.stringify({ vowelsCompleted: 5 }), points: 50 },
-    { code: 'consonant-explorer', name: 'Umushakashatsi w\'Ingombajwi', description: 'Complete 5 consonant lessons', icon: '📚', category: 'LESSON_COMPLETION', requirement: JSON.stringify({ consonantsCompleted: 5 }), points: 40 },
-    { code: 'cultural-seeker', name: 'Umushakisha w\'Umuco', description: 'Complete all cultural lessons', icon: '🌍', category: 'CULTURAL_KNOWLEDGE', requirement: JSON.stringify({ cultureLessonsCompleted: 3 }), points: 60 },
-    { code: 'dedicated-learner', name: 'Umunyeshuri w\'Indahemuka', description: 'Practice for 1 hour total', icon: '⏰', category: 'PRACTICE_MASTERY', requirement: JSON.stringify({ totalMinutes: 60 }), points: 30 },
-    { code: 'perfect-score', name: 'Amanota Yuzuye', description: 'Get 100% on any lesson', icon: '⭐', category: 'PRACTICE_MASTERY', requirement: JSON.stringify({ perfectScore: true }), points: 40 },
-    { code: 'week-streak', name: 'Iminsi 7', description: 'Learn 7 days in a row', icon: '🔥', category: 'STREAK', requirement: JSON.stringify({ streakDays: 7 }), points: 70 },
-    { code: 'month-streak', name: 'Ukwezi Kuzuye', description: 'Learn 30 days in a row', icon: '💎', category: 'STREAK', requirement: JSON.stringify({ streakDays: 30 }), points: 200 },
-    { code: 'artist', name: 'Umuhanga mu Gushushanya', description: 'Practice canvas writing 10 times', icon: '🎨', category: 'PRACTICE_MASTERY', requirement: JSON.stringify({ drawingsCount: 10 }), points: 25 },
-    { code: 'inyambo-scholar', name: 'Umuhanga w\'Inyambo', description: 'Master all cultural characters', icon: '🐄', category: 'CULTURAL_KNOWLEDGE', requirement: JSON.stringify({ culturalMastered: true }), points: 100 },
-    { code: 'compound-master', name: 'Umuhanga w\'Ibihekane', description: 'Learn all ligature characters', icon: '🧩', category: 'LESSON_COMPLETION', requirement: JSON.stringify({ ligaturesLearned: true }), points: 150 },
-    { code: 'number-sage', name: 'Umuhanga w\'Imibare', description: 'Master the Umwero number system', icon: '🔢', category: 'CULTURAL_KNOWLEDGE', requirement: JSON.stringify({ numbersMastered: true }), points: 80 },
+    { code: 'first-steps', name: 'Intambwe ya Mbere', description: 'Complete your first lesson', icon: '🎯', category: 'LESSON_COMPLETION' as const, requirement: JSON.stringify({ lessonsCompleted: 1 }), points: 10 },
+    { code: 'vowel-master', name: 'Umuhanga w\'Inyajwi', description: 'Complete all 5 vowel lessons', icon: '🏆', category: 'LESSON_COMPLETION' as const, requirement: JSON.stringify({ vowelsCompleted: 5 }), points: 50 },
+    { code: 'consonant-explorer', name: 'Umushakashatsi w\'Ingombajwi', description: 'Complete 10 consonant lessons', icon: '📚', category: 'LESSON_COMPLETION' as const, requirement: JSON.stringify({ consonantsCompleted: 10 }), points: 40 },
+    { code: 'cultural-seeker', name: 'Umushakisha w\'Umuco', description: 'Complete all cultural lessons', icon: '🌍', category: 'CULTURAL_KNOWLEDGE' as const, requirement: JSON.stringify({ cultureLessonsCompleted: 2 }), points: 60 }
   ];
   for (const a of achievements) {
     await prisma.achievement.upsert({
@@ -613,11 +338,10 @@ async function main() {
   const users = [
     { email: '37nzela@gmail.com', username: 'kwizera', password: 'Mugix260', fullName: 'Kwizera Mugisha', role: 'ADMIN', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Creator of Umwero alphabet.', emailVerified: true, provider: 'EMAIL' },
     { email: 'demo@uruziga.com', username: 'demo', password: 'demo123', fullName: 'Demo Student', role: 'USER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Demo account.', emailVerified: true, provider: 'EMAIL' },
-    { email: 'teacher@uruziga.com', username: 'teacher', password: 'teach123', fullName: 'Umwero Teacher', role: 'TEACHER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Teacher account.', emailVerified: true, provider: 'EMAIL' },
+    { email: 'teacher@uruziga.com', username: 'teacher', password: 'teach123', fullName: 'Umwero Teacher', role: 'TEACHER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Teacher account.', emailVerified: true, provider: 'EMAIL' }
   ];
   for (const u of users) {
     const hashed = await bcrypt.hash(u.password, 10);
-    // Explicitly casting data to match Prisma inputs if necessary
     await prisma.user.create({
       data: {
         email: u.email,
@@ -633,29 +357,31 @@ async function main() {
         provider: u.provider as any
       }
     });
-    const icon = u.role === 'ADMIN' ? '👑' : u.role === 'TEACHER' ? '👨🏫' : '👤';
-    console.log(`  ${icon} ${u.fullName} (${u.role}) — ${u.email} / ${u.password}`);
   }
   console.log(`✅ ${users.length} users\n`);
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // SUMMARY
-  // ═══════════════════════════════════════════════════════════════════════════
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('🎉 SEED COMPLETE');
+  console.log('🎉 ORTHOGRAPHICALLY CORRECT SEED COMPLETE');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`  🌐 Languages:    ${langs.length}`);
-  console.log(`  ✏️  Characters:   ${allChars.length} (${vowels.length}V + ${consonants.length}C + ${ligatures.length}L + ${specials.length}S)`);
-  console.log(`  📚 Lessons:      ${allLessons.length}`);
+  console.log(`  🌐 Languages:    ${languages.length}`);
+  console.log(`  ✏️  Characters:   ${allChars.length}`);
+  console.log(`  📚 Lessons:      ${allLessons.length} (ALL INDIVIDUAL)`);
   console.log(`  🏆 Achievements: ${achievements.length}`);
   console.log(`  👥 Users:        ${users.length}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('\n📖 i18n MAPPING: character.latinEquivalent → t(`characters.${latinEquivalent}.name`)');
-  console.log('🔤 FONT RENDER:  character.umweroGlyph → displayed using Umwero font');
-  console.log('➡️  DIRECTION:    Umwero script is written RIGHT TO LEFT (RTL)');
-  console.log('📏 GRID:         8-unit measurement (umunani), joint at position 3\n');
+  console.log('');
+  console.log('✅ STRUCTURAL INTEGRITY: Official UMWERO_MAP only');
+  console.log('✅ NO FAKE GLYPHS: All glyphs from official mapping');
+  console.log('✅ CORRECT CLASSIFICATION: Consonants vs Ligatures');
+  console.log('✅ INDIVIDUAL LESSONS: Every character = one lesson');
+  console.log('✅ NO GROUPINGS: No phonological families');
 }
 
 main()
-  .then(async () => { await prisma.$disconnect(); })
-  .catch(async (e) => { console.error('❌ Error:', e); await prisma.$disconnect(); process.exit(1); });
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

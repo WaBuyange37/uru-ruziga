@@ -8,9 +8,10 @@ export const dynamic = 'force-dynamic'
 // POST - Add comment to post
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
+    const { postId } = await params
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -41,7 +42,7 @@ export async function POST(
     const comment = await prisma.postComment.create({
       data: {
         userId: decoded.userId,
-        postId: params.postId,
+        postId: postId,
         content,
         language,
         latinText,
@@ -60,7 +61,7 @@ export async function POST(
 
     // Increment comments count
     await prisma.communityPost.update({
-      where: { id: params.postId },
+      where: { id: postId },
       data: { commentsCount: { increment: 1 } },
     })
 

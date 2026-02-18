@@ -47,7 +47,7 @@ export function useLessonState(lessonId: string): LessonState {
   const [lesson, setLesson] = useState<LessonData | null>(null)
   const [character, setCharacter] = useState<CharacterData | null>(null)
   const [activeTab, setActiveTab] = useState<TabType>('overview')
-  const [practiceMode, setPracticeMode] = useState<PracticeMode>('idle')
+  const [practiceMode, setPracticeMode] = useState<PracticeMode>('drawing')
   const [progress, setProgress] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
