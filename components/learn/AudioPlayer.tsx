@@ -10,9 +10,18 @@ interface AudioPlayerProps {
   label?: string
   autoPlay?: boolean
   className?: string
+  size?: 'sm' | 'md' | 'lg'
+  variant?: 'default' | 'outline' | 'ghost'
 }
 
-export function AudioPlayer({ src, label, autoPlay = false, className = '' }: AudioPlayerProps) {
+export function AudioPlayer({ 
+  src, 
+  label, 
+  autoPlay = false, 
+  className = '',
+  size = 'sm',
+  variant = 'outline'
+}: AudioPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(false)
@@ -24,25 +33,56 @@ export function AudioPlayer({ src, label, autoPlay = false, className = '' }: Au
     }
   }, [autoPlay, src])
 
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause()
+        audioRef.current = null
+      }
+    }
+  }, [])
+
   const playAudio = async () => {
-    if (!src) return
+    if (!src) {
+      setError(true)
+      return
+    }
 
     try {
       setIsLoading(true)
       setError(false)
 
+      // Create new audio instance if needed
       if (!audioRef.current) {
-        audioRef.current = new Audio(src)
+        audioRef.current = new Audio()
+        audioRef.current.preload = 'auto'
+        
         audioRef.current.onended = () => {
           setIsPlaying(false)
         }
-        audioRef.current.onerror = () => {
+        
+        audioRef.current.onerror = (e) => {
+          console.error('Audio error:', e)
           setError(true)
           setIsLoading(false)
           setIsPlaying(false)
         }
+
+        audioRef.current.oncanplaythrough = () => {
+          setIsLoading(false)
+        }
       }
 
+      // Set source if different
+      if (audioRef.current.src !== src) {
+        audioRef.current.src = src
+      }
+
+      // Reset to beginning
+      audioRef.current.currentTime = 0
+      
+      // Play audio
       await audioRef.current.play()
       setIsPlaying(true)
       setIsLoading(false)
@@ -70,22 +110,39 @@ export function AudioPlayer({ src, label, autoPlay = false, className = '' }: Au
     }
   }
 
+  const buttonSizes = {
+    sm: 'h-8 px-3',
+    md: 'h-10 px-4',
+    lg: 'h-12 px-6'
+  }
+
+  const iconSizes = {
+    sm: 'h-4 w-4',
+    md: 'h-5 w-5', 
+    lg: 'h-6 w-6'
+  }
+
   return (
     <Button
-      variant="outline"
-      size="sm"
+      variant={variant}
       onClick={toggleAudio}
-      disabled={isLoading || error}
-      className={`${className} ${isPlaying ? 'bg-[#8B4513] text-white' : ''}`}
+      disabled={isLoading || error || !src}
+      className={`
+        ${buttonSizes[size]} 
+        ${className} 
+        ${isPlaying ? 'bg-[#8B4513] text-white border-[#8B4513] hover:bg-[#A0522D]' : ''}
+        ${error ? 'opacity-50 cursor-not-allowed' : ''}
+        transition-all duration-200
+      `}
     >
       {isLoading ? (
-        <Loader2 className="h-4 w-4 animate-spin" />
+        <Loader2 className={`${iconSizes[size]} animate-spin`} />
       ) : error ? (
-        <VolumeX className="h-4 w-4" />
+        <VolumeX className={`${iconSizes[size]} text-red-500`} />
       ) : (
-        <Volume2 className={`h-4 w-4 ${isPlaying ? 'animate-pulse' : ''}`} />
+        <Volume2 className={`${iconSizes[size]} ${isPlaying ? 'animate-pulse' : ''}`} />
       )}
-      {label && <span className="ml-2">{label}</span>}
+      {label && <span className="ml-2 font-medium">{label}</span>}
     </Button>
   )
 }

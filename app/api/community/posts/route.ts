@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
       latinText,
       umweroText,
       imageUrl,
+      mediaUrls,
       isChallenge,
       challengeType,
     } = validation.data
@@ -124,6 +125,7 @@ export async function POST(request: NextRequest) {
         latinText,
         umweroText,
         imageUrl,
+        mediaUrls: mediaUrls || [],
         isChallenge: isChallenge || false,
         challengeType,
       },

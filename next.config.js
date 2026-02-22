@@ -6,7 +6,21 @@ const nextConfig = {
   
   // Bypass TypeScript errors during build (remove once all translation keys are synced)
   typescript: {
-    ignoreBuildErrors: true,
+    // ignoreBuildErrors: true, // Enabled strict checking
+  },
+
+  // Configure external image domains
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+      },
+    ],
   },
 
   // Ensure custom font files are served with correct headers

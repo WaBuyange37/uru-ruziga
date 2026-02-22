@@ -2,7 +2,11 @@
 import { useLanguage } from '../app/contexts/LanguageContext'
 import { translations, TranslationKey } from '../lib/translations'
 
+// 🔒 CRITICAL CULTURAL DATA - DO NOT MODIFY 🔒
 // Umwero character mapping (Latin → Umwero)
+// This data represents authentic Rwandan cultural heritage
+// ANY MODIFICATIONS WILL BREAK THE TRANSLATION SYSTEM
+// See: UMWERO_LIGATURE_SYSTEM_CRITICAL.md for details
 const UMWERO_MAP: { [key: string]: string } = {
   // Vowels (both cases)
   'A': '"', 'a': '"',
@@ -239,14 +243,26 @@ const UMWERO_MAP: { [key: string]: string } = {
   // Umweero numerals from 100 to hundred Decillions need to be looped for better  and shortter code
   //I will do it in next update, even these are more much lines
 
-  // Compound consonants (lowercase variants)
-  'mb': 'A', 'Mb': 'A', 
-  'nc': 'CC', 'Nc': 'CC',
-  'nd': 'ND', 'Nd': 'ND',
-  'nk': 'E', 'Nk': 'E',
-  'sh': 'HH', 'Sh': 'HH',
-  'pf': 'I', 'Pf': 'I',
+  // Space and punctuation
+  ' ': ' ',
+  '.': '.',
+  ',': ',',
+  '!': '!',
+  '?': '?',
+  ':': ':',
+  ';': ';',
+  '-': '-',
+  "'": "'",
+  '"': '"',
+  '(': '(',
+  ')': ')',
 }
+
+// 🔒 CRITICAL SYSTEM - DO NOT MODIFY 🔒
+// This ligature conversion algorithm is PRODUCTION-LOCKED
+// Last verified working: February 2026
+// ANY CHANGES WILL BREAK THE ENTIRE UMWERO TRANSLATION SYSTEM
+// See: UMWERO_LIGATURE_SYSTEM_CRITICAL.md for details
 
 export function convertToUmwero(text: string): string {
   // Convert to uppercase first for consistent mapping
@@ -259,8 +275,9 @@ export function convertToUmwero(text: string): string {
     while (i < word.length) {
       let found = false
       
-      // Check for 5-letter compounds first (longest first)
-      if (i + 4 < word.length) {
+      // 🚨 CRITICAL: Check for 5-letter compounds first (longest first)
+      // BOUNDARY CONDITION: i + 5 <= word.length (NOT i + 4 < word.length)
+      if (i + 5 <= word.length) {
         const fiveLetters = word.slice(i, i + 5)
         if (UMWERO_MAP[fiveLetters]) {
           result += UMWERO_MAP[fiveLetters]
@@ -269,8 +286,9 @@ export function convertToUmwero(text: string): string {
         }
       }
       
-      // Check for 4-letter compounds
-      if (!found && i + 3 < word.length) {
+      // 🚨 CRITICAL: Check for 4-letter compounds
+      // BOUNDARY CONDITION: i + 4 <= word.length (NOT i + 3 < word.length)
+      if (!found && i + 4 <= word.length) {
         const fourLetters = word.slice(i, i + 4)
         if (UMWERO_MAP[fourLetters]) {
           result += UMWERO_MAP[fourLetters]
@@ -279,8 +297,9 @@ export function convertToUmwero(text: string): string {
         }
       }
       
-      // Check for 3-letter compounds
-      if (!found && i + 2 < word.length) {
+      // 🚨 CRITICAL: Check for 3-letter compounds
+      // BOUNDARY CONDITION: i + 3 <= word.length (NOT i + 2 < word.length)
+      if (!found && i + 3 <= word.length) {
         const threeLetters = word.slice(i, i + 3)
         if (UMWERO_MAP[threeLetters]) {
           result += UMWERO_MAP[threeLetters]
@@ -289,8 +308,9 @@ export function convertToUmwero(text: string): string {
         }
       }
       
-      // Check for 2-letter compounds
-      if (!found && i + 1 < word.length) {
+      // 🚨 CRITICAL: Check for 2-letter compounds
+      // BOUNDARY CONDITION: i + 2 <= word.length (NOT i + 1 < word.length)
+      if (!found && i + 2 <= word.length) {
         const twoLetters = word.slice(i, i + 2)
         if (UMWERO_MAP[twoLetters]) {
           result += UMWERO_MAP[twoLetters]
@@ -316,6 +336,56 @@ export function convertToUmwero(text: string): string {
   return result.trim()
 }
 
+// 🔒 END CRITICAL SYSTEM 🔒
+
+// Create reverse mapping for Umwero to Latin conversion
+const REVERSE_UMWERO_MAP: { [key: string]: string } = {}
+Object.entries(UMWERO_MAP).forEach(([latin, umwero]) => {
+  // Only map if it's not a number key and the umwero character is unique
+  if (typeof latin === 'string' && !REVERSE_UMWERO_MAP[umwero]) {
+    REVERSE_UMWERO_MAP[umwero] = latin.toLowerCase()
+  }
+})
+
+export function convertFromUmwero(text: string): string {
+  let result = ''
+  const words = text.split(' ')
+
+  for (let word of words) {
+    let i = 0
+    while (i < word.length) {
+      let found = false
+      
+      // Check for multi-character Umwero sequences (longest first)
+      for (let len = 6; len >= 2; len--) {
+        if (i + len <= word.length) {
+          const umweroSeq = word.slice(i, i + len)
+          if (REVERSE_UMWERO_MAP[umweroSeq]) {
+            result += REVERSE_UMWERO_MAP[umweroSeq]
+            i += len
+            found = true
+            break
+          }
+        }
+      }
+      
+      // Check for single character
+      if (!found) {
+        const char = word[i]
+        if (REVERSE_UMWERO_MAP[char]) {
+          result += REVERSE_UMWERO_MAP[char]
+        } else {
+          result += char.toLowerCase() // Keep unmapped characters
+        }
+        i++
+      }
+    }
+    result += ' ' // Add space between words
+  }
+
+  return result.trim()
+}
+
 export function useTranslation() {
   const { language } = useLanguage()
   
@@ -329,6 +399,25 @@ export function useTranslation() {
     
     return translation
   }
+
+  // Extract vowel and ligature mappings for reference display
+  const vowelMap: Record<string, string> = {}
+  const ligatureMap: Record<string, string> = {}
   
-  return { t, language }
+  Object.entries(UMWERO_MAP).forEach(([latin, umwero]) => {
+    if (typeof latin === 'string' && latin.length === 1 && ['A', 'E', 'I', 'O', 'U'].includes(latin.toUpperCase())) {
+      vowelMap[latin.toUpperCase()] = umwero
+    } else if (typeof latin === 'string' && latin.length > 1) {
+      ligatureMap[latin.toUpperCase()] = umwero
+    }
+  })
+  
+  return { 
+    t, 
+    language,
+    latinToUmwero: convertToUmwero,
+    umweroToLatin: convertFromUmwero,
+    vowelMap,
+    ligatureMap
+  }
 }

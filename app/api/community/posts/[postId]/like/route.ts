@@ -8,9 +8,10 @@ export const dynamic = 'force-dynamic'
 // POST - Like/Unlike a post
 export async function POST(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
+    const { postId } = await params
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -26,7 +27,7 @@ export async function POST(
       where: {
         userId_postId: {
           userId: decoded.userId,
-          postId: params.postId,
+          postId: postId,
         },
       },
     })
@@ -38,7 +39,7 @@ export async function POST(
       })
 
       await prisma.communityPost.update({
-        where: { id: params.postId },
+        where: { id: postId },
         data: { likesCount: { decrement: 1 } },
       })
 
@@ -48,12 +49,12 @@ export async function POST(
       await prisma.postLike.create({
         data: {
           userId: decoded.userId,
-          postId: params.postId,
+          postId: postId,
         },
       })
 
       await prisma.communityPost.update({
-        where: { id: params.postId },
+        where: { id: postId },
         data: { likesCount: { increment: 1 } },
       })
 

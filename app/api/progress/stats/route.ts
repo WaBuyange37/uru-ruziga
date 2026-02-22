@@ -52,14 +52,20 @@ export async function GET(request: NextRequest) {
       where: { isPublished: true }
     })
 
-    // Get drawings stats
+    // Get drawings stats with recent drawings
     const drawings = await prisma.userDrawing.findMany({
       where: { userId: decoded.userId },
       select: {
+        id: true,
+        vowel: true,
+        umweroChar: true,
         aiScore: true,
         isCorrect: true,
-        timeSpent: true
-      }
+        timeSpent: true,
+        feedback: true,
+        createdAt: true
+      },
+      orderBy: { createdAt: 'desc' }
     })
 
     const totalDrawings = drawings.length
@@ -69,6 +75,19 @@ export async function GET(request: NextRequest) {
       ? Math.round(drawings.reduce((sum, d) => sum + (d.aiScore || 0), 0) / totalDrawings)
       : 0
     const totalTimeSpent = drawings.reduce((sum, d) => sum + d.timeSpent, 0)
+    const perfectScores = drawings.filter(d => (d.aiScore || 0) >= 90).length
+
+    // Get recent drawings for display (last 10)
+    const recentDrawings = drawings.slice(0, 10).map(drawing => ({
+      id: drawing.id,
+      vowel: drawing.vowel,
+      umweroChar: drawing.umweroChar,
+      aiScore: drawing.aiScore || 0,
+      isCorrect: drawing.isCorrect,
+      timeSpent: drawing.timeSpent,
+      createdAt: drawing.createdAt.toISOString(),
+      feedback: drawing.feedback || 'Practice completed'
+    }))
 
     // Get achievements
     const userAchievements = await prisma.userAchievement.findMany({
@@ -120,6 +139,9 @@ export async function GET(request: NextRequest) {
       ? Math.round((completedLessons / totalLessons) * 100)
       : 0
 
+    // Calculate characters learned (unique characters from drawings)
+    const uniqueCharacters = new Set(drawings.map(d => d.umweroChar)).size
+
     return NextResponse.json({
       user: {
         fullName: user.fullName,
@@ -135,25 +157,31 @@ export async function GET(request: NextRequest) {
         accuracy,
         averageScore,
         totalTimeSpent,
-        learningStreak
+        learningStreak,
+        charactersLearned: uniqueCharacters,
+        perfectScores
       },
       lessonProgress: lessonProgress.map(p => ({
         lesson: {
+          id: p.lesson.id,
           title: p.lesson.title,
           type: p.lesson.type,
           module: p.lesson.module
         },
         completed: p.completed,
         score: p.score || 0,
-        attempts: p.attempts
+        attempts: p.attempts,
+        timeSpent: p.timeSpent,
+        completedAt: p.completedAt?.toISOString()
       })),
+      recentDrawings,
       achievements: {
         unlocked: userAchievements.filter(ua => ua.isUnlocked).map(ua => ({
           name: ua.achievement.name,
           description: ua.achievement.description,
           icon: ua.achievement.icon || '🏆',
           points: ua.achievement.points,
-          unlockedAt: ua.unlockedAt
+          unlockedAt: ua.unlockedAt.toISOString()
         })),
         new: [], // Could track new achievements in session
         totalPoints

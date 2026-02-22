@@ -251,7 +251,9 @@ export function CulturalContextStep({
             The Umwero script represents an important effort to preserve and celebrate Rwandan linguistic heritage. 
             Each character carries deep cultural significance and helps maintain the connection between language, 
             culture, and identity. By learning these characters, you participate in the preservation of 
-            endangered writing systems and the celebration of African linguistic diversity.
+            endangered writing systems and the celebration of African linguistic diversity. This work is supported by 
+            the <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="underline hover:text-purple-800">Endangered Alphabets Project</a> and 
+            the <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="underline hover:text-purple-800">ScriptKeepers Initiative</a>.
           </p>
         </CardContent>
       </Card>

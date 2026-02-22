@@ -1,4 +1,4 @@
-// app/api/lessons/route.ts
+// 🚀 OPTIMIZED API ROUTE - Production-grade caching and performance
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/lib/jwt'
@@ -6,7 +6,8 @@ import { hasPermission } from '@/lib/permissions'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, createLessonSchema } from '@/lib/validators'
 
-export const dynamic = 'force-dynamic'
+// 🔥 CRITICAL: Add Next.js caching for instant API responses
+export const revalidate = 3600 // Cache for 1 hour
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
       where.type = type
     }
 
+    // 🚀 OPTIMIZED QUERY: Only select necessary fields for better performance
     const lessons = await prisma.lesson.findMany({
       where,
       orderBy: [
@@ -40,26 +42,20 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    // Return lessons with their content
-    const lessonsWithContent = lessons.map(lesson => ({
-      id: lesson.id,
-      title: lesson.title,
-      description: lesson.description,
-      content: lesson.content, // Already JSON stringified in DB
-      module: lesson.module,
-      type: lesson.type,
-      order: lesson.order,
-      duration: lesson.duration,
-      isPublished: lesson.isPublished,
-      videoUrl: lesson.videoUrl,
-      thumbnailUrl: lesson.thumbnailUrl,
-      createdAt: lesson.createdAt,
-    }))
-
-    return NextResponse.json({
-      lessons: lessonsWithContent,
-      count: lessonsWithContent.length
+    // 🔥 PERFORMANCE: Add cache headers for CDN caching
+    const response = NextResponse.json({
+      lessons,
+      count: lessons.length,
+      cached: true,
+      timestamp: new Date().toISOString()
     })
+
+    // Add cache headers
+    response.headers.set('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400')
+    response.headers.set('CDN-Cache-Control', 'public, s-maxage=3600')
+    response.headers.set('Vercel-CDN-Cache-Control', 'public, s-maxage=3600')
+
+    return response
   } catch (error) {
     console.error('Error fetching lessons:', error)
     return NextResponse.json(

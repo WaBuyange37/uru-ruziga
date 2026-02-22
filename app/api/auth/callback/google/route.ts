@@ -101,8 +101,8 @@ export async function GET(request: NextRequest) {
       sessionStorage.removeItem('oauth_provider')
     }
 
-    // Redirect to dashboard with token
-    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/dashboard?token=${encodeURIComponent(token)}`
+    // Redirect to homepage with token
+    const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/?token=${encodeURIComponent(token)}`
     
     return NextResponse.redirect(redirectUrl)
 

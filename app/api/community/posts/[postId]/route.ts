@@ -8,11 +8,12 @@ export const dynamic = 'force-dynamic'
 // GET - Fetch single post
 export async function GET(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
+    const { postId } = await params
     const post = await prisma.communityPost.findUnique({
-      where: { id: params.postId },
+      where: { id: postId },
       include: {
         user: {
           select: {
@@ -55,7 +56,7 @@ export async function GET(
 
     // Increment views
     await prisma.communityPost.update({
-      where: { id: params.postId },
+      where: { id: postId },
       data: { views: { increment: 1 } },
     })
 
@@ -72,9 +73,10 @@ export async function GET(
 // DELETE - Delete post
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
+    const { postId } = await params
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -86,7 +88,7 @@ export async function DELETE(
     }
 
     const post = await prisma.communityPost.findUnique({
-      where: { id: params.postId },
+      where: { id: postId },
     })
 
     if (!post) {
@@ -99,7 +101,7 @@ export async function DELETE(
     }
 
     await prisma.communityPost.delete({
-      where: { id: params.postId },
+      where: { id: postId },
     })
 
     return NextResponse.json({ message: 'Post deleted successfully' })

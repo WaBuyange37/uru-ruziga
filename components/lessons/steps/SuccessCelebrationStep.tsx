@@ -230,7 +230,9 @@ export function SuccessCelebrationStep({
           <p className="text-blue-700">
             By learning this character, you're helping preserve the endangered Umwero script 
             and honoring Rwandan cultural heritage. Every character learned is a step toward 
-            keeping this beautiful writing system alive for future generations.
+            keeping this beautiful writing system alive for future generations. This preservation 
+            effort is supported by the <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Endangered Alphabets Project</a> and 
+            the <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">ScriptKeepers Initiative</a>.
           </p>
         </CardContent>
       </Card>

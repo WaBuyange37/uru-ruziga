@@ -17,7 +17,7 @@ function VerifyEmailContent() {
   const [resending, setResending] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const email = searchParams.get('email') || ''
+  const email = searchParams?.get('email') || ''
 
   useEffect(() => {
     if (!email) {
@@ -54,7 +54,7 @@ function VerifyEmailContent() {
       
       setSuccess(true)
       setTimeout(() => {
-        router.push('/dashboard')
+        router.push('/')
       }, 2000)
 
     } catch (err: any) {
@@ -98,7 +98,7 @@ function VerifyEmailContent() {
           <CardContent className="pt-6 text-center">
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-[#8B4513] mb-2">Email Verified!</h2>
-            <p className="text-[#D2691E]">Redirecting to your dashboard...</p>
+            <p className="text-[#D2691E]">Redirecting to homepage...</p>
           </CardContent>
         </Card>
       </div>

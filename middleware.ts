@@ -1,42 +1,70 @@
-// protect routes and handle redirects
+// middleware.ts - Fixed routing logic
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get('token')?.value || request.headers.get('authorization')?.replace('Bearer ', '')
+  const token = request.cookies.get('token')?.value
   const { pathname } = request.nextUrl
 
-  // Public pages that don't require authentication
-  const publicPages = ['/login', '/signup', '/']
+  // Public routes that anyone can access
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/signup',
+    '/about',
+    '/gallery',
+    '/translate',
+    '/games-and-quizzes',
+    '/umwero-chat',
+    '/community',
+    '/fund',
+    '/cart',
+    '/verify-email',
+  ]
+
+  // Protected routes that require authentication
+  const protectedRoutes = [
+    '/dashboard',
+    '/admin',
+    '/teacher',
+    '/profile',
+    '/learn', // Learning requires authentication
+  ]
+
+  // Check if the current path is protected
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
   
-  // Pages that require authentication
-  const protectedPages = ['/dashboard', '/admin', '/profile', '/learn']
-  
-  // Check if current page is protected
-  const isProtectedPage = protectedPages.some(page => pathname.startsWith(page))
-  
-  // If accessing protected page without token, redirect to login
-  if (isProtectedPage && !token) {
-    return NextResponse.redirect(new URL('/login', request.url))
+  // Check if the current path is public
+  const isPublicRoute = publicRoutes.some(route => 
+    pathname === route || pathname.startsWith(route + '/')
+  )
+
+  // Allow access to public routes regardless of auth status
+  if (isPublicRoute) {
+    return NextResponse.next()
   }
 
-  // If logged in user tries to access login/signup, redirect to home
-  if (token && (pathname === '/login' || pathname === '/signup')) {
-    return NextResponse.redirect(new URL('/', request.url))
+  // Redirect to login if accessing protected route without token
+  if (isProtectedRoute && !token) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
 
+  // Allow all other routes
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except:
      * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files (images, fonts, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf)).*)',
   ],
 }
