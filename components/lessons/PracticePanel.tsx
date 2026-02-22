@@ -6,12 +6,17 @@ import { Card, CardContent } from '@/components/ui/card'
 import { RotateCcw, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react'
 import { useCanvasDrawing } from '@/hooks/useCanvasDrawing'
 import { PhotoUploadModal } from './PhotoUploadModal'
+import { handleCharacterProgression, celebrateCharacterLearned, transitionToNextLesson } from '@/lib/character-progression'
+import { emitProgressUpdate } from '@/lib/progress-events'
+import { lessonIdToCharacterId } from '@/lib/character-mapping'
+import { submitCharacterProgress } from '@/lib/auth-utils'
 import Image from 'next/image'
 import type { PracticeMode } from '@/hooks/useLessonState'
 
 interface PracticePanelProps {
   lesson: any
   character: {
+    id: string
     umwero: string
     vowel?: string
     consonant?: string
@@ -19,13 +24,16 @@ interface PracticePanelProps {
   }
   practiceMode: PracticeMode
   onModeChange: (mode: PracticeMode) => void
+  onCharacterLearned?: (characterId: string, score: number) => void
+  onNextCharacter?: (nextCharacterId: string) => void
 }
 
-export function PracticePanel({ lesson, character, practiceMode, onModeChange }: PracticePanelProps) {
+export function PracticePanel({ lesson, character, practiceMode, onModeChange, onCharacterLearned, onNextCharacter }: PracticePanelProps) {
   const [showReference, setShowReference] = useState(true)
   const [evaluationResult, setEvaluationResult] = useState<any>(null)
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   
   const {
     canvasRef,
@@ -112,6 +120,11 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
           }
         }
 
+        // Update character progress if score meets threshold
+        if (evaluation.score >= 70 && onCharacterLearned) {
+          onCharacterLearned(character.id, evaluation.score)
+        }
+
         onModeChange('complete')
       } else {
         throw new Error('Invalid evaluation response')
@@ -137,9 +150,110 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
     onModeChange('drawing')
   }
 
-  const handleNext = () => {
-    // Navigate to next lesson or back to lesson list
-    window.location.href = '/learn'
+  const handleNext = async () => {
+    if (!evaluationResult?.score || isSubmitting) return
+
+    setIsSubmitting(true)
+
+    try {
+      // Map lesson ID to actual character ID
+      const actualCharacterId = lessonIdToCharacterId(character.id)
+      
+      console.log('🚀 Starting progress submission:', {
+        originalId: character.id,
+        actualCharacterId: actualCharacterId,
+        score: evaluationResult.score,
+        character: character
+      })
+
+      // Check authentication first
+      const token = localStorage.getItem('token')
+      if (!token) {
+        console.error('❌ No authentication token found')
+        alert('Please log in again to save your progress. Your session may have expired.')
+        window.location.href = '/login'
+        return
+      }
+
+      // Use the robust progress submission utility
+      const result = await submitCharacterProgress(
+        actualCharacterId,
+        evaluationResult.score,
+        0
+      )
+
+      if (result.success && result.data) {
+        console.log('✅ Progress saved successfully:', result.data)
+        
+        // Emit progress update event to notify other components
+        const characterType = character.vowel ? 'vowel' : character.consonant ? 'consonant' : 'ligature'
+        emitProgressUpdate(
+          actualCharacterId,
+          result.data.status,
+          evaluationResult.score,
+          characterType as 'vowel' | 'consonant' | 'ligature'
+        )
+        
+        // Update character status if callback provided and score meets threshold
+        if (onCharacterLearned && evaluationResult.score >= 70) {
+          onCharacterLearned(actualCharacterId, evaluationResult.score)
+        }
+
+        // Show celebration if character was learned
+        if (evaluationResult.score >= 70) {
+          celebrateCharacterLearned(
+            character.vowel || character.consonant || 'Character',
+            evaluationResult.score
+          )
+        }
+
+        // Handle next character progression - NO NAVIGATION
+        if (result.data.nextCharacter && onNextCharacter) {
+          // Seamless transition to next character within same workspace
+          setTimeout(() => {
+            onNextCharacter(result.data.nextCharacter.id)
+          }, 1500) // Allow time for celebration
+        } else {
+          // No more characters - show completion message but stay in workspace
+          setTimeout(() => {
+            console.log('🎉 All characters completed in this category!')
+          }, 2000)
+        }
+      } else {
+        // Progress submission failed
+        console.error('❌ Progress submission failed:', result.error)
+        
+        // Check if it's an authentication error
+        if (result.error?.includes('Authentication') || result.error?.includes('token') || result.error?.includes('Unauthorized')) {
+          alert('Your session has expired. Please log in again to save your progress.')
+          localStorage.removeItem('token') // Clear invalid token
+          window.location.href = '/login'
+          return
+        }
+        
+        // Show user-friendly error message for other errors
+        alert(`Failed to save progress: ${result.error}. Please try again or contact support if the issue persists.`)
+        
+        // Still allow character progression for better UX (but warn user)
+        if (onCharacterLearned && evaluationResult.score >= 70) {
+          console.warn('⚠️ Allowing character progression despite save failure for better UX')
+          onCharacterLearned(character.id, evaluationResult.score)
+        }
+      }
+
+    } catch (error) {
+      console.error('❌ Unexpected error in character progression:', error)
+      
+      // Check if it's a network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        alert('Network error: Please check your internet connection and try again.')
+      } else {
+        alert('An unexpected error occurred. Please try again or refresh the page.')
+      }
+      
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handlePhotoUpload = async (imageFile: File) => {
@@ -321,10 +435,20 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
                 </Button>
                 <Button
                   onClick={handleNext}
+                  disabled={isSubmitting}
                   className="bg-[#8B4513] hover:bg-[#A0522D] gap-2"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Continue
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="h-4 w-4" />
+                      Continue
+                    </>
+                  )}
                 </Button>
               </div>
 

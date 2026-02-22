@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getCachedLesson, setCachedLesson } from '@/lib/lesson-cache'
 
 export async function GET(
   request: NextRequest,
@@ -7,6 +8,12 @@ export async function GET(
 ) {
   try {
     const { lessonId } = await params
+
+    // Try cache first
+    const cachedLesson = getCachedLesson(lessonId)
+    if (cachedLesson) {
+      return NextResponse.json({ lesson: cachedLesson })
+    }
 
     const lesson = await prisma.lesson.findUnique({
       where: { id: lessonId },
@@ -41,6 +48,9 @@ export async function GET(
         { status: 403 }
       )
     }
+
+    // Cache the lesson for future requests
+    setCachedLesson(lesson)
 
     return NextResponse.json({ lesson })
   } catch (error) {

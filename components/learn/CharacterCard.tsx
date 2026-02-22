@@ -25,37 +25,48 @@ interface CharacterCardProps {
     order: number
     imageUrl: string
     audioUrl?: string
+    examples: string[]
   }
   progress?: {
     completed: boolean
     score: number
     timeSpent: number
     attempts: number
+    status: 'NOT_STARTED' | 'IN_PROGRESS' | 'LEARNED'
   }
   isLocked: boolean
   onStart: () => void
+  onStatusChange?: (status: 'LEARNED') => void
+  language?: 'en' | 'rw'
 }
 
-export function CharacterCard({ character, progress, isLocked, onStart }: CharacterCardProps) {
+export function CharacterCard({ character, progress, isLocked, onStart, onStatusChange, language = 'en' }: CharacterCardProps) {
   // Get audio path from our mapping system
   const audioPath = getAudioPath(character.vowel) || character.audioUrl
   
-  // Get Umwero ASCII representation
-  const umweroAscii = getUmweroAscii(character.vowel)
+  // Use the umwero character directly from the database (already correct from UMWERO_MAP)
+  const umweroAscii = character.umwero
   
   // Get the latin character for keyboard mapping
   const latinChar = character.vowel.toLowerCase()
 
+  // Convert example words to Umwero
+  const convertToUmwero = (text: string): string => {
+    // Import the conversion function from audio-utils
+    const { convertToUmwero: convert } = require('@/lib/audio-utils')
+    return convert(text)
+  }
+
   const getStatusColor = () => {
-    if (progress?.completed) return 'bg-green-100 text-green-700 border-green-300'
-    if (progress) return 'bg-blue-100 text-blue-700 border-blue-300'
+    if (progress?.status === 'LEARNED') return 'bg-green-100 text-green-700 border-green-300'
+    if (progress?.status === 'IN_PROGRESS') return 'bg-blue-100 text-blue-700 border-blue-300'
     return 'bg-gray-100 text-gray-700 border-gray-300'
   }
 
   const getStatusText = () => {
-    if (progress?.completed) return 'Completed'
-    if (progress) return 'In Progress'
-    return 'Not Started'
+    if (progress?.status === 'LEARNED') return language === 'rw' ? 'Yizwe' : 'Learned'
+    if (progress?.status === 'IN_PROGRESS') return language === 'rw' ? 'Urakora' : 'In Progress'
+    return language === 'rw' ? 'Ntabwo watangiye' : 'Not Started'
   }
 
   return (
@@ -95,14 +106,52 @@ export function CharacterCard({ character, progress, isLocked, onStart }: Charac
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Example Word Section - NEW FEATURE */}
+        {character.examples && character.examples.length > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-200">
+            <p className="text-xs text-green-800 font-medium mb-2">
+              {language === 'rw' ? 'Urugero rw\'ijambo' : 'Example Word'}
+            </p>
+            <div className="space-y-2">
+              {character.examples.slice(0, 2).map((example, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <span className="text-sm font-medium text-green-900">{example}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-green-700">
+                    <span>{language === 'rw' ? 'Umwero:' : 'Umwero:'}</span>
+                    <span 
+                      className="font-bold text-green-800 bg-white px-2 py-1 rounded border"
+                      style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
+                    >
+                      {convertToUmwero(example)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Character Image */}
         <div className="relative w-full h-32 bg-gray-50 rounded-lg overflow-hidden">
-          <Image
-            src={character.imageUrl}
-            alt={`${character.title} character`}
-            fill
-            className="object-contain p-2"
-          />
+          {character.imageUrl ? (
+            <Image
+              src={character.imageUrl}
+              alt={`${character.title} character`}
+              fill
+              className="object-contain p-2"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <span 
+                className="text-6xl text-[#8B4513] opacity-30"
+                style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
+              >
+                {umweroAscii}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Description */}
@@ -181,22 +230,22 @@ export function CharacterCard({ character, progress, isLocked, onStart }: Charac
           {isLocked ? (
             <>
               <Lock className="h-4 w-4 mr-2" />
-              Complete Previous Lesson
+              {language === 'rw' ? 'Rangiza isomo ribanziriza' : 'Complete Previous Lesson'}
             </>
-          ) : progress?.completed ? (
+          ) : progress?.status === 'LEARNED' ? (
             <>
               <CheckCircle className="h-4 w-4 mr-2" />
-              Review Lesson
+              {language === 'rw' ? 'Subiramo isomo' : 'Review Lesson'}
             </>
-          ) : progress ? (
+          ) : progress?.status === 'IN_PROGRESS' ? (
             <>
               <Play className="h-4 w-4 mr-2" />
-              Continue Learning
+              {language === 'rw' ? 'Komeza kwiga' : 'Continue Learning'}
             </>
           ) : (
             <>
               <Play className="h-4 w-4 mr-2" />
-              Start Lesson
+              {language === 'rw' ? 'Tangira isomo' : 'Start Lesson'}
             </>
           )}
         </Button>

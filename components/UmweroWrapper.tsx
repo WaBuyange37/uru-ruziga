@@ -3,6 +3,7 @@
 
 import { useLanguage } from '../app/contexts/LanguageContext'
 import { ReactNode, useEffect } from 'react'
+import { initializeLessonCache } from '../lib/lesson-cache'
 
 /**
  * Global wrapper that applies Umwero font and language-specific styling
@@ -12,6 +13,9 @@ export function UmweroWrapper({ children }: { children: ReactNode }) {
   const { language } = useLanguage()
   
   useEffect(() => {
+    // Initialize lesson cache for faster loading
+    initializeLessonCache()
+    
     // Apply language-specific classes and data attributes
     document.documentElement.setAttribute('data-language', language)
     document.body.setAttribute('data-language', language)
