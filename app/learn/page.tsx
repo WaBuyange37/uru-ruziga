@@ -113,7 +113,7 @@ export default async function LearnPage() {
   const lessonsData = await getLessonsData()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+    <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB] px-2 sm:px-4">
       <Suspense fallback={<LoadingSpinner />}>
         <LearnPageClient 
           initialVowelLessons={lessonsData.vowelLessons}

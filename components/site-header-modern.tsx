@@ -43,6 +43,7 @@ export function SiteHeaderModern() {
   
   // Unified dropdown state
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
+  const [isNavigating, setIsNavigating] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const mobileDrawerRef = useRef<HTMLDivElement>(null)
 
@@ -105,6 +106,15 @@ export function SiteHeaderModern() {
 
   const closeDropdown = () => setOpenDropdown(null)
 
+  // Fast navigation handler with loading state
+  const handleNavigation = (href: string) => {
+    setIsNavigating(true)
+    closeDropdown()
+    router.push(href)
+    // Reset navigation state after a short delay
+    setTimeout(() => setIsNavigating(false), 100)
+  }
+
   const handleLogout = () => {
     logout()
     closeDropdown()
@@ -136,8 +146,12 @@ export function SiteHeaderModern() {
     <>
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-neutral-200 shadow-sm">
         <div className="container flex h-16 items-center justify-between px-4 max-w-7xl mx-auto">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2 group flex-shrink-0">
+          {/* Logo - Optimized with prefetch */}
+          <Link 
+            href="/" 
+            className="flex items-center space-x-2 group flex-shrink-0"
+            prefetch={true}
+          >
             <CircleIcon className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
             <span className="text-xl font-bold text-foreground">Uruziga</span>
           </Link>
@@ -165,7 +179,7 @@ export function SiteHeaderModern() {
                       )} />
                     </button>
 
-                    {/* Dropdown Menu */}
+                    {/* Dropdown Menu - Optimized Links */}
                     {openDropdown === route.id && (
                       <div className="absolute left-0 mt-2 w-56 rounded-xl bg-white border border-neutral-200 shadow-lg animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
                         <div className="py-1" role="menu">
@@ -174,7 +188,11 @@ export function SiteHeaderModern() {
                               key={child.href}
                               href={child.href}
                               onClick={closeDropdown}
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                              prefetch={true}
+                              className={cn(
+                                "flex items-center gap-3 px-4 py-2.5 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors",
+                                isNavigating && "opacity-50 pointer-events-none"
+                              )}
                               role="menuitem"
                             >
                               {child.icon && <child.icon className="h-4 w-4 text-neutral-500" />}
@@ -192,12 +210,14 @@ export function SiteHeaderModern() {
                 <Link
                   key={route.href}
                   href={route.href}
+                  prefetch={true}
                   className={cn(
                     "px-3 py-2 text-sm font-medium rounded-lg transition-colors",
                     "hover:bg-neutral-100 hover:text-neutral-900",
                     pathname === route.href
                       ? "text-primary font-semibold"
-                      : "text-neutral-600"
+                      : "text-neutral-600",
+                    isNavigating && "opacity-50 pointer-events-none"
                   )}
                   aria-current={pathname === route.href ? "page" : undefined}
                 >
@@ -214,8 +234,8 @@ export function SiteHeaderModern() {
               <LanguageSwitcher />
             </div>
 
-            {/* Cart */}
-            <Link href="/cart">
+            {/* Cart - Optimized */}
+            <Link href="/cart" prefetch={true}>
               <Button variant="ghost" size="icon" className="relative h-10 w-10">
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (

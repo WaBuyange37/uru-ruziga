@@ -10,19 +10,18 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { 
-  BookOpen, 
-  Video, 
-  Trophy, 
-  Search, 
-  X, 
-  Play, 
+import {
+  BookOpen,
+  Video,
+  Trophy,
+  Search,
+  X,
+  Play,
   Heart,
   Globe,
   Sparkles,
   Target
 } from 'lucide-react'
-import { CharacterCard } from '@/components/learn/CharacterCard'
 import { CompleteVowelLesson, VowelData } from '@/components/lessons/CompleteVowelLesson'
 import { VideoPlayer } from "@/components/VideoPlayer"
 import { EnhancedCharacterGrid } from '@/components/learn/EnhancedCharacterGrid'
@@ -30,7 +29,8 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { useProgressSummary } from '@/hooks/useProgressSummary'
 import { ProgressDebugger } from '@/components/debug/ProgressDebugger'
 
-// 🔥 TYPE DEFINITIONS
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface LessonData {
   id: string
   title: string
@@ -53,11 +53,13 @@ interface LearnPageClientProps {
   totalLessons: number
 }
 
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function LearnPageClient({
   initialVowelLessons,
   initialConsonantLessons,
   initialLigatureLessons,
-  totalLessons
+  totalLessons,
 }: LearnPageClientProps) {
   const { t } = useTranslation()
   const [mounted, setMounted] = useState(false)
@@ -66,111 +68,83 @@ export function LearnPageClient({
   const [showIntroVideo, setShowIntroVideo] = useState(false)
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0)
 
-  // 🚀 SINGLE SOURCE OF TRUTH - Database only
   const { summary: progressSummary, loading: progressLoading } = useProgressSummary()
 
-  // 🚀 INSTANT DATA - No loading needed, data comes from server
   const [vowelLessons] = useState<LessonData[]>(initialVowelLessons)
   const [consonantLessons] = useState<LessonData[]>(initialConsonantLessons)
   const [ligatureLessons] = useState<LessonData[]>(initialLigatureLessons)
 
-  // Handle client-side mounting to prevent hydration mismatch
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
-  const startLesson = (lessonId: string, type: 'vowel' | 'consonant' | 'ligature') => {
-    // Navigate to lesson workspace
+  // Lock body scroll when a modal is open
+  useEffect(() => {
+    document.body.style.overflow = (activeLesson || showIntroVideo) ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [activeLesson, showIntroVideo])
+
+  const startLesson = (lessonId: string, _type: 'vowel' | 'consonant' | 'ligature') => {
     window.location.href = `/lessons/${lessonId}`
   }
 
-  const stopLesson = () => {
-    setActiveLesson(null)
-    // Progress will be automatically updated via useProgressSummary hook
-  }
+  const stopLesson = () => setActiveLesson(null)
 
-  // Parse lesson content for character data
   const parseCharacterData = (lesson: LessonData) => {
     try {
-      const content = typeof lesson.content === 'string' 
-        ? JSON.parse(lesson.content) 
+      const content = typeof lesson.content === 'string'
+        ? JSON.parse(lesson.content)
         : lesson.content
 
-      // Extract the character based on lesson type and content structure
       let character = ''
-      if (content.vowel) {
-        character = content.vowel
-      } else if (content.consonant) {
-        character = content.consonant
-      } else if (content.ligature) {
-        character = content.ligature
-      } else if (content.character) {
-        character = content.character
-      } else {
-        // Fallback: extract from lesson title (e.g., "Consonant B" -> "b")
-        const titleMatch = lesson.title.match(/(?:Vowel|Consonant|Ligature)\s+(.+)/)
-        character = titleMatch ? titleMatch[1].toLowerCase() : lesson.title.charAt(0).toLowerCase()
+      if (content.vowel)           character = content.vowel
+      else if (content.consonant)  character = content.consonant
+      else if (content.ligature)   character = content.ligature
+      else if (content.character)  character = content.character
+      else {
+        const m = lesson.title.match(/(?:Vowel|Consonant|Ligature)\s+(.+)/)
+        character = m ? m[1].toLowerCase() : lesson.title.charAt(0).toLowerCase()
       }
 
       return {
-        id: lesson.id,
-        vowel: character,
-        umwero: content.glyph || content.umwero || '?',
-        title: lesson.title,
-        description: lesson.description || content.description || '',
-        pronunciation: content.pronunciation || '',
-        meaning: content.meaning || content.symbol || '',
+        id:           lesson.id,
+        vowel:        character,
+        umwero:       content.glyph || content.umwero || '?',
+        title:        lesson.title,
+        description:  lesson.description || content.description || '',
+        pronunciation:content.pronunciation || '',
+        meaning:      content.meaning || content.symbol || '',
         culturalNote: content.culturalNote || content.symbol || '',
-        duration: lesson.duration || 10,
-        difficulty: content.difficulty || 1,
-        order: lesson.order,
-        imageUrl: lesson.thumbnailUrl || '',
-        audioUrl: content.audioUrl,
-        examples: content.examples || []
+        duration:     lesson.duration || 10,
+        difficulty:   content.difficulty || 1,
+        order:        lesson.order,
+        imageUrl:     lesson.thumbnailUrl || '',
+        audioUrl:     content.audioUrl,
+        examples:     content.examples || [],
       }
-    } catch (e) {
-      console.error('Error parsing lesson content:', e)
+    } catch {
       return {
-        id: lesson.id,
-        vowel: lesson.title.charAt(0).toLowerCase(),
-        umwero: '?',
-        title: lesson.title,
-        description: lesson.description || '',
-        pronunciation: '',
-        meaning: '',
-        culturalNote: '',
-        duration: 10,
-        difficulty: 1,
-        order: lesson.order,
-        imageUrl: lesson.thumbnailUrl || '',
-        audioUrl: null,
-        examples: []
+        id: lesson.id, vowel: lesson.title.charAt(0).toLowerCase(),
+        umwero: '?', title: lesson.title, description: lesson.description || '',
+        pronunciation: '', meaning: '', culturalNote: '', duration: 10,
+        difficulty: 1, order: lesson.order, imageUrl: lesson.thumbnailUrl || '',
+        audioUrl: null, examples: [],
       }
     }
   }
 
   const getCurrentVowelData = (): VowelData | null => {
-    if (!activeLesson || currentLessonIndex < 0 || currentLessonIndex >= vowelLessons.length) {
-      return null
-    }
-
+    if (!activeLesson || currentLessonIndex < 0 || currentLessonIndex >= vowelLessons.length) return null
     try {
       const lesson = vowelLessons[currentLessonIndex]
-      const content = typeof lesson.content === 'string' 
-        ? JSON.parse(lesson.content) 
-        : lesson.content
-
+      const content = typeof lesson.content === 'string' ? JSON.parse(lesson.content) : lesson.content
       return {
-        vowel: content.vowel || content.character || 'a',
-        umwero: content.umwero || content.glyph || '"',
+        vowel:       content.vowel || content.character || 'a',
+        umwero:      content.umwero || content.glyph || '"',
         pronunciation: content.pronunciation || '',
-        meaning: content.meaning || '',
-        culturalNote: content.culturalNote || '',
-        examples: Array.isArray(content.examples) ? content.examples : []
+        meaning:     content.meaning || '',
+        culturalNote:content.culturalNote || '',
+        examples:    Array.isArray(content.examples) ? content.examples : [],
       }
-    } catch (e) {
-      return null
-    }
+    } catch { return null }
   }
 
   const videoTutorials = [
@@ -179,41 +153,72 @@ export function LearnPageClient({
       title: t("introductionToUmweroTeaching"),
       src: "/videos/introTeach1.mp4",
       description: t("startUmweroJourney"),
-      duration: "12:45"
+      duration: "12:45",
     },
     {
       id: "numbers",
       title: t("imibireExploringUmwero"),
       src: "/videos/imibare1.mp4",
       description: t("learnToWriteNumbers"),
-      duration: "15:30"
-    }
+      duration: "15:30",
+    },
   ]
 
-  // Filter lessons based on search query
-  const filterLessons = (lessons: LessonData[]) => {
-    if (!searchQuery) return lessons
-    return lessons.filter(lesson => 
-      lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lesson.description?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }
+  const filterLessons = (lessons: LessonData[]) =>
+    searchQuery
+      ? lessons.filter(l =>
+          l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          l.description?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : lessons
 
+  const lang = mounted ? (localStorage.getItem('language') as 'en' | 'rw') || 'en' : 'en'
+
+  // ─── Tabs config (keeps JSX DRY) ─────────────────────────────────────────
+  const tabs = [
+    {
+      value: 'vowels',
+      icon: <BookOpen className="h-[18px] w-[18px] shrink-0" />,
+      label: 'Vowels',
+      count: vowelLessons.length,
+    },
+    {
+      value: 'consonants',
+      icon: <BookOpen className="h-[18px] w-[18px] shrink-0" />,
+      label: 'Consonants',
+      count: consonantLessons.length,
+    },
+    {
+      value: 'ibihekane',
+      icon: <Trophy className="h-[18px] w-[18px] shrink-0" />,
+      label: 'Ibihekane',
+      count: ligatureLessons.length,
+    },
+    {
+      value: 'videos',
+      icon: <Video className="h-[18px] w-[18px] shrink-0" />,
+      label: 'Videos',
+      count: null,
+    },
+  ]
+
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Lesson Modal */}
+      {/* ── Lesson Modal ── */}
       {activeLesson && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-auto">
-          <div className="min-h-screen py-4">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
+          <div className="min-h-screen py-4 px-2 sm:px-4">
             <Button
-              className="fixed top-4 right-4 z-[60] bg-white text-[#8B4513] hover:bg-[#F3E5AB] shadow-lg"
+              className="fixed top-3 right-3 z-[60] h-9 w-9 rounded-full bg-white text-[#8B4513] shadow-lg hover:bg-[#F3E5AB]"
               variant="ghost"
               size="icon"
               onClick={stopLesson}
+              aria-label="Close lesson"
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </Button>
-            
+
             {vowelLessons.length > 0 && getCurrentVowelData() && (
               <CompleteVowelLesson
                 vowelData={getCurrentVowelData()!}
@@ -224,21 +229,11 @@ export function LearnPageClient({
                   try {
                     const c = typeof l.content === 'string' ? JSON.parse(l.content) : l.content
                     return { vowel: c.vowel || c.character || 'a', completed: false, id: l.id }
-                  } catch (e) {
-                    return { vowel: 'a', completed: false, id: l.id }
-                  }
+                  } catch { return { vowel: 'a', completed: false, id: l.id } }
                 })}
                 onComplete={stopLesson}
-                onNext={() => {
-                  if (currentLessonIndex < vowelLessons.length - 1) {
-                    setCurrentLessonIndex(currentLessonIndex + 1)
-                  }
-                }}
-                onPrevious={() => {
-                  if (currentLessonIndex > 0) {
-                    setCurrentLessonIndex(currentLessonIndex - 1)
-                  }
-                }}
+                onNext={() => { if (currentLessonIndex < vowelLessons.length - 1) setCurrentLessonIndex(i => i + 1) }}
+                onPrevious={() => { if (currentLessonIndex > 0) setCurrentLessonIndex(i => i - 1) }}
                 hasNext={currentLessonIndex < vowelLessons.length - 1}
                 hasPrevious={currentLessonIndex > 0}
               />
@@ -247,210 +242,228 @@ export function LearnPageClient({
         </div>
       )}
 
-      {/* Intro Video Modal */}
+      {/* ── Intro Video Modal ── */}
       {showIntroVideo && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
-          <div className="w-full max-w-4xl bg-white rounded-lg overflow-hidden relative">
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-6"
+          onClick={(e) => e.target === e.currentTarget && setShowIntroVideo(false)}
+        >
+          <div className="relative w-full max-w-4xl rounded-xl overflow-hidden shadow-2xl">
             <Button
-              className="absolute top-4 right-4 z-50 bg-white/90 hover:bg-white"
+              className="absolute top-3 right-3 z-50 h-8 w-8 rounded-full bg-white/90 text-[#8B4513] hover:bg-white"
               variant="ghost"
               size="icon"
               onClick={() => setShowIntroVideo(false)}
+              aria-label="Close video"
             >
-              <X className="h-6 w-6" />
+              <X className="h-4 w-4" />
             </Button>
             <VideoPlayer src="/videos/introTeach1.mp4" title={t("introductionToUmweroTeaching")} />
           </div>
         </div>
       )}
 
-      {/* Hero Section */}
-      <section className="relative py-16 px-4 md:px-6 lg:px-8">
-        <div className="container mx-auto text-center max-w-5xl">
-          {/* Cultural Badge */}
+      {/* ── Hero Section ── */}
+      <section className="relative py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-5xl text-center">
+
+          {/* Cultural Badges */}
           <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-              <Heart className="h-4 w-4 text-red-500" />
-              <span className="text-sm">Preserving Rwandan Heritage</span>
+            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
+              <Heart className="h-3.5 w-3.5 text-red-500 shrink-0" />
+              <span>Preserving Rwandan Heritage</span>
             </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-              <Globe className="h-4 w-4 text-blue-500" />
-              <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
+            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
+              <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+              <a
+                href="https://endangeredalphabets.net/umwero/"
+                target="_blank" rel="noopener noreferrer"
+                className="hover:underline"
+              >
                 Endangered Alphabets Project
               </a>
             </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-              <BookOpen className="h-4 w-4 text-green-500" />
-              <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="text-sm hover:underline">
+            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
+              <BookOpen className="h-3.5 w-3.5 text-green-500 shrink-0" />
+              <a
+                href="https://scriptkeepers.org/projects"
+                target="_blank" rel="noopener noreferrer"
+                className="hover:underline"
+              >
                 ScriptKeepers Initiative
               </a>
             </Badge>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-[#8B4513]">
+          {/* Heading — fluid scale via clamp-like Tailwind classes */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.15] mb-4 text-[#8B4513]">
             {mounted ? t("startYourUmweroJourneyToday") : "Start Your Umwero Journey Today"}
           </h1>
-          <p className="text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto">
+
+          <p className="text-base sm:text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto leading-relaxed">
             Learn the authentic Umwero script character by character. Each lesson reveals the deep cultural significance and helps preserve this endangered writing system for future generations.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all"
+          {/* CTA Buttons — stack on mobile, row on sm+ */}
+          <div className="flex flex-col xs:flex-row gap-3 justify-center items-center">
+            <Button
+              size="lg"
+              className="w-full xs:w-auto gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all"
               onClick={() => vowelLessons.length > 0 && startLesson(vowelLessons[0].id, 'vowel')}
             >
-              <Sparkles className="h-5 w-5" />
+              <Sparkles className="h-5 w-5 shrink-0" />
               {t("startLearning")}
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]" 
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full xs:w-auto gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]"
               onClick={() => setShowIntroVideo(true)}
             >
-              <Play className="h-5 w-5" />
+              <Play className="h-5 w-5 shrink-0" />
               {t("watchIntroVideo")}
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Progress Section */}
-      <section className="py-8 px-4 md:px-6 lg:px-8">
-        <div className="container mx-auto max-w-6xl">
-          {/* Debug Component - Remove in production */}
-          <ProgressDebugger />
-          
-          <Card className="bg-white/80 backdrop-blur border-[#8B4513]">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center gap-6">
-                <div className="flex items-center gap-4 flex-1 w-full">
-                  <Target className="h-8 w-8 text-[#8B4513] flex-shrink-0" />
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-[#8B4513]">{t("yourProgress")}</span>
-                      <span className="text-sm font-bold text-[#D2691E]">
-                        {progressLoading ? '...' : `${progressSummary.overall.percentage}%`}
-                      </span>
-                    </div>
-                    <Progress value={progressLoading ? 0 : progressSummary.overall.percentage} className="h-3" />
-                  </div>
-                </div>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B4513]" />
-                  <Input
-                    type="search"
-                    placeholder={t("searchLessons")}
-                    className="pl-10 bg-[#F3E5AB] border-[#8B4513] text-[#8B4513]"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
+      {/* ── Main Content ── */}
+      <section className="py-8 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
 
-      {/* Main Content */}
-      <section className="py-8 px-4 md:px-6 lg:px-8">
-        <div className="container mx-auto max-w-7xl">
+          {/* Optional: Search bar */}
+          <div className="relative mb-6 max-w-md mx-auto sm:mx-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B4513]/50 pointer-events-none" />
+            <Input
+              placeholder="Search lessons…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-9 border-[#8B4513]/30 focus-visible:ring-[#8B4513]"
+            />
+            {searchQuery && (
+              <button
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8B4513]/60 hover:text-[#8B4513]"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
           <Tabs defaultValue="vowels" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 md:grid-cols-4 gap-1 md:gap-2 mb-8 h-auto bg-white/80 backdrop-blur p-2">
-              <TabsTrigger value="vowels" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Vowels</span>
-                <span className="sm:hidden">V</span>
-                <span className="hidden md:inline">({vowelLessons.length})</span>
-              </TabsTrigger>
-              <TabsTrigger value="consonants" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <BookOpen className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Consonants</span>
-                <span className="sm:hidden">C</span>
-                <span className="hidden md:inline">({consonantLessons.length})</span>
-              </TabsTrigger>
-              <TabsTrigger value="ibihekane" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <Trophy className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Ibihekane</span>
-                <span className="sm:hidden">I</span>
-                <span className="hidden md:inline">({ligatureLessons.length})</span>
-              </TabsTrigger>
-              <TabsTrigger value="videos" className="gap-1 md:gap-2 text-xs md:text-sm data-[state=active]:bg-[#8B4513] data-[state=active]:text-white">
-                <Video className="h-3 w-3 md:h-4 md:w-4" />
-                <span className="hidden sm:inline">Videos</span>
-                <span className="sm:hidden">V</span>
-              </TabsTrigger>
+            {/* ── Tab List ── */}
+            <TabsList
+              className="
+                grid grid-cols-4 mb-8
+                h-auto p-1.5
+                bg-white/80 backdrop-blur
+                rounded-2xl shadow-sm border border-amber-100
+                gap-1
+              "
+            >
+              {tabs.map(({ value, icon, label, count }) => (
+                <TabsTrigger
+                  key={value}
+                  value={value}
+                  className="
+                    flex flex-col items-center justify-center gap-1
+                    rounded-xl py-2.5 px-1
+                    transition-all duration-200
+                    data-[state=active]:bg-[#8B4513] data-[state=active]:text-white data-[state=active]:shadow-md
+                    data-[state=inactive]:text-[#8B4513]/60 data-[state=inactive]:hover:bg-amber-50 data-[state=inactive]:hover:text-[#8B4513]
+                    min-h-[3.5rem]
+                    group
+                  "
+                >
+                  {/* Icon — slightly larger, always visible */}
+                  <span className="flex items-center justify-center h-5 w-5 [&>svg]:h-[18px] [&>svg]:w-[18px]">
+                    {icon}
+                  </span>
+
+                  {/* Full label — always shown, wraps if needed */}
+                  <span className="text-[11px] leading-tight font-semibold text-center tracking-wide w-full px-0.5 truncate">
+                    {label}
+                  </span>
+
+                  {/* Count pill — visible on sm+ */}
+                  {count !== null && (
+                    <span
+                      className="
+                        hidden sm:inline-flex items-center justify-center
+                        h-4 min-w-[1.1rem] px-1 rounded-full
+                        text-[9px] font-bold leading-none
+                        bg-[#8B4513]/10 text-[#8B4513]
+                        data-[state=active]:bg-white/20 data-[state=active]:text-white
+                        group-data-[state=active]:bg-white/25 group-data-[state=active]:text-white
+                      "
+                    >
+                      {count}
+                    </span>
+                  )}
+                </TabsTrigger>
+              ))}
             </TabsList>
 
-            {/* Vowels Tab */}
+            {/* ── Vowels ── */}
             <TabsContent value="vowels" className="space-y-6">
               <EnhancedCharacterGrid
-                characters={filterLessons(vowelLessons).map(lesson => {
-                  const charData = parseCharacterData(lesson)
-                  return {
-                    ...charData,
-                    examples: charData.examples || []
-                  }
-                })}
+                characters={filterLessons(vowelLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="vowel"
                 title={mounted ? t("umweroVowels") : "Umwero Vowels"}
                 description={mounted ? t("learnVowelCharacters") : "Learn the 5 vowel characters and their cultural significance"}
                 onStartLesson={startLesson}
-                language={mounted ? (localStorage.getItem('language') as 'en' | 'rw') || 'en' : 'en'}
+                language={lang}
               />
             </TabsContent>
 
-            {/* Consonants Tab */}
+            {/* ── Consonants ── */}
             <TabsContent value="consonants" className="space-y-6">
               <EnhancedCharacterGrid
-                characters={filterLessons(consonantLessons).map(lesson => {
-                  const charData = parseCharacterData(lesson)
-                  return {
-                    ...charData,
-                    examples: charData.examples || []
-                  }
-                })}
+                characters={filterLessons(consonantLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="consonant"
                 title={mounted ? t("umweroConsonants") : "Umwero Consonants"}
                 description={mounted ? t("masterConsonantCharacters") : "Master consonant characters and combinations"}
                 onStartLesson={startLesson}
-                language={mounted ? (localStorage.getItem('language') as 'en' | 'rw') || 'en' : 'en'}
+                language={lang}
               />
             </TabsContent>
 
-            {/* Ibihekane (Ligatures) Tab */}
+            {/* ── Ibihekane ── */}
             <TabsContent value="ibihekane" className="space-y-6">
               <EnhancedCharacterGrid
-                characters={filterLessons(ligatureLessons).map(lesson => {
-                  const charData = parseCharacterData(lesson)
-                  return {
-                    ...charData,
-                    examples: charData.examples || []
-                  }
-                })}
+                characters={filterLessons(ligatureLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="ligature"
-                title="Ibihekane - Compound Characters"
-                description="Master advanced compound characters - the building blocks of complex Umwero writing"
+                title="Ibihekane — Compound Characters"
+                description="Master advanced compound characters — the building blocks of complex Umwero writing"
                 onStartLesson={startLesson}
-                language={mounted ? (localStorage.getItem('language') as 'en' | 'rw') || 'en' : 'en'}
+                language={lang}
               />
             </TabsContent>
 
-            {/* Videos Tab */}
+            {/* ── Videos ── */}
             <TabsContent value="videos">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 {videoTutorials.map((video) => (
-                  <Card key={video.id} className="bg-white border-[#8B4513] overflow-hidden">
-                    <div className="aspect-video relative">
+                  <Card key={video.id} className="bg-white border-[#8B4513]/30 overflow-hidden rounded-xl">
+                    {/* 16/9 ratio container */}
+                    <div className="aspect-video">
                       <VideoPlayer src={video.src} title={video.title} />
                     </div>
-                    <CardContent className="p-4 md:p-6">
-                      <h3 className="font-bold text-[#8B4513] mb-2 text-base md:text-lg">{video.title}</h3>
-                      <p className="text-[#D2691E] text-sm mb-4">{video.description}</p>
+                    <CardContent className="p-4 sm:p-5">
+                      <h3 className="font-bold text-[#8B4513] mb-1.5 text-sm sm:text-base leading-snug">
+                        {video.title}
+                      </h3>
+                      <p className="text-[#D2691E] text-xs sm:text-sm mb-3 leading-relaxed line-clamp-2">
+                        {video.description}
+                      </p>
                       <div className="flex items-center justify-between">
-                        <span className="text-[#8B4513] text-sm">{video.duration}</span>
-                        <Badge variant="outline">{mounted ? t("videoTutorials") : "Video"}</Badge>
+                        <span className="text-[#8B4513] text-xs sm:text-sm font-medium tabular-nums">
+                          {video.duration}
+                        </span>
+                        <Badge variant="outline" className="text-xs">
+                          {mounted ? t("videoTutorials") : "Video"}
+                        </Badge>
                       </div>
                     </CardContent>
                   </Card>
@@ -461,16 +474,16 @@ export function LearnPageClient({
         </div>
       </section>
 
-      {/* Cultural Footer */}
-      <section className="py-12 px-4 md:px-6 lg:px-8">
-        <div className="container mx-auto max-w-4xl">
-          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-            <CardContent className="p-8 text-center">
-              <div className="text-5xl mb-4">🏛️</div>
-              <h3 className="text-2xl font-semibold text-amber-800 mb-3">
+      {/* ── Cultural Footer Card ── */}
+      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl">
+          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 rounded-2xl overflow-hidden">
+            <CardContent className="p-6 sm:p-10 text-center">
+              <div className="text-4xl sm:text-5xl mb-4" role="img" aria-label="Heritage">🏛️</div>
+              <h3 className="text-xl sm:text-2xl font-semibold text-amber-800 mb-3">
                 Join the Cultural Movement
               </h3>
-              <p className="text-amber-700 leading-relaxed">
+              <p className="text-sm sm:text-base text-amber-700 leading-relaxed max-w-2xl mx-auto">
                 Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. Together, we can ensure this beautiful writing system continues to inspire future generations and maintains its place in the rich tapestry of African linguistic diversity.
               </p>
             </CardContent>

@@ -209,28 +209,28 @@ export default function UmweroChatPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-[#FFFFFF]">
-      <h1 className="text-4xl font-bold mb-6 text-center text-[#8B4513]">
+    <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 bg-[#FFFFFF] min-h-screen">
+      <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 md:mb-6 text-center text-[#8B4513]">
         {t("umweroChat")}
       </h1>
       
-      <p className="text-xl text-center mb-8 text-[#D2691E]">
+      <p className="text-sm sm:text-base md:text-lg lg:text-xl text-center mb-4 sm:mb-6 md:mb-8 text-[#D2691E] px-2">
         Type in Latin and see it transform into beautiful Umwero script ✨
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
         {/* Input Section */}
         <Card className="bg-[#F3E5AB] border-[#8B4513]">
-          <CardHeader>
-            <CardTitle className="text-[#8B4513] flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
+          <CardHeader className="p-3 sm:p-4 md:p-6">
+            <CardTitle className="text-[#8B4513] flex items-center gap-2 text-base sm:text-lg md:text-xl">
+              <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5" />
               Compose Message
             </CardTitle>
-            <CardDescription className="text-[#D2691E]">
+            <CardDescription className="text-[#D2691E] text-xs sm:text-sm md:text-base">
               Type your message and watch it transform to Umwero
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6 pt-0">
             {/* Input Field */}
             <div>
               <label className="block text-sm font-medium text-[#8B4513] mb-2">
@@ -241,7 +241,7 @@ export default function UmweroChatPage() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message here..."
-                className="border-[#8B4513] text-lg"
+                className="border-[#8B4513] text-sm sm:text-base"
               />
             </div>
 
@@ -267,16 +267,16 @@ export default function UmweroChatPage() {
               </label>
               <div 
                 ref={umweroPreviewRef}
-                className="min-h-[120px] p-4 bg-white border-2 border-[#8B4513] rounded-lg"
+                className="min-h-[80px] sm:min-h-[100px] md:min-h-[120px] p-3 sm:p-4 bg-white border-2 border-[#8B4513] rounded-lg"
                 style={{ 
                   fontFamily: "'UMWEROalpha', serif",
-                  fontSize: `${fontSize}px`,
+                  fontSize: `${Math.min(fontSize, 28)}px`,
                   lineHeight: '1.5',
                   color: '#8B4513'
                 }}
               >
                 {umweroPreview || (
-                  <span className="text-gray-400 italic" style={{ fontFamily: 'Arial, sans-serif', fontSize: '16px' }}>
+                  <span className="text-gray-400 italic" style={{ fontFamily: 'Arial, sans-serif', fontSize: '12px' }}>
                     Your Umwero text will appear here as you type...
                   </span>
                 )}
@@ -284,13 +284,13 @@ export default function UmweroChatPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={sendMessage}
                 disabled={!inputText.trim()}
-                className="flex-1 bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                className="flex-1 bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] text-sm sm:text-base"
               >
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
                 Send Message
               </Button>
               
@@ -298,9 +298,9 @@ export default function UmweroChatPage() {
                 <Button
                   onClick={() => copyToClipboard(umweroPreview)}
                   variant="outline"
-                  className="border-[#8B4513] text-[#8B4513]"
+                  className="border-[#8B4513] text-[#8B4513] px-3 sm:px-4"
                 >
-                  {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  {copied ? <Check className="h-3 w-3 sm:h-4 sm:w-4" /> : <Copy className="h-3 w-3 sm:h-4 sm:w-4" />}
                 </Button>
               )}
             </div>
@@ -309,10 +309,10 @@ export default function UmweroChatPage() {
 
         {/* Chat Messages */}
         <Card className="bg-[#F3E5AB] border-[#8B4513]">
-          <CardHeader>
+          <CardHeader className="p-4 sm:p-6">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-[#8B4513] flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
+              <CardTitle className="text-[#8B4513] flex items-center gap-2 text-lg sm:text-xl">
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />
                 Messages ({messages.length})
               </CardTitle>
               {messages.length > 0 && (
@@ -320,53 +320,53 @@ export default function UmweroChatPage() {
                   onClick={clearChat}
                   variant="outline"
                   size="sm"
-                  className="border-[#8B4513] text-[#8B4513]"
+                  className="border-[#8B4513] text-[#8B4513] text-xs sm:text-sm px-2 sm:px-3"
                 >
                   Clear All
                 </Button>
               )}
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-6 pt-0">
             <div 
               ref={chatRef}
-              className="space-y-4 max-h-[600px] overflow-y-auto"
+              className="space-y-3 sm:space-y-4 max-h-[400px] sm:max-h-[600px] overflow-y-auto"
             >
               {messages.length === 0 ? (
-                <div className="text-center py-8 text-[#D2691E]">
-                  <MessageCircle className="h-12 w-12 mx-auto mb-4 text-[#D2691E]" />
-                  <p>No messages yet. Send your first Umwero message!</p>
+                <div className="text-center py-6 sm:py-8 text-[#D2691E]">
+                  <MessageCircle className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 text-[#D2691E]" />
+                  <p className="text-sm sm:text-base">No messages yet. Send your first Umwero message!</p>
                 </div>
               ) : (
                 messages.map((message) => (
                   <Card key={message.id} className="bg-white border-[#8B4513]">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3 sm:p-4">
                       {/* Message Header */}
-                      <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-[#8B4513] text-[#F3E5AB]">
+                      <div className="flex justify-between items-center mb-2 sm:mb-3">
+                        <div className="flex items-center gap-1 sm:gap-2 min-w-0 flex-1">
+                          <Badge className="bg-[#8B4513] text-[#F3E5AB] text-xs px-2 py-1 truncate">
                             {message.user}
                           </Badge>
-                          <span className="text-sm text-[#D2691E]">
+                          <span className="text-xs sm:text-sm text-[#D2691E]">
                             {message.timestamp.toLocaleTimeString()}
                           </span>
                         </div>
                       </div>
 
                       {/* Latin Text */}
-                      <div className="mb-3">
-                        <p className="text-sm text-[#D2691E] mb-1">Latin:</p>
-                        <p className="text-[#8B4513]">{message.latinText}</p>
+                      <div className="mb-2 sm:mb-3">
+                        <p className="text-xs sm:text-sm text-[#D2691E] mb-1">Latin:</p>
+                        <p className="text-[#8B4513] text-sm sm:text-base">{message.latinText}</p>
                       </div>
 
                       {/* Umwero Text - Using Real Translation */}
-                      <div className="mb-4">
-                        <p className="text-sm text-[#D2691E] mb-1">Umwero:</p>
+                      <div className="mb-3 sm:mb-4">
+                        <p className="text-xs sm:text-sm text-[#D2691E] mb-1">Umwero:</p>
                         <div 
-                          className="p-3 bg-[#F3E5AB] rounded-lg border border-[#D2691E]"
+                          className="p-2 sm:p-3 bg-[#F3E5AB] rounded-lg border border-[#D2691E]"
                           style={{ 
                             fontFamily: "'UMWEROalpha', serif",
-                            fontSize: `${fontSize}px`,
+                            fontSize: `${Math.min(fontSize, 28)}px`,
                             lineHeight: '1.5',
                             color: '#8B4513'
                           }}
@@ -376,14 +376,14 @@ export default function UmweroChatPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1 sm:gap-2">
                         <Button
                           onClick={() => generateSocialImage(message)}
                           disabled={isGeneratingImage}
                           size="sm"
-                          className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D]"
+                          className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] text-xs px-2 py-1"
                         >
-                          <Camera className="h-3 w-3 mr-1" />
+                          <Camera className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
                           {isGeneratingImage ? 'Creating...' : 'PNG'}
                         </Button>
                         
@@ -391,9 +391,9 @@ export default function UmweroChatPage() {
                           onClick={() => copyToClipboard(message.umweroText)}
                           size="sm"
                           variant="outline"
-                          className="border-[#8B4513] text-[#8B4513]"
+                          className="border-[#8B4513] text-[#8B4513] text-xs px-2 py-1"
                         >
-                          <Copy className="h-3 w-3 mr-1" />
+                          <Copy className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
                           Copy
                         </Button>
 
@@ -401,30 +401,30 @@ export default function UmweroChatPage() {
                           onClick={() => shareToSocial('twitter', message)}
                           size="sm"
                           variant="outline"
-                          className="border-blue-500 text-blue-500"
+                          className="border-blue-500 text-blue-500 text-xs px-2 py-1"
                         >
-                          <Twitter className="h-3 w-3 mr-1" />
-                          Tweet
+                          <Twitter className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">Tweet</span>
                         </Button>
 
                         <Button
                           onClick={() => shareToSocial('facebook', message)}
                           size="sm"
                           variant="outline"
-                          className="border-blue-600 text-blue-600"
+                          className="border-blue-600 text-blue-600 text-xs px-2 py-1"
                         >
-                          <Facebook className="h-3 w-3 mr-1" />
-                          Share
+                          <Facebook className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">Share</span>
                         </Button>
 
                         <Button
                           onClick={() => shareToSocial('whatsapp', message)}
                           size="sm"
                           variant="outline"
-                          className="border-green-500 text-green-500"
+                          className="border-green-500 text-green-500 text-xs px-2 py-1"
                         >
-                          <Share2 className="h-3 w-3 mr-1" />
-                          WhatsApp
+                          <Share2 className="h-2 w-2 sm:h-3 sm:w-3 mr-1" />
+                          <span className="hidden sm:inline">WhatsApp</span>
                         </Button>
                       </div>
                     </CardContent>
@@ -437,30 +437,30 @@ export default function UmweroChatPage() {
       </div>
 
       {/* Features Info */}
-      <Card className="mt-8 bg-[#F3E5AB] border-[#8B4513]">
-        <CardHeader>
-          <CardTitle className="text-[#8B4513] text-center">✨ Features</CardTitle>
+      <Card className="mt-6 sm:mt-8 bg-[#F3E5AB] border-[#8B4513]">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-[#8B4513] text-center text-lg sm:text-xl">✨ Features</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 text-center">
             <div>
-              <Sparkles className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#8B4513] mb-2">Auto Translation</h3>
-              <p className="text-sm text-[#D2691E]">
+              <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2 text-sm sm:text-base">Auto Translation</h3>
+              <p className="text-xs sm:text-sm text-[#D2691E]">
                 Text automatically converts to Umwero as you type
               </p>
             </div>
             <div>
-              <Camera className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#8B4513] mb-2">Social Sharing</h3>
-              <p className="text-sm text-[#D2691E]">
+              <Camera className="h-6 w-6 sm:h-8 sm:w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2 text-sm sm:text-base">Social Sharing</h3>
+              <p className="text-xs sm:text-sm text-[#D2691E]">
                 Generate beautiful PNG images for social media
               </p>
             </div>
             <div>
-              <Share2 className="h-8 w-8 text-[#8B4513] mx-auto mb-2" />
-              <h3 className="font-semibold text-[#8B4513] mb-2">Easy Sharing</h3>
-              <p className="text-sm text-[#D2691E]">
+              <Share2 className="h-6 w-6 sm:h-8 sm:w-8 text-[#8B4513] mx-auto mb-2" />
+              <h3 className="font-semibold text-[#8B4513] mb-2 text-sm sm:text-base">Easy Sharing</h3>
+              <p className="text-xs sm:text-sm text-[#D2691E]">
                 One-click sharing to Twitter, Facebook, WhatsApp
               </p>
             </div>

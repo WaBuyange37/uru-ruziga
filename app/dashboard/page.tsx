@@ -31,6 +31,7 @@ import {
   Activity,
   Zap
 } from "lucide-react"
+import { ProgressTracker } from "../../components/dashboard/ProgressTracker"
 
 interface DrawingAttempt {
   id: string
@@ -344,6 +345,9 @@ export default function EnhancedDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Progress Tracker - New Section */}
+        <ProgressTracker />
 
         {/* Recent Drawing Activity */}
         <Card className="bg-white/90 backdrop-blur border-[#8B4513] shadow-xl">

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Eye, EyeOff, Trophy, Target } from 'lucide-react'
-import { CharacterCard } from './CharacterCard'
+import CharacterCard from './CharacterCard'
 import { useLearnQueue, Character } from '@/hooks/useLearnQueue'
 
 interface EnhancedCharacterGridProps {
