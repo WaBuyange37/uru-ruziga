@@ -17,7 +17,12 @@ export const translations = {
     english: "English",
     kinyarwanda: "Kinyarwanda",
     umwero: "Umwero",
+    ThreePillars:"Umwero in 3 Pillars of Rwandan Culture",
+    UnderstandingFoundational:`Why is the original writing system for the Kinyarwanda language called “Umwero”?
 
+Umwero is a word that carries deep sacred meaning, because it represents the three pillars upon which Rwandan culture has long been built: God, the cow, and the royal drum.
+
+From ancient times, Rwandans were protected and guided by the Holy God(God-Yera); they drank what is pure(ayera) — meaning milk — and lived from the fertility and nourishment of the soil(Ibyeze). Now a new season has come: God has once again remembered us and granted us Umwero for culture preservation.`,
     // Main Navigation
     home: "Home",
     learn: "Learn",
@@ -153,7 +158,8 @@ export const translations = {
     conclusion: "Conclusion",
     umweroImportance: "Umwero represents a bridge between tradition and modernity, preserving Kinyarwanda language for future generations.",
     learnMoreUmwero: "Learn More About Umwero",
-
+    Founder:"Kwizera Mugisha, Creator of Umwero",
+    EveryCulture:"Every culture is protected by its language, and any language may be protected by its own writing system.",
     // Home Page
     enterCircleOfKnowledge: "Enter the Circle of Knowledge",
     whereEveryLetterTellsStory: "Where Every Letter Tells a Story",
@@ -171,16 +177,16 @@ export const translations = {
     // Cultural Content
     culturalInsights: "Cultural Insights",
     didYouKnow: "Did you know?",
-    umweroCircleMeaning: "Umwero's circle represents the eternal cycle of knowledge",
+    
     languagePreservation: "Language Preservation",
-    umweroRoleInPreservation: "Umwero preserves Kinyarwanda heritage",
+    umweroRoleInPreservation: "Umwero preserves Kinyarwanda heritage, ",
 
     // Umwero Movement
     umweroMovement: "The Umwero Movement",
     culturalRenaissance: "Cultural Renaissance",
     ourMission: "Our Mission",
     preservingKinyarwandaCulture: "Preserving Kinyarwanda Culture",
-    umweroAlphabetDescription: "The Umwero alphabet is a revolutionary writing system designed specifically for the Kinyarwanda language, capturing its unique sounds and cultural essence.",
+    umweroAlphabetDescription: "The Umwero alphabet is a revolutionary writing system created for preserving the Kinyarwanda language, capturing its unique sounds and cultural essence. Since 2019 Umwero is heere to Preserve our culture and protect our language from vanishing",
     umweroQuote: "Every character tells a story, every word preserves our heritage.",
     ourVision: "Our Vision",
     buildingCulturalSchool: "Building a Cultural School",
@@ -214,10 +220,11 @@ export const translations = {
     minutes: "min",
     hours: "hours",
     allRightsReserved: "All rights reserved",
-    welcomeToUmwero: "Welcome to Umwero Learning Platform",
+    welcomeToUmwero: "Welcome to Uruziga",
+    Discover:"the cicle of Knowledge, history & culture. The Umwero learning Platform",
     joinCommunity: "Join our community to learn the beautiful Umwero alphabet and preserve Kinyarwanda culture",
-    getStarted: "Get Started - Sign Up",
-    alreadyHaveAccount: "Already have an account? Login",
+    getStarted: "Sign Up",
+    alreadyHaveAccount: "Login",
     whatYouGetAccess: "What You'll Get Access To",
     interactiveLessonsTitle: "Interactive Lessons",
     interactiveLessonsDesc: "Learn Umwero step by step with interactive lessons",
@@ -374,6 +381,21 @@ export const translations = {
     roleChangedSuccess: "Role changed successfully!",
     errorOccurred: "An error occurred",
     tryAgainLater: "Please try again",
+    IngomaMuKinyarwanda:"In Kinyarwanda, the word “Ingoma” has two explanations. Although they may look different, they are closely related in meaning.",
+    IngomaNkIgikoresho:"1) Ingoma as a musical instrument Ingoma can refer to a drum used to play music. Drums are very important in our culture because they are used in traditional dances and in different cultural ceremonies. However, the Umwero symbol mentioned here does not represent the drum as a musical instrument.",
+    IngomaNkIkirango:`2) Ingoma as a symbol of kingship Ingoma can also refer to a symbol of the kingdom or monarchy. If you look carefully at the symbol, it resembles a crown or royal headpiece, representing royal authority through the centuries, because Gihanga, the owner of the crown, is called “Ngomijana.”`,
+    InkaBavuga:"There are people who say that the cow itself is like a Rwandan person, because of how deeply it is connected to our lives and culture. Cows play an important role in marriage traditions, where they are given during the ceremony of asking for and receiving a bride. In many ways, cows help raise and sustain families.",
+    InkaIrakomeye:"The cow is so respected that people even swear by it when speaking. One person may say “My cow,” while another may say “He gave me a cow,” showing how meaningful and honorable it is in our society.",
+    ishushoMana:`Symbol of Divinity: The circle is considered a symbol of divinity, because it has no beginning and no end.`,
+    HeroNaHerezo:`Beginning and End: The circle represents both the beginning and the end, and in Rwandan culture it is also a symbol of fertility and continuity. That is why parents traditionally place a bead ornament (urugori), as a sign connected to life, growth, and continuity.`,
+    featuresTool:"Comprehensive tools and resources for mastering the Umwero script",
+    Essential:"Essential",
+    Analytics:"Analytics",
+    cultureTitle: "Join the Cultural Movement",
+    cultureDescription: "Every character you learn helps preserve the Umwero script and honors Rwanda’s cultural heritage. Start learning today and be part of bringing this tradition back to life.",
+    cultureButton: "Begin Your Journey",
+    UmweroCircle:"The Circle in Umwero",
+    HeroHerezo:"In Umwero, the circle is a symbol of the divine — an eternal form that surrounds knowledge, prosperity, strength, and resilience. A circle has no beginning and no end; it reflects the eternal nature of God.",
   },
 
   signup: "Sign Up",
@@ -398,6 +420,8 @@ export const translations = {
   applyForSponsorship: "Apply for Sponsorship",
   rw: {
     // Navigation & Core
+    Founder:"Kwizera Mugisha, Wahanze Umwero",
+    ThreePillars:" Umwero mu Nkingi 3 z'Umuco Nyarwanda",
     settings: "Igenamiterere",
     language: "Ururimi",
     profile: "Umwirondoro",
@@ -407,7 +431,9 @@ export const translations = {
     gamesAndQuizzes: "Imikino n'Ibizamini",
     welcome: "Murakaza neza",
     viewProfile: "Reba Umwirondoro",
-
+    UnderstandingFoundational: `Mpamvu ki Inyandiko mwimerere yandika Ikinyarwanda yiswe Umwero? 
+    Umwero ni Ijambo risigura Ubwiru bukomeye kuko ariryo jambo risiga Inkingi eshatu Umuco Nyarwanda wubakiye ho arizo: Imana, In'ka n'Ingoma.
+    kuko Uhereye kera kose Abanyarwanda barindwaga bakagasanirwa n'Imana yeze, bakanywa Ayera ndavuga amata kandi bakarya n'umwero wo mubutaka, none Imana iratwereye iduhaye Umwero`,
     // Languages
     english: "Icyongereza",
     kinyarwanda: "Ikinyarwanda",
@@ -417,7 +443,7 @@ export const translations = {
     home: "Mu Bicumbi",
     learn: "Iga",
     tools: "Ibikoresho",
-    fundUs: "Duterere",
+    fundUs: "Dutwerere",
     gallery: "Amafoto",
     translate: "Guhindura",
     calendar: "Kalendari",
@@ -470,7 +496,7 @@ export const translations = {
     quickLinks: "Ahabihuta",
     resources: "Ibikoresho",
     learningMaterials: "Ibikoresho byo Kwiga",
-    supportUs: "Duterere Inkunga",
+    supportUs: "Dutwerere",
     cultureAndHistory: "Umuco n'Amateka",
 
     // Culture & History Page (Kinyarwanda)
@@ -508,10 +534,10 @@ export const translations = {
     interactiveLessons: "Amasomo ashishikaje yo kwiga Umwero",
     exploreAncientCalendar: "Menya kalendari ya kera",
     accessTools: "Koresha ibikoresho byo kwiga",
-    culturalRenaissance: "Ihinduka ry'Umuco",
+    culturalRenaissance: "Sigasira Umuco",
     ourMission: "Intego Yacu",
     preservingKinyarwandaCulture: "Kubungabunga Umuco w'Ikinyarwanda",
-    umweroAlphabetDescription: "Umwero ni sisitemu y'inyandiko yakozwe ku buryo bwihariye ku rurimi rw'Ikinyarwanda.",
+    umweroAlphabetDescription: "Umwero ni inyuguti mpinduramatwara zahanzwe ngo zisigasire Ikinyarwanda mu budasa bwa cyo mu majwi yacyo yihariye. Kuva mu 2019 Umwero waziye kurinda Ikinyarwanda izima.",
     umweroQuote: "Buri nyuguti ivuga inkuru, buri jambo ribungabunga umurage wacu.",
     ourVision: "Icyerekezo Cyacu",
     buildingCulturalSchool: "Kubaka Ishuri ry'Umuco",
@@ -526,14 +552,14 @@ export const translations = {
     // Cultural Content
     culturalInsights: "Ubumenyi bw'Umuco",
     didYouKnow: "Wari uzi ko?",
-    umweroCircleMeaning: "Uruziga rw'Umwero rugaragaza uruziga ruhoraho rw'ubumenyi",
+    
     culturalSignificance: "Agaciro k'Umuco",
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
     umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
 
     // Umwero Movement
-    umweroMovement: "Ihuriro ry'Umwero",
+    umweroMovement: "Umwero Mu Ngamba",
     joinUsInPreserving: "Dufashe kubungabunga umuco w'Ikinyarwanda",
     umweroMovementDescription: "Ihinduka ry'umuco ryo kubungabunga Ikinyarwanda",
     learnMoreAboutUmwero: "Menya Byinshi ku Mwero",
@@ -774,8 +800,8 @@ export const translations = {
     errorOccurred: "Habaye ikosa",
     tryAgainLater: "Nyamuneka gerageza nyuma",
     joinCommunity: "Injira mu muryango wacu kugirango wige Umwero kandi ubungabunga umuco w'Ikinyarwanda",
-    getStarted: "Tangira - Iyandikishe",
-    alreadyHaveAccount: "Usanzwe ufite konti? Injira",
+    getStarted: "Iyandikishe",
+    alreadyHaveAccount: "Injira",
     whatYouGetAccess: "Ibyo Uzabona",
     interactiveLessonsTitle: "Amasomo Ashishikaje",
     interactiveLessonsDesc: "Wiga Umwero intambwe ku yindi ukoresheje amasomo ashishikaje",
@@ -787,7 +813,9 @@ export const translations = {
     translationToolsDesc: "Hindura hagati y'Umwero n'inyandiko za Latin",
     welcomeBack: "Murakaza neza",
     continueJourney: "Komeza urugendo rwawe rwo kwiga Umwero",
-
+welcomeToUmwero: "MURAKAZA NEZA MU URUZIGA",
+    Discover:"URUZIGA RUZIGA UBUMENYI,AMATEKA, NU MUCO RUKIGA UMWERO",
+    EveryCulture:"Buri muco urindwa n' Ururimi bwite, Buri Rurimi rukomezwa ni Inyandiko yarwo bwite",
     myProgress: "Iterambere Ryanjye",
     viewYourProgress: "Reba aho ugeze",
     continueLearn: "Iga",
@@ -826,7 +854,21 @@ export const translations = {
     sponsorshipLevel: "Urwego rw'Inkunga",
     selectLevel: "Hitamo Urwego",
     applyForSponsorship: "Saba Gutanga Inkunga",
-
+    IngomaMuKinyarwanda:"Ingoma mu Kinyarwanda isobanurwa mu buryo bubiri ariko bwose usanga ari kimwe nubwo bitandukanye.",
+    IngomaNkIgikoresho:"1) Ingoma nk'Igikoresho cyogucuranga umuziki, iyi rero ni ingenzi mu Muco wacu kuko tuyikoresha mu imbyino gakondo n'indi mihango, gusa iki kimenyetso cyo mu Umwero ntabgo gihagarariye Ingoma nk'igikoresho cy'umuziki",
+    IngomaNkIkirango:"2) Ingoma nk'ikirango cy'Ingoma ngabe cg Ubwami, niwitegereza neza icyo kimenyetso ni ishusho y'Igisingo/ikamba, igahagararira ibinyejana kubera ko Gihanga nyiri gisingo ni ngomijana",
+    InkaBavuga:"Inka hariho abavuga ko inka ari Umunyarwanda, Inka nizo dukoshanya(Umuhango wo gusaba no gukwa), inka ziraturera.",
+    InkaIrakomeye:"Inka irakomeye kugeza aho tuyirahira, umwe ati 'Inka yanjye', undi ati 'Yampaye Inka'",
+    ishushoMana:"Uruziga ni ishusho y'Ubumana kubera ko ntirugira itangiriro cyangwa iherezo.",
+    HeroNaHerezo:"Uruziga ni Hero na Herezo, kandi ni ishusho y'uburumbuke mu muco nyarwanda. niyo mpanvu ababyeyi batega urugori",
+    featuresTool:"Ibikoresho n' Inyunganizi bigufasha Kwiga no Kumenya Umwero neza.",
+    Essential:"Ingenzi",
+    Analytics:"Ubugenzuzi",
+    cultureTitle: "Twiyungeho mu Kubungabunga Umuco",
+    cultureDescription: "Buri nyuguti wiga ifasha kubungabunga inyandiko y'Umwero no kurinda umurage w'umuco nyarwanda. Tangira kwiga uyu munsi nawe ube umwe mu bawusigasira.",
+    cultureButton: "Tangira Urugendo Rwawe",
+    UmweroCircle:"Uruziga mu Umwero",
+    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruzuga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
   },
 
   signup: "Iyandikishe",
@@ -854,6 +896,9 @@ export const translations = {
     // The useTranslation hook will automatically convert them
 
     // Navigation & Core
+    Analytics:"Ubugenzuzi",
+    Founder:"Kwizera Mugisha, Wahanze Umwero",
+    ThreePillars:"Umwero mu Nkingi 3 zu Umuco Nyarwanda",
     settings: "Igenamiterere",
     language: "Ururimi",
     profile: "Umwirondoro",
@@ -863,7 +908,10 @@ export const translations = {
     gamesAndQuizzes: "Imikino n'Ibizamini",
     welcome: "Murakaza neza",
     viewProfile: "Reba Umwirondoro",
-
+    UnderstandingFoundational: `Mpamvu ki Inyandiko mwimerere yandika Ikinyarwanda yiswe Umwero? 
+    Umwero ni Ijambo risigura Ubwiru bukomeye kuko ariryo jambo risiga Inkingi eshatu Umuco Nyarwanda wubakiye ho arizo: Imana, In'ka n'Ingoma.
+    kuko Uhereye kera kose Abanyarwanda barindwaga bakagasanirwa n'Imana yeze, bakanywa Ayera ndavuga amata kandi bakarya n'umwero wo mubutaka, none Imana iratwereye iduhaye Umwero`,
+    EveryCulture:"Buri muco urindwa n' Ururimi bwite, Buri Rurimi rukomezw a ni Inyandiko yarwo bwite",
     // Languages
     english: "Icyongereza",
     kinyarwanda: "Ikinyarwanda",
@@ -873,7 +921,7 @@ export const translations = {
     home: "Mu Bicumbi",
     learn: "Iga",
     tools: "Ibikoresho",
-    fundUs: "Duterere",
+    fundUs: "Dutwerere",
     gallery: "Amafoto",
     translate: "Guhindura",
     calendar: "Kalendari",
@@ -928,7 +976,7 @@ export const translations = {
     quickLinks: "Ahabihuta",
     resources: "Ibikoresho",
     learningMaterials: "Ibikoresho byo Kwiga",
-    supportUs: "Duterere Inkunga",
+    supportUs: "Dutwerere",
     cultureAndHistory: "Umuco n'Amateka",
 
 
@@ -971,19 +1019,19 @@ export const translations = {
     // Cultural Content
     culturalInsights: "Ubumenyi bw'Umuco",
     didYouKnow: "Wari uzi ko",
-    umweroCircleMeaning: "Uruziga rw'Umwero rugaragaza uruziga ruhoraho rw'ubumenyi",
+    
     culturalSignificance: "Agaciro k'Umuco",
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
     umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
 
     // Umwero Movement
-    umweroMovement: "Ihuriro ry'Umwero",
+    umweroMovement: "Umwero mu ngamba",
     joinUsInPreserving: "Dufashe kubungabunga umuco w'Ikinyarwanda",
-    culturalRenaissance: "Ihinduka ry'Umuco",
+    culturalRenaissance: "Sigasira Umuco",
     ourMission: "Intego Yacu",
     preservingKinyarwandaCulture: "Kubungabunga Umuco w'Ikinyarwanda",
-    umweroAlphabetDescription: "Umwero ni sisitemu y'inyandiko yakozwe ku buryo bwihariye ku rurimi rw'Ikinyarwanda.",
+    umweroAlphabetDescription: "Umwero ni inyuguti mpinduramatwara zahanzwe ngo zisigasire Ikinyarwanda mu budasa bwa cyo mu majwi yacyo yihariye. Kuva mu 2019 Umwero waziye kurinda Ikinyarwanda izima.",
     umweroQuote: "Buri nyuguti ivuga inkuru, buri jambo ribungabunga umurage wacu.",
     ourVision: "Icyerekezo Cyacu",
     buildingCulturalSchool: "Kubaka Ishuri ry'Umuco",
@@ -1236,10 +1284,11 @@ export const translations = {
     allRightsReserved: "Uburenganzira bwose burarinzwe",
 
     // Home Page - Additional (Umwero - will be converted from Kinyarwanda)
-    welcomeToUmwero: "Murakaza neza kuri Urubuga rwo Kwiga Umwero",
+     welcomeToUmwero: "MURAKAZA NEZA MU URUZIGA",
+    Discover:"URUZIGA RUZIGA UBUMENYI,AMATEKA, NU MUCO RUKIGA UMWERO",
     joinCommunity: "Injira mu muryango wacu kugirango wige Umwero kandi ubungabunga umuco w'Ikinyarwanda",
-    getStarted: "Tangira - Iyandikishe",
-    alreadyHaveAccount: "Usanzwe ufite konti? Injira",
+    getStarted: "Iyandikishe",
+    alreadyHaveAccount: "Injira",
     whatYouGetAccess: "Ibyo Uzabona",
     interactiveLessonsTitle: "Amasomo Ashishikaje",
     interactiveLessonsDesc: "Wiga Umwero intambwe ku yindi ukoresheje amasomo ashishikaje",
@@ -1289,6 +1338,20 @@ export const translations = {
     sponsorshipLevel: "Urwego rw'Inkunga",
     selectLevel: "Hitamo Urwego",
     applyForSponsorship: "Saba Gutanga Inkunga",
+    IngomaMuKinyarwanda:"Ingoma mu Kinyarwanda isobanurwa mu buryo bubiri ariko bwose usanga ari kimwe nubwo bitandukanye.",
+    IngomaNkIgikoresho:"1) Ingoma nk'Igikoresho cyogucuranga umuziki, iyi rero ni ingenzi mu Muco wacu kuko tuyikoresha mu imbyino gakondo n'indi mihango, gusa iki kimenyetso cyo mu Umwero ntabgo gihagarariye Ingoma nk'igikoresho cy'umuziki",
+    IngomaNkIkirango:"2) Ingoma nk'ikirango cy'Ingoma ngabe cg Ubwami, niwitegereza neza icyo kimenyetso ni ishusho y'Igisingo/ikamba, igahagararira ibinyejana kubera ko Gihanga nyiri gisingo ni ngomijana",
+    InkaBavuga:"Inka hariho abavuga ko inka ari Umunyarwanda, Inka nizo dukoshanya(Umuhango wo gusaba no gukwa), inka ziraturera.",
+    InkaIrakomeye:"Inka irakomeye kugeza aho tuyirahira, umwe ati 'Inka yanjye', undi ati 'Yampaye Inka'",
+    ishushoMana:"Uruziga ni ishusho y'Ubumana kubera ko ntirugira itangiriro cyangwa iherezo.",
+    HeroNaHerezo:"Uruziga ni Hero na Herezo, kandi ni ishusho y'uburumbuke mu muco nyarwanda. niyo mpanvu ababyeyi batega urugori",
+    featuresTool:"Ibikoresho n Inyunganizi bigufasha Kwiga no Kumenya Umwero neza.",
+    Essential:"Ingenzi",
+    cultureTitle: "Twiyungeho mu Kubungabunga Umuco",
+    cultureDescription: "Buri nyuguti wiga ifasha kubungabunga inyandiko y'Umwero no kurinda umurage w'umuco nyarwanda. Tangira kwiga uyu munsi nawe ube umwe mu bawusigasira.",
+    cultureButton: "Tangira Urugendo Rwawe",
+    UmweroCircle:"Uruziga mu Umwero",
+    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruzuga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
   }
 }
 

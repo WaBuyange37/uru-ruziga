@@ -15,12 +15,6 @@ const UMWERO_MAP: { [key: string]: string } = {
   'O': '{', 'o': '{',
   'U': ':', 'u': ':',
   
-  // Ligatures (Ibihekane) - vowel combinations
-  'AA': String.fromCodePoint(0xE000), 'aa': String.fromCodePoint(0xE000),
-  'EE': String.fromCodePoint(0xE001), 'ee': String.fromCodePoint(0xE001),
-  'II': String.fromCodePoint(0xE002), 'ii': String.fromCodePoint(0xE002),
-  'OO': String.fromCodePoint(0xE003), 'oo': String.fromCodePoint(0xE003),
-  'UU': String.fromCodePoint(0xE004), 'uu': String.fromCodePoint(0xE004),
   
   // 5-letter compounds
   'NSHYW': 'QQKW', 'nshyw': 'QQKW',

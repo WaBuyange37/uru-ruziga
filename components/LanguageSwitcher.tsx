@@ -4,9 +4,9 @@ import { useLanguage } from "../app/contexts/LanguageContext"
 import { ChevronDown } from "lucide-react"
 
 const languages = [
-  { code: 'en', name: 'English', flag: '🇺🇸', shortName: 'EN' },
-  { code: 'rw', name: 'Kinyarwanda', flag: '🇷🇼', shortName: 'RW' },
-  { code: 'um', name: 'Umwero', flag: '⭕', shortName: 'UM' }
+  { code: 'en', name: 'English', flag: ' ', shortName: 'EN' },
+  { code: 'rw', name: 'Kinyarwanda', flag: ' ', shortName: 'RW' },
+  { code: 'um', name: 'Umwero', flag: '  ', shortName: 'UM' }
 ]
 
 export default function LanguageSwitcher() {

@@ -153,7 +153,7 @@ export function SiteHeaderModern() {
             prefetch={true}
           >
             <CircleIcon className="h-8 w-8 text-primary transition-transform group-hover:scale-110" />
-            <span className="text-xl font-bold text-foreground">Uruziga</span>
+            <span className="text-xl font-bold text-foreground">{t("Uruziga")}</span>
           </Link>
 
           {/* Desktop Navigation */}
