@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
@@ -10,24 +9,23 @@ import {
   Calculator,
   GamepadIcon,
   BarChart3,
-  Settings,
   Heart,
   TrendingUp,
-  Sparkles,
   Users,
   Globe,
-  Target,
-  Play,
-  ArrowRight,
   Star
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "../hooks/useTranslation";
 import { useAuth } from "./contexts/AuthContext";
-import inka from "../public/baaa.PNG";
-import Imana from "../public/Imana.png";
-import ingoma from "../public/ingoma.png";
-import logo from "../public/logo.jpeg";
+
+// ✅ Replace all direct image imports with named ImageAsset components
+import {
+  InkaImage,
+  ImanaImage,
+  IngomaImage,
+  LogoImage,
+} from "../components/ui/ImageAssets";
 
 export default function Home() {
   const { t } = useTranslation();
@@ -76,14 +74,14 @@ export default function Home() {
     );
   }
 
-  // If not authenticated, show modern landing page
+  // ─── Unauthenticated Landing Page ───────────────────────────────────────────
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+
         {/* Hero Section */}
         <section className="relative py-16 px-4 md:px-6 lg:px-8">
           <div className="container mx-auto text-center max-w-5xl">
-            {/* Cultural Badge */}
             <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
               <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
                 <Heart className="h-4 w-4 text-red-500" />
@@ -104,10 +102,9 @@ export default function Home() {
               {t("welcomeToUmwero")}
             </h1>
             <p className="text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto">
-               {t("Discover")}
+              {t("Discover")}
             </p>
 
-            {/* Founder's Quote */}
             <Card className="bg-white/80 backdrop-blur border-[#8B4513] shadow-xl mb-8">
               <CardContent className="p-6 md:p-8">
                 <blockquote className="text-lg md:text-xl italic text-[#8B4513] leading-relaxed">
@@ -120,26 +117,11 @@ export default function Home() {
             </Card>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                size="lg"
-                asChild
-                className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all"
-              >
-                <Link href="/signup">
-                  
-                  {t("getStarted")}
-                </Link>
+              <Button size="lg" asChild className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all">
+                <Link href="/signup">{t("getStarted")}</Link>
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                asChild
-                className="gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]"
-              >
-                <Link href="/login">
-                  
-                  {t("alreadyHaveAccount")}
-                </Link>
+              <Button size="lg" variant="outline" asChild className="gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]">
+                <Link href="/login">{t("alreadyHaveAccount")}</Link>
               </Button>
             </div>
           </div>
@@ -154,74 +136,58 @@ export default function Home() {
               </h2>
               <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
                 {t("UnderstandingFoundational")}
-                </p>
+              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Imana */}
               <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-xl transition-all">
                 <CardHeader className="text-center pb-4">
-                  <div className="text-6xl mb-4">
-                    <Image
-                      src={Imana}
-                      alt="uruziga"
-                      width={120}
-                      height={120}
-                      className="mx-auto"                
-                    />
+                  <div className="mb-4">
+                    {/* ✅ Replaced <Image src={Imana} /> */}
+                    <ImanaImage width={120} height={120} className="mx-auto" />
                   </div>
                   <CardTitle className="text-2xl text-purple-800">{t("Imana")}</CardTitle>
-                  {/* <CardDescription className="text-purple-600 font-semibold">{t("God")}</CardDescription> */}
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-purple-700 leading-relaxed">
-                    {t("ishushoMana")}<br/><br/>
+                    {t("ishushoMana")}<br /><br />
                     {t("HeroNaHerezo")}
                   </p>
                 </CardContent>
               </Card>
 
+              {/* Inka */}
               <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-xl transition-all">
                 <CardHeader className="text-center pb-4">
-                  <div className="text-6xl mb-4"><Image
-                                                        src={inka}
-                                                        alt="Inka"
-                                                        width={120}
-                                                        height={120}
-                                                        className="mx-auto"
-                                                      />
+                  <div className="mb-4">
+                    {/* ✅ Replaced <Image src={inka} /> */}
+                    <InkaImage width={120} height={120} className="mx-auto" />
                   </div>
-                <CardTitle className="text-2xl text-blue-800">{t("Inka")}</CardTitle>
-                {/* <CardDescription className="text-blue-600 font-semibold">Cattle</CardDescription> */}
+                  <CardTitle className="text-2xl text-blue-800">{t("Inka")}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-blue-700 leading-relaxed">
-                    {t("InkaBavuga")}<br/><br/>
+                    {t("InkaBavuga")}<br /><br />
                     {t("InkaIrakomeye")}
                   </p>
                 </CardContent>
               </Card>
 
-              
-
+              {/* Ingoma */}
               <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-xl transition-all">
                 <CardHeader className="text-center pb-4">
-                  <div className="text-6xl mb-4">
-                    <Image
-                      src={ingoma}
-                      alt="Ibinyejana"
-                      width={120}
-                      height={120}
-                      className="mx-auto"                
-                    />
+                  <div className="mb-4">
+                    {/* ✅ Replaced <Image src={ingoma} /> */}
+                    <IngomaImage width={120} height={120} className="mx-auto" />
                   </div>
-                  <CardTitle className="text-2xl text-amber-800"> {t("Ingoma")} </CardTitle>
-                  {/* <CardDescription className="text-amber-600 font-semibold">Throne/Kingdom</CardDescription> */}
+                  <CardTitle className="text-2xl text-amber-800">{t("Ingoma")}</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
                   <p className="text-amber-700 leading-relaxed">
-                    {t("IngomaMuKinyarwanda")}<br/><br/>
+                    {t("IngomaMuKinyarwanda")}<br /><br />
                     {t("IngomaNkIgikoresho")}
-                    <br/>
+                    <br />
                     {t("IngomaNkIkirango")}
                   </p>
                 </CardContent>
@@ -238,7 +204,6 @@ export default function Home() {
                 {t("whatYouGetAccess")}
               </h2>
               <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
-                
                 {t("featuresTool")}
               </p>
             </div>
@@ -248,16 +213,12 @@ export default function Home() {
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <BookOpen className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs"> {t("Essential")} </Badge>
+                    <Badge variant="outline" className="text-xs">{t("Essential")}</Badge>
                   </div>
-                  <CardTitle className="text-[#8B4513] text-lg">
-                    {t("interactiveLessonsTitle")}
-                  </CardTitle>
+                  <CardTitle className="text-[#8B4513] text-lg">{t("interactiveLessonsTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">
-                    {t("interactiveLessonsDesc")}
-                  </p>
+                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("interactiveLessonsDesc")}</p>
                 </CardContent>
               </Card>
 
@@ -265,16 +226,12 @@ export default function Home() {
                 <CardHeader>
                   <div className="flex items-center justify-between mb-2">
                     <BarChart3 className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs"> {t("Analytics")} </Badge>
+                    <Badge variant="outline" className="text-xs">{t("Analytics")}</Badge>
                   </div>
-                  <CardTitle className="text-[#8B4513] text-lg">
-                    {t("trackProgressTitle")}
-                  </CardTitle>
+                  <CardTitle className="text-[#8B4513] text-lg">{t("trackProgressTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">
-                    {t("trackProgressDesc")}
-                  </p>
+                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("trackProgressDesc")}</p>
                 </CardContent>
               </Card>
 
@@ -284,14 +241,10 @@ export default function Home() {
                     <GamepadIcon className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
                     <Badge variant="outline" className="text-xs">Fun</Badge>
                   </div>
-                  <CardTitle className="text-[#8B4513] text-lg">
-                    {t("funGamesTitle")}
-                  </CardTitle>
+                  <CardTitle className="text-[#8B4513] text-lg">{t("funGamesTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">
-                    {t("funGamesDesc")}
-                  </p>
+                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("funGamesDesc")}</p>
                 </CardContent>
               </Card>
 
@@ -301,14 +254,10 @@ export default function Home() {
                     <Calculator className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
                     <Badge variant="outline" className="text-xs">Tools</Badge>
                   </div>
-                  <CardTitle className="text-[#8B4513] text-lg">
-                    {t("translationToolsTitle")}
-                  </CardTitle>
+                  <CardTitle className="text-[#8B4513] text-lg">{t("translationToolsTitle")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">
-                    {t("translationToolsDesc")}
-                  </p>
+                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("translationToolsDesc")}</p>
                 </CardContent>
               </Card>
             </div>
@@ -317,50 +266,37 @@ export default function Home() {
 
         {/* Call to Action */}
         <section className="py-16 px-4 md:px-6 lg:px-8">
-            <div className="container mx-auto max-w-4xl">
-              <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-                <CardContent className="p-8 text-center">
-                  <div className="text-5xl mb-4"><Image
-                      src={logo}
-                      alt="umwero logo"
-                      width={120}
-                      height={120}
-                      className="mx-auto"                
-                    /></div>
-
-                  <h3 className="text-2xl md:text-3xl font-semibold text-amber-800 mb-4">
-                    {t("cultureTitle")}
-                  </h3>
-
-                  <p className="text-amber-700 leading-relaxed mb-6 max-w-2xl mx-auto">
-                    {t("cultureDescription")}
-                  </p>
-
-                  <Button
-                    size="lg"
-                    asChild
-                    className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg"
-                  >
-                    <Link href="/signup">
-                      
-                      {t("cultureButton")}
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="container mx-auto max-w-4xl">
+            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+              <CardContent className="p-8 text-center">
+                <div className="mb-4 flex justify-center">
+                  {/* ✅ Replaced <Image src={logo} /> */}
+                  <LogoImage width={120} height={120} className="mx-auto" />
+                </div>
+                <h3 className="text-2xl md:text-3xl font-semibold text-amber-800 mb-4">
+                  {t("cultureTitle")}
+                </h3>
+                <p className="text-amber-700 leading-relaxed mb-6 max-w-2xl mx-auto">
+                  {t("cultureDescription")}
+                </p>
+                <Button size="lg" asChild className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg">
+                  <Link href="/signup">{t("cultureButton")}</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </section>
       </div>
     );
   }
 
-  // Authenticated user home page
+  // ─── Authenticated Home Page ─────────────────────────────────────────────────
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#F3E5AB] via-[#FFFFFF] to-[#F3E5AB]">
+
       {/* Hero Section with Mission */}
       <section className="relative py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-br from-[#F3E5AB] via-[#FAEBD7] to-[#F3E5AB]">
         <div className="container mx-auto max-w-6xl">
-          {/* Welcome Message */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center mb-4">
               <CircleIcon className="h-12 w-12 text-[#8B4513] animate-pulse" />
@@ -373,11 +309,9 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Mission Statement - Based on Verified Umwero Data */}
           <Card className="bg-white/80 backdrop-blur-sm border-2 border-[#8B4513] shadow-xl mb-8">
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-2xl md:text-3xl text-[#8B4513] flex items-center justify-center gap-2">
-                
                 {t("umweroMovement")}
               </CardTitle>
               <CardDescription className="text-[#D2691E] text-base md:text-lg mt-2">
@@ -391,42 +325,23 @@ export default function Home() {
               <blockquote className="border-l-4 border-[#8B4513] pl-4 italic text-[#D2691E] text-center py-4">
                 "{t("umweroQuote")}"
               </blockquote>
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                
                 <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  <div className="text-3xl mb-2">
-                    <Image
-                      src={Imana}
-                      alt="uruziga"
-                      width={80}
-                      height={80}
-                      className="mx-auto"                
-                    />
-                  </div>
+                  {/* ✅ Replaced <Image src={Imana} /> */}
+                  <ImanaImage width={80} height={80} className="mx-auto mb-2" />
                   <h3 className="font-semibold text-[#8B4513] mb-1">{t("Imana")}</h3>
                   <p className="text-sm text-[#D2691E]">God - The eternal circle</p>
                 </div>
                 <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  <div className="text-3xl mb-2"><Image
-                      src={inka}
-                      alt="uruziga"
-                      width={80}
-                      height={80}
-                      className="mx-auto"                
-                    /></div>
+                  {/* ✅ Replaced <Image src={inka} /> */}
+                  <InkaImage width={80} height={80} className="mx-auto mb-2" />
                   <h3 className="font-semibold text-[#8B4513] mb-1">{t("Inka")}</h3>
                   <p className="text-sm text-[#D2691E]">Cattle - Symbol of wealth and prosperity</p>
                 </div>
                 <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  <div className="text-3xl mb-2">
-                    <Image
-                      src={ingoma}
-                      alt="uruziga"
-                      width={80}
-                      height={80}
-                      className="mx-auto"                
-                    />
-                    </div>
+                  {/* ✅ Replaced <Image src={ingoma} /> */}
+                  <IngomaImage width={80} height={80} className="mx-auto mb-2" />
                   <h3 className="font-semibold text-[#8B4513] mb-1">{t("Ingoma")}</h3>
                   <p className="text-sm text-[#D2691E]">Throne - Cultural sovereignty</p>
                 </div>
@@ -434,40 +349,17 @@ export default function Home() {
             </CardContent>
           </Card>
 
-          {/* Quick Actions */}
           <div className="flex flex-wrap justify-center gap-4">
             {user?.role === "ADMIN" && (
-              <Button
-                size="lg"
-                asChild
-                className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg"
-              >
-                <Link href="/admin">
-                  
-                  {t("adminDashboard")}
-                </Link>
+              <Button size="lg" asChild className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg">
+                <Link href="/admin">{t("adminDashboard")}</Link>
               </Button>
             )}
-            <Button
-              size="lg"
-              asChild
-              className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg"
-            >
-              <Link href="/dashboard">
-                
-                {t("viewYourProgress")}
-              </Link>
+            <Button size="lg" asChild className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg">
+              <Link href="/dashboard">{t("viewYourProgress")}</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] shadow-lg"
-            >
-              <Link href="/learn">
-                
-                {t("continueLearn")}
-              </Link>
+            <Button size="lg" variant="outline" asChild className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] shadow-lg">
+              <Link href="/learn">{t("continueLearn")}</Link>
             </Button>
           </div>
         </div>
@@ -482,39 +374,29 @@ export default function Home() {
           <p className="text-center text-[#D2691E] mb-12 max-w-2xl mx-auto">
             {t("didYouKnow")}
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
               <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">
-                  {t("UmweroCircle")}
-                </CardTitle>
+                <CardTitle className="text-[#8B4513] text-lg">{t("UmweroCircle")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#8B4513]">
-                  {t("HeroHerezo")} 
-                </p>
+                <p className="text-[#8B4513]">{t("HeroHerezo")}</p>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
               <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">
-                  {t("languagePreservation")}
-                </CardTitle>
+                <CardTitle className="text-[#8B4513] text-lg">{t("languagePreservation")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#8B4513]">
-                  {t("umweroRoleInPreservation")} through authentic phonetic representation and cultural symbolism.
-                </p>
+                <p className="text-[#8B4513]">{t("umweroRoleInPreservation")}</p>
               </CardContent>
             </Card>
 
             <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
               <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">
-                  Measurement of 8 (Umunani)
-                </CardTitle>
+                <CardTitle className="text-[#8B4513] text-lg">{t("Measures:")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#8B4513]">
@@ -525,9 +407,7 @@ export default function Home() {
 
             <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
               <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">
-                  Founder's Vision
-                </CardTitle>
+                <CardTitle className="text-[#8B4513] text-lg">Founder's Vision</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-[#8B4513] italic">
@@ -554,9 +434,7 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">
-                  {t("learnUmweroDesc")}
-                </p>
+                <p className="text-[#D2691E] text-sm mb-4">{t("learnUmweroDesc")}</p>
                 <Button asChild size="sm" className="w-full bg-[#8B4513] hover:bg-[#A0522D]">
                   <Link href="/learn">{t("startLearning")}</Link>
                 </Button>
@@ -571,9 +449,7 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">
-                  {t("connectWithFellowLearners")}
-                </p>
+                <p className="text-[#D2691E] text-sm mb-4">{t("connectWithFellowLearners")}</p>
                 <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
                   <Link href="/community">{t("joinDiscussion")}</Link>
                 </Button>
@@ -588,9 +464,7 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">
-                  {t("toolsDesc")}
-                </p>
+                <p className="text-[#D2691E] text-sm mb-4">{t("toolsDesc")}</p>
                 <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
                   <Link href="/translate">{t("translate")}</Link>
                 </Button>
@@ -605,9 +479,7 @@ export default function Home() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">
-                  {t("gamesDesc")}
-                </p>
+                <p className="text-[#D2691E] text-sm mb-4">{t("gamesDesc")}</p>
                 <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
                   <Link href="/games-and-quizzes">{t("gamesAndQuizzes")}</Link>
                 </Button>
@@ -617,7 +489,7 @@ export default function Home() {
         </div>
       </section>
 
-    {/* Video Tutorials */}
+      {/* Video Tutorials */}
       <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-white to-[#F3E5AB]">
         <div className="container mx-auto max-w-6xl">
           <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
@@ -628,7 +500,7 @@ export default function Home() {
               <div key={index} className="aspect-video rounded-lg overflow-hidden shadow-xl border-2 border-[#8B4513]">
                 <iframe
                   ref={(el) => {
-                    if (el) videoRefs.current[`video-${index}`] = el
+                    if (el) videoRefs.current[`video-${index}`] = el;
                   }}
                   className="w-full h-full"
                   src={url}
@@ -636,7 +508,7 @@ export default function Home() {
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                ></iframe>
+                />
               </div>
             ))}
           </div>
@@ -653,11 +525,7 @@ export default function Home() {
           <p className="text-xl mb-8 text-[#D2691E]">
             {t("supportOurMissionDesc")}
           </p>
-          <Button
-            asChild
-            size="lg"
-            className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-xl"
-          >
+          <Button asChild size="lg" className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-xl">
             <Link href="/fund">{t("supportTheProject")}</Link>
           </Button>
         </div>

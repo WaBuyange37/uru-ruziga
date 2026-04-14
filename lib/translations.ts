@@ -396,6 +396,10 @@ From ancient times, Rwandans were protected and guided by the Holy God(God-Yera)
     cultureButton: "Begin Your Journey",
     UmweroCircle:"The Circle in Umwero",
     HeroHerezo:"In Umwero, the circle is a symbol of the divine — an eternal form that surrounds knowledge, prosperity, strength, and resilience. A circle has no beginning and no end; it reflects the eternal nature of God.",
+    Imana: "Imana",
+    Inka: "Inka", 
+    Ingoma: "Ingoma",
+    "Measures:": "Measures:",
   },
 
   signup: "Sign Up",
@@ -556,7 +560,7 @@ From ancient times, Rwandans were protected and guided by the Holy God(God-Yera)
     culturalSignificance: "Agaciro k'Umuco",
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
-    umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
+    umweroRoleInPreservation: "Ururimi nirwo ruziga ruziga Umuco wa bene-rwo; iyo ururimi ruhawe Inyandiko yarwo bwite ruba rubaye Ubukombe. Umwero ubungabunga umurage w'Ikinyarwanda kuko umuco, imigirire n'imigenzo imwe n'imwe Iri mu Umwero Kinyarwanda",
 
     // Umwero Movement
     umweroMovement: "Umwero Mu Ngamba",
@@ -868,7 +872,11 @@ welcomeToUmwero: "MURAKAZA NEZA MU URUZIGA",
     cultureDescription: "Buri nyuguti wiga ifasha kubungabunga inyandiko y'Umwero no kurinda umurage w'umuco nyarwanda. Tangira kwiga uyu munsi nawe ube umwe mu bawusigasira.",
     cultureButton: "Tangira Urugendo Rwawe",
     UmweroCircle:"Uruziga mu Umwero",
-    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruzuga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
+    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruziga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
+    Imana: "Imana",
+    Inka: "Inka",
+    Ingoma: "Ingoma", 
+    "Measures:": "Ingero:",
   },
 
   signup: "Iyandikishe",
@@ -1023,7 +1031,7 @@ welcomeToUmwero: "MURAKAZA NEZA MU URUZIGA",
     culturalSignificance: "Agaciro k'Umuco",
     umweroCharacterMeaning: "Buri nyuguti y'Umwero ivuga inkuru",
     languagePreservation: "Kubungabunga Ururimi",
-    umweroRoleInPreservation: "Umwero ubungabunga umurage w'Ikinyarwanda",
+    umweroRoleInPreservation: "Ururimi nirwo ruziga ruziga Umuco wa bene-rwo; iyo ururimi ruhawe Inyandiko yarwo bwite ruba rubaye Ubukombe. Umwero ubungabunga umurage w'Ikinyarwanda kuko umuco, imigirire n'imigenzo imwe n'imwe Iri mu Umwero Kinyarwanda",
 
     // Umwero Movement
     umweroMovement: "Umwero mu ngamba",
@@ -1351,7 +1359,7 @@ welcomeToUmwero: "MURAKAZA NEZA MU URUZIGA",
     cultureDescription: "Buri nyuguti wiga ifasha kubungabunga inyandiko y'Umwero no kurinda umurage w'umuco nyarwanda. Tangira kwiga uyu munsi nawe ube umwe mu bawusigasira.",
     cultureButton: "Tangira Urugendo Rwawe",
     UmweroCircle:"Uruziga mu Umwero",
-    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruzuga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
+    HeroHerezo:"Uruziga mu Umwero ni ishusho igaragaza Ubumana, uruziga ruhoraho ruziga ubumenyi, uburumbuke, Imbaraga no gukomera. Uruziga nturugira itangiriro ntirugira iherezo ni Imana nsa.",
   }
 }
 
