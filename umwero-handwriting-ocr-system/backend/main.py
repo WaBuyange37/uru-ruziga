@@ -17,9 +17,18 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 import uvicorn
 
+# Add src to Python path
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
 # Import our evaluation components
-from src.evaluation_engine import EvaluationEngine, EvaluationResult
-from src.font_renderer import FontRenderingService
+from evaluation_engine import EvaluationEngine, EvaluationResult
+from font_renderer import FontRenderingService
+from cache_service import CacheService, CacheConfig, get_cache_service
+from performance_optimizer import PerformanceOptimizer
+from image_processor import ImageProcessingPipeline
+from comparison_algorithm import HybridComparisonAlgorithm
 
 # Configure logging
 logging.basicConfig(
@@ -119,6 +128,7 @@ app.add_middleware(
 # Global variables for services (will be initialized on startup)
 evaluation_engine: Optional[EvaluationEngine] = None
 font_renderer: Optional[FontRenderingService] = None
+cache_service: Optional[CacheService] = None
 
 
 @app.middleware("http")
@@ -221,11 +231,22 @@ async def general_exception_handler(request: Request, exc: Exception):
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global evaluation_engine, font_renderer
+    global evaluation_engine, font_renderer, cache_service
     
     logger.info("Starting Umwero Handwriting Evaluation API...")
     
     try:
+        # Initialize cache service
+        cache_config = CacheConfig(
+            redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
+            default_ttl=int(os.getenv("CACHE_DEFAULT_TTL", "3600")),
+            reference_ttl=int(os.getenv("CACHE_REFERENCE_TTL", "86400")),
+            feature_ttl=int(os.getenv("CACHE_FEATURE_TTL", "43200"))
+        )
+        
+        cache_service = await get_cache_service(cache_config)
+        logger.info("Cache service initialized")
+        
         # Initialize font renderer
         font_path = os.getenv("UMWERO_FONT_PATH", "fonts/umwero.ttf")
         
@@ -234,10 +255,28 @@ async def startup_event():
             # For demo purposes, we'll continue without the font
             # In production, this should be a critical error
         
-        font_renderer = FontRenderingService(font_path) if os.path.exists(font_path) else None
+        font_renderer = FontRenderingService(font_path, cache_service=cache_service) if os.path.exists(font_path) else None
         
         # Initialize evaluation engine
-        evaluation_engine = EvaluationEngine(font_renderer)
+        # Initialize evaluation engine with performance optimizer
+        performance_optimizer = PerformanceOptimizer(
+            font_renderer=font_renderer,
+            image_processor=ImageProcessingPipeline(),
+            comparison_algorithm=HybridComparisonAlgorithm(),
+            cache_service=cache_service
+        )
+        
+        await performance_optimizer.initialize()
+        
+        evaluation_engine = EvaluationEngine(font_renderer, cache_service=cache_service, performance_optimizer=performance_optimizer)
+        
+        # Warm cache with common characters if font renderer is available
+        if font_renderer and cache_service:
+            common_characters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            logger.info("Starting cache warming for common characters...")
+            warm_results = await cache_service.warm_cache(common_characters, font_renderer)
+            successful_count = sum(1 for success in warm_results.values() if success)
+            logger.info(f"Cache warming completed: {successful_count}/{len(common_characters)} characters cached")
         
         logger.info("Services initialized successfully")
         
@@ -249,7 +288,14 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
+    global cache_service
+    
     logger.info("Shutting down Umwero Handwriting Evaluation API...")
+    
+    # Close cache service
+    if cache_service:
+        await cache_service.close()
+        logger.info("Cache service closed")
 
 
 @app.post("/api/evaluate-character", response_model=EvaluationResponse)
@@ -345,7 +391,16 @@ async def health_check():
     components = {
         "evaluation_engine": evaluation_engine is not None,
         "font_renderer": font_renderer is not None,
+        "cache_service": cache_service is not None,
     }
+    
+    # Get cache service health if available
+    if cache_service:
+        try:
+            cache_health = await cache_service.health_check()
+            components["cache_service_details"] = cache_health
+        except Exception as e:
+            components["cache_service_error"] = str(e)
     
     # Check if all critical components are healthy
     all_healthy = all(components.values())
@@ -360,13 +415,111 @@ async def health_check():
 @app.get("/metrics")
 async def get_metrics():
     """Prometheus-compatible metrics endpoint."""
-    # This would return metrics in Prometheus format
-    # For now, return basic info
-    return {
+    metrics = {
         "requests_total": "# Not implemented yet",
         "request_duration_seconds": "# Not implemented yet",
         "evaluation_scores_histogram": "# Not implemented yet"
     }
+    
+    # Add cache metrics if available
+    if cache_service:
+        try:
+            cache_stats = cache_service.get_cache_stats()
+            metrics["cache_hits_total"] = cache_stats.get('hits', 0)
+            metrics["cache_misses_total"] = cache_stats.get('misses', 0)
+            metrics["cache_hit_rate_percent"] = cache_stats.get('hit_rate_percent', 0)
+        except Exception as e:
+            metrics["cache_metrics_error"] = str(e)
+    
+    return metrics
+
+
+@app.post("/api/cache/warm")
+async def warm_cache(characters: List[str] = None):
+    """Warm cache with specified characters or common characters."""
+    if not cache_service or not font_renderer:
+        raise EvaluationException(
+            "SERVICE_UNAVAILABLE",
+            "Cache service or font renderer not available"
+        )
+    
+    # Use provided characters or default to common ones
+    if not characters:
+        characters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    
+    try:
+        logger.info(f"Starting cache warming for {len(characters)} characters")
+        results = await cache_service.warm_cache(characters, font_renderer)
+        successful_count = sum(1 for success in results.values() if success)
+        
+        return {
+            "message": f"Cache warming completed",
+            "total_characters": len(characters),
+            "successful": successful_count,
+            "failed": len(characters) - successful_count,
+            "results": results
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache warming failed: {e}")
+        raise EvaluationException(
+            "CACHE_WARM_FAILED",
+            f"Failed to warm cache: {str(e)}"
+        )
+
+
+@app.delete("/api/cache/clear")
+async def clear_cache():
+    """Clear all cached data."""
+    if not cache_service:
+        raise EvaluationException(
+            "SERVICE_UNAVAILABLE",
+            "Cache service not available"
+        )
+    
+    try:
+        success = await cache_service.clear_all_cache()
+        
+        if success:
+            return {"message": "Cache cleared successfully"}
+        else:
+            raise EvaluationException(
+                "CACHE_CLEAR_FAILED",
+                "Failed to clear cache"
+            )
+            
+    except Exception as e:
+        logger.error(f"Cache clearing failed: {e}")
+        raise EvaluationException(
+            "CACHE_CLEAR_FAILED",
+            f"Failed to clear cache: {str(e)}"
+        )
+
+
+@app.get("/api/cache/stats")
+async def get_cache_stats():
+    """Get cache performance statistics."""
+    if not cache_service:
+        raise EvaluationException(
+            "SERVICE_UNAVAILABLE",
+            "Cache service not available"
+        )
+    
+    try:
+        stats = cache_service.get_cache_stats()
+        health = await cache_service.health_check()
+        
+        return {
+            "stats": stats,
+            "health": health
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get cache stats: {e}")
+        raise EvaluationException(
+            "CACHE_STATS_FAILED",
+            f"Failed to get cache statistics: {str(e)}"
+        )
 
 
 @app.get("/")

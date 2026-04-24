@@ -42,21 +42,28 @@ class EvaluationEngine:
                  font_renderer: Optional[FontRenderingService] = None,
                  processing_config: Optional[ProcessingConfig] = None,
                  comparison_weights: Optional[ComparisonWeights] = None,
-                 feedback_config: Optional[FeedbackConfig] = None):
+                 feedback_config: Optional[FeedbackConfig] = None,
+                 cache_service=None):
         
         # Initialize components
         self.font_renderer = font_renderer
+        self.cache_service = cache_service
         self.image_processor = ImageProcessingPipeline(processing_config or ProcessingConfig())
         self.comparison_algorithm = HybridComparisonAlgorithm(comparison_weights or ComparisonWeights())
         self.feedback_generator = FeedbackGenerator(feedback_config or FeedbackConfig())
         
-        # Cache for reference data
+        # Cache for reference data (fallback when cache service is not available)
         self.reference_cache = {}
+        
+        # Connect cache service to font renderer if both are available
+        if self.font_renderer and self.cache_service:
+            self.font_renderer.set_cache_service(self.cache_service)
         
         logger.info("EvaluationEngine initialized successfully")
         
         # Log component status
         logger.info(f"Font renderer available: {self.font_renderer is not None}")
+        logger.info(f"Cache service available: {self.cache_service is not None}")
         logger.info(f"Image processor: {type(self.image_processor).__name__}")
         logger.info(f"Comparison algorithm: {type(self.comparison_algorithm).__name__}")
         logger.info(f"Feedback generator: {type(self.feedback_generator).__name__}")
@@ -152,10 +159,20 @@ class EvaluationEngine:
             )
     
     async def _get_reference_data(self, character: str) -> Optional[ReferenceData]:
-        """Get reference data for character, using cache if available"""
-        # Check cache first
+        """Get reference data for character, using cache service if available"""
+        # Try cache service first
+        if self.cache_service:
+            try:
+                cached_data = await self.cache_service.get_reference_data(character)
+                if cached_data:
+                    logger.debug(f"Using cached reference from cache service for character '{character}'")
+                    return cached_data
+            except Exception as e:
+                logger.warning(f"Cache service lookup failed for '{character}': {e}")
+        
+        # Check local cache as fallback
         if character in self.reference_cache:
-            logger.debug(f"Using cached reference for character '{character}'")
+            logger.debug(f"Using local cached reference for character '{character}'")
             return self.reference_cache[character]
         
         # Generate new reference if font renderer is available
@@ -163,8 +180,11 @@ class EvaluationEngine:
             try:
                 logger.debug(f"Generating reference for character '{character}'")
                 
-                # Render character
-                reference_image = self.font_renderer.render_character(character, 256)
+                # Use cached rendering if available
+                if hasattr(self.font_renderer, 'render_character_cached'):
+                    reference_image = await self.font_renderer.render_character_cached(character, 256)
+                else:
+                    reference_image = self.font_renderer.render_character(character, 256)
                 
                 # Get metrics
                 metrics = self.font_renderer.get_character_metrics(character)
@@ -178,8 +198,18 @@ class EvaluationEngine:
                     quality_score=1.0  # Assume high quality for font-rendered images
                 )
                 
-                # Cache the result
-                self.reference_cache[character] = reference_data
+                # Cache the result in cache service if available
+                if self.cache_service:
+                    try:
+                        await self.cache_service.set_reference_data(character, reference_data)
+                        logger.debug(f"Reference cached in cache service for character '{character}'")
+                    except Exception as e:
+                        logger.warning(f"Failed to cache reference in cache service: {e}")
+                        # Fallback to local cache
+                        self.reference_cache[character] = reference_data
+                else:
+                    # Use local cache
+                    self.reference_cache[character] = reference_data
                 
                 logger.debug(f"Reference generated and cached for character '{character}'")
                 return reference_data
@@ -250,9 +280,18 @@ class EvaluationEngine:
     
     def get_system_status(self) -> dict:
         """Get system status information"""
+        cache_info = {}
+        if self.cache_service:
+            try:
+                cache_info = asyncio.run(self.cache_service.get_cache_stats())
+            except Exception as e:
+                cache_info = {'error': str(e)}
+        
         return {
             'font_renderer_available': self.font_renderer is not None,
-            'cached_references': len(self.reference_cache),
+            'cache_service_available': self.cache_service is not None,
+            'local_cached_references': len(self.reference_cache),
+            'cache_service_stats': cache_info,
             'supported_characters': len(self.get_supported_characters()),
             'components': {
                 'image_processor': type(self.image_processor).__name__,
@@ -261,23 +300,42 @@ class EvaluationEngine:
             }
         }
     
-    def clear_cache(self):
-        """Clear reference cache"""
+    async def clear_cache(self):
+        """Clear all caches"""
+        # Clear cache service
+        if self.cache_service:
+            try:
+                await self.cache_service.clear_all_cache()
+                logger.info("Cache service cleared")
+            except Exception as e:
+                logger.error(f"Failed to clear cache service: {e}")
+        
+        # Clear local cache
         self.reference_cache.clear()
-        logger.info("Reference cache cleared")
+        logger.info("Local reference cache cleared")
     
-    def precompute_references(self, characters: List[str]) -> dict:
-        """Precompute references for multiple characters"""
+    async def precompute_references(self, characters: List[str]) -> dict:
+        """Precompute references for multiple characters using cache service"""
         if not self.font_renderer:
             logger.warning("Cannot precompute references without font renderer")
             return {}
         
-        results = {}
+        # Use cache service warm_cache if available
+        if self.cache_service:
+            try:
+                results = await self.cache_service.warm_cache(characters, self.font_renderer)
+                logger.info(f"Cache service warmed for {sum(results.values())}/{len(characters)} characters")
+                return results
+            except Exception as e:
+                logger.error(f"Cache service warm_cache failed: {e}")
+                # Fall back to local precomputation
         
+        # Fallback to local precomputation
+        results = {}
         for character in characters:
             try:
-                # This will cache the reference
-                asyncio.run(self._get_reference_data(character))
+                # This will cache the reference locally
+                await self._get_reference_data(character)
                 results[character] = True
                 logger.debug(f"Precomputed reference for '{character}'")
                 
@@ -290,19 +348,19 @@ class EvaluationEngine:
 
 
 # Utility functions for testing and debugging
-def create_evaluation_engine(font_path: Optional[str] = None) -> EvaluationEngine:
-    """Create evaluation engine with optional font path"""
+def create_evaluation_engine(font_path: Optional[str] = None, cache_service=None) -> EvaluationEngine:
+    """Create evaluation engine with optional font path and cache service"""
     font_renderer = None
     
     if font_path:
         try:
             from .font_renderer import FontRenderingService
-            font_renderer = FontRenderingService(font_path)
+            font_renderer = FontRenderingService(font_path, cache_service=cache_service)
             logger.info(f"Font renderer created with font: {font_path}")
         except Exception as e:
             logger.error(f"Failed to create font renderer: {e}")
     
-    return EvaluationEngine(font_renderer)
+    return EvaluationEngine(font_renderer, cache_service=cache_service)
 
 
 # Example usage and testing

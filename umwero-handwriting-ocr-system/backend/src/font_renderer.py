@@ -1,10 +1,12 @@
 """
 Professional font rendering system with multi-engine support and quality validation.
 Supports FreeType-py (primary), Cairo/Pycairo (fallback), and fontTools + Pillow (alternative).
+Enhanced with Redis-based caching and performance optimization.
 """
 
 import os
 import logging
+import asyncio
 from typing import Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
 from enum import Enum
@@ -76,14 +78,15 @@ class FontQualityReport:
 
 class FontRenderingService:
     """
-    Professional font rendering service with automatic engine selection
-    and quality validation for optimal character extraction.
+    Professional font rendering service with automatic engine selection,
+    quality validation, and Redis-based caching for optimal performance.
     """
     
-    def __init__(self, font_path: str, rendering_engine: RenderingEngine = RenderingEngine.AUTO):
+    def __init__(self, font_path: str, rendering_engine: RenderingEngine = RenderingEngine.AUTO, cache_service=None):
         self.font_path = font_path
         self.rendering_engine = rendering_engine
         self.cache: Dict[str, ReferenceData] = {}
+        self.cache_service = cache_service
         
         # Validate font file exists
         if not os.path.exists(font_path):
@@ -94,6 +97,11 @@ class FontRenderingService:
         self._select_rendering_engine()
         
         logging.info(f"FontRenderingService initialized with {self.selected_engine.value} engine")
+    
+    def set_cache_service(self, cache_service):
+        """Set the cache service for performance optimization"""
+        self.cache_service = cache_service
+        logging.info("Cache service attached to FontRenderingService")
     
     def _load_font(self):
         """Load font file and extract basic information"""
@@ -128,6 +136,54 @@ class FontRenderingService:
             raise RuntimeError("FreeType engine selected but not available")
         if self.selected_engine == RenderingEngine.CAIRO and not CAIRO_AVAILABLE:
             raise RuntimeError("Cairo engine selected but not available")
+    
+    async def render_character_cached(self, character: str, size: int = 256) -> Image.Image:
+        """
+        Render a character with caching support for optimal performance.
+        
+        Args:
+            character: Unicode character to render
+            size: Output image size (size x size pixels)
+            
+        Returns:
+            PIL Image with rendered character, centered and properly scaled
+        """
+        # Try to get from cache first
+        if self.cache_service:
+            try:
+                cached_data = await self.cache_service.get_reference_data(character)
+                if cached_data and cached_data.image:
+                    logging.debug(f"Using cached rendered character '{character}'")
+                    return cached_data.image
+            except Exception as e:
+                logging.warning(f"Cache lookup failed for '{character}': {e}")
+        
+        # Render character if not cached
+        img = self.render_character(character, size)
+        
+        # Cache the result if cache service is available
+        if self.cache_service and img:
+            try:
+                # Create reference data for caching
+                metrics = self.get_character_metrics(character)
+                quality = self._assess_rendering_quality(img)
+                processed = np.array(img, dtype=np.float32) / 255.0
+                
+                reference_data = ReferenceData(
+                    image=img,
+                    processed_image=processed,
+                    metrics=metrics,
+                    rendering_engine=self.selected_engine.value,
+                    quality_score=quality
+                )
+                
+                await self.cache_service.set_reference_data(character, reference_data)
+                logging.debug(f"Cached rendered character '{character}'")
+                
+            except Exception as e:
+                logging.warning(f"Failed to cache character '{character}': {e}")
+        
+        return img
     
     def render_character(self, character: str, size: int = 256) -> Image.Image:
         """
@@ -392,8 +448,51 @@ class FontRenderingService:
         quality = (edge_ratio * 0.4 + contrast * 0.4 + fill_ratio * 0.2)
         return min(1.0, quality)
     
+    async def precompute_references_cached(self, characters: List[str]) -> Dict[str, ReferenceData]:
+        """Precompute reference data for multiple characters with caching"""
+        references = {}
+        
+        for char in characters:
+            try:
+                # Check cache first
+                if self.cache_service:
+                    cached_data = await self.cache_service.get_reference_data(char)
+                    if cached_data:
+                        references[char] = cached_data
+                        logging.debug(f"Using cached reference for '{char}'")
+                        continue
+                
+                # Generate new reference if not cached
+                img = self.render_character(char, 256)
+                metrics = self.get_character_metrics(char)
+                quality = self._assess_rendering_quality(img)
+                processed = np.array(img, dtype=np.float32) / 255.0
+                
+                reference_data = ReferenceData(
+                    image=img,
+                    processed_image=processed,
+                    metrics=metrics,
+                    rendering_engine=self.selected_engine.value,
+                    quality_score=quality
+                )
+                
+                references[char] = reference_data
+                
+                # Cache the result
+                if self.cache_service:
+                    await self.cache_service.set_reference_data(char, reference_data)
+                    logging.debug(f"Cached reference for '{char}'")
+                else:
+                    # Fallback to memory cache
+                    self.cache[char] = reference_data
+                
+            except Exception as e:
+                logging.error(f"Failed to precompute reference for '{char}': {e}")
+        
+        return references
+    
     def precompute_references(self, characters: List[str]) -> Dict[str, ReferenceData]:
-        """Precompute reference data for multiple characters"""
+        """Precompute reference data for multiple characters (synchronous version)"""
         references = {}
         
         for char in characters:

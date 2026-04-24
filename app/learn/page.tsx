@@ -5,9 +5,37 @@ import { Suspense } from 'react'
 import { prisma } from '@/lib/prisma'
 import { LearnPageClient } from '@/components/learn/LearnPageClient'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { STATIC_VOWEL_LESSONS, STATIC_CONSONANT_LESSONS, STATIC_LIGATURE_LESSONS } from '@/lib/static-lessons'
 
 // 🔥 CRITICAL: Add Next.js caching for instant subsequent loads
 export const revalidate = 3600 // Cache for 1 hour (lessons rarely change)
+
+// Convert static lessons to database format
+function convertStaticToDbFormat(staticLessons: any[]) {
+  return staticLessons.map(lesson => ({
+    id: lesson.id,
+    title: lesson.title,
+    description: lesson.description,
+    content: JSON.stringify({
+      [lesson.type.toLowerCase()]: lesson.character,
+      umwero: lesson.umwero,
+      pronunciation: lesson.pronunciation,
+      meaning: lesson.meaning,
+      culturalNote: lesson.culturalNote,
+      examples: lesson.examples,
+      imageUrl: lesson.imageUrl,
+      audioUrl: lesson.audioUrl
+    }),
+    module: null,
+    type: lesson.type,
+    order: lesson.order,
+    duration: lesson.duration,
+    videoUrl: null,
+    thumbnailUrl: lesson.imageUrl,
+    isPublished: true,
+    createdAt: new Date()
+  }))
+}
 
 // 🚀 Server-side data fetching with parallel queries - DATABASE PRIORITY
 async function getLessonsData() {
@@ -81,30 +109,64 @@ async function getLessonsData() {
       })
     ])
 
-    console.log(`✅ Database connected! Found ${vowelLessons.length} vowels, ${consonantLessons.length} consonants, ${ligatureLessons.length} ligatures`)
+    const totalLessons = vowelLessons.length + consonantLessons.length + ligatureLessons.length
 
-    // 🎯 SUCCESS: Return full database data
-    return {
-      vowelLessons,
-      consonantLessons, 
-      ligatureLessons,
-      totalLessons: vowelLessons.length + consonantLessons.length + ligatureLessons.length,
-      source: 'database'
+    console.log(`✅ Database connected! Found ${totalLessons} lessons`)
+    console.log(`📊 Breakdown: ${vowelLessons.length} vowels, ${consonantLessons.length} consonants, ${ligatureLessons.length} ligatures`)
+
+    // If database has lessons, use them
+    if (totalLessons > 0) {
+      return {
+        vowelLessons,
+        consonantLessons,
+        ligatureLessons,
+        totalLessons,
+        source: 'database'
+      }
     }
-  } catch (error) {
-    console.error('❌ Database connection failed:', (error as Error).message)
-    console.log('🔄 Please ensure database is seeded and accessible')
+
+    // 🔄 FALLBACK: Use static lessons if database is empty
+    console.log('⚠️ Database is empty, falling back to static lessons...')
     
-    // 🛡️ RETURN EMPTY FOR NOW - User prefers full database over static fallback
+    const staticVowels = convertStaticToDbFormat(STATIC_VOWEL_LESSONS)
+    const staticConsonants = convertStaticToDbFormat(STATIC_CONSONANT_LESSONS)
+    const staticLigatures = convertStaticToDbFormat(STATIC_LIGATURE_LESSONS)
+    
+    const staticTotal = staticVowels.length + staticConsonants.length + staticLigatures.length
+    
+    console.log(`✅ Using static lessons: ${staticTotal} total (${staticVowels.length} vowels, ${staticConsonants.length} consonants, ${staticLigatures.length} ligatures)`)
+
     return {
-      vowelLessons: [],
-      consonantLessons: [],
-      ligatureLessons: [],
-      totalLessons: 0,
-      source: 'empty',
-      error: (error as Error).message
+      vowelLessons: staticVowels,
+      consonantLessons: staticConsonants,
+      ligatureLessons: staticLigatures,
+      totalLessons: staticTotal,
+      source: 'static'
+    }
+
+  } catch (error) {
+    console.error('❌ Database connection failed:', error)
+    
+    // 🔄 FALLBACK: Use static lessons on database error
+    console.log('🔄 Using static lessons as fallback...')
+    
+    const staticVowels = convertStaticToDbFormat(STATIC_VOWEL_LESSONS)
+    const staticConsonants = convertStaticToDbFormat(STATIC_CONSONANT_LESSONS)
+    const staticLigatures = convertStaticToDbFormat(STATIC_LIGATURE_LESSONS)
+    
+    const staticTotal = staticVowels.length + staticConsonants.length + staticLigatures.length
+    
+    console.log(`✅ Static fallback loaded: ${staticTotal} lessons`)
+
+    return {
+      vowelLessons: staticVowels,
+      consonantLessons: staticConsonants,
+      ligatureLessons: staticLigatures,
+      totalLessons: staticTotal,
+      source: 'static-fallback'
     }
   }
+}
 }
 
 // 🚀 MAIN SERVER COMPONENT - Pre-fetches all data
