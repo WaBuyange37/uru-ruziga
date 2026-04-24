@@ -10,6 +10,16 @@ import { Badge } from "../ui/badge"
 import { RefreshCw, Loader2 } from "lucide-react"
 import { useEvaluationAPI, interpretScore } from "../../lib/evaluation-api"
 
+// Map Latin to Umwero characters (same as in evaluation-api.ts)
+const LATIN_TO_UMWERO: Record<string, string> = {
+  'a': '"',   // Umwero vowel A
+  'u': ':',   // Umwero vowel U
+  'o': '{',   // Umwero vowel O
+  'e': '|',   // Umwero vowel E
+  'i': '}',   // Umwero vowel I
+  // Add consonants as needed
+};
+
 interface Props {
   character: string;
   umweroGlyph: string;
@@ -24,6 +34,7 @@ export function PracticeCanvasWithAPI({ character, umweroGlyph, onComplete }: Pr
   const [evaluating, setEvaluating] = useState(false)
   const [score, setScore] = useState<number | null>(null)
   const [userDrawingImage, setUserDrawingImage] = useState<string>("")
+  const [referenceImage, setReferenceImage] = useState<string>("")
   const [error, setError] = useState<string>("")
 
   const { evaluateDrawing } = useEvaluationAPI()
@@ -114,6 +125,7 @@ export function PracticeCanvasWithAPI({ character, umweroGlyph, onComplete }: Pr
     setShowComparison(false)
     setHasDrawn(false)
     setUserDrawingImage("")
+    setReferenceImage("")
     setScore(null)
     setError("")
   }
@@ -133,6 +145,28 @@ export function PracticeCanvasWithAPI({ character, umweroGlyph, onComplete }: Pr
       // Call evaluation API
       const result = await evaluateDrawing(character, canvas)
       setScore(result.score)
+
+      // Fetch reference image from API
+      try {
+        const umweroChar = LATIN_TO_UMWERO[character.toLowerCase()] || character;
+        const referenceResponse = await fetch(`${process.env.NEXT_PUBLIC_EVALUATION_API_URL}/api/get-reference`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            character: umweroChar, // Send Umwero character directly
+            image: imageData, // Required by the interface but not used for reference generation
+          }),
+        })
+
+        if (referenceResponse.ok) {
+          const referenceData = await referenceResponse.json()
+          setReferenceImage(referenceData.reference_image)
+        }
+      } catch (referenceError) {
+        console.warn('Could not fetch reference image:', referenceError)
+        // Fallback to font rendering if reference endpoint fails
+      }
+
       setShowComparison(true)
 
       // Call onComplete callback with score
@@ -252,12 +286,20 @@ export function PracticeCanvasWithAPI({ character, umweroGlyph, onComplete }: Pr
               {/* Correct Form */}
               <div>
                 <h4 className="text-center font-semibold text-[#8B4513] mb-2">
-                  Correct Form
+                  Reference (Font-Generated)
                 </h4>
-                <div className="bg-white rounded-lg border-2 border-[#8B4513] aspect-square flex items-center justify-center">
-                  <div className="text-9xl font-umwero text-[#8B4513]">
-                    {umweroGlyph}
-                  </div>
+                <div className="bg-white rounded-lg border-2 border-[#8B4513] aspect-square flex items-center justify-center p-2">
+                  {referenceImage ? (
+                    <img 
+                      src={referenceImage} 
+                      alt="Font-generated reference" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="text-9xl font-umwero text-[#8B4513]">
+                      {umweroGlyph}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

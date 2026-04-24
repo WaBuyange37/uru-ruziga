@@ -14,6 +14,16 @@ interface EvaluationError {
   error: string;
 }
 
+// Map Latin to Umwero characters
+const LATIN_TO_UMWERO: Record<string, string> = {
+  'a': '"',   // Umwero vowel A
+  'u': ':',   // Umwero vowel U
+  'o': '{',   // Umwero vowel O
+  'e': '|',   // Umwero vowel E
+  'i': '}',   // Umwero vowel I
+  // Add consonants as needed
+};
+
 export class HandwritingEvaluationClient {
   private baseUrl: string;
   private timeout: number;
@@ -27,7 +37,7 @@ export class HandwritingEvaluationClient {
   /**
    * Evaluate a user-drawn character
    * 
-   * @param character - The Umwero character (e.g., "a", "u", "o")
+   * @param character - The Latin character (e.g., "a", "u", "o") - will be converted to Umwero
    * @param imageDataUrl - Base64-encoded image or data URL
    * @returns Promise with similarity score (0-100)
    */
@@ -43,6 +53,21 @@ export class HandwritingEvaluationClient {
       throw new Error('Image data is required');
     }
 
+    // CRITICAL: Ensure image is full data URL with header
+    if (!imageDataUrl.startsWith('data:image/')) {
+      throw new Error('Image must be a data URL (data:image/png;base64,...)');
+    }
+
+    // Convert Latin to Umwero character
+    const umweroChar = LATIN_TO_UMWERO[character.toLowerCase()] || character;
+    
+    console.log('Sending to API:', {
+      latinChar: character,
+      umweroChar: umweroChar,
+      imageLength: imageDataUrl.length,
+      imagePrefix: imageDataUrl.substring(0, 50)
+    });
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -53,7 +78,7 @@ export class HandwritingEvaluationClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          character,
+          character: umweroChar, // Send Umwero character to API
           image: imageDataUrl,
         } as EvaluationRequest),
         signal: controller.signal,

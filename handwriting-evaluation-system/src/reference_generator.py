@@ -6,6 +6,9 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from typing import Optional
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ReferenceGenerator:
     def __init__(self, font_path: str):
@@ -39,13 +42,15 @@ class ReferenceGenerator:
             character: The character to render
             
         Returns:
-            PIL Image of the rendered character (256x256, transparent background)
+            PIL Image of the rendered character (256x256, white background, black text)
         """
         if not character:
             raise ValueError("Character cannot be empty")
         
-        # Create transparent canvas
-        image = Image.new('RGBA', self.canvas_size, (255, 255, 255, 0))
+        logger.info(f"Generating reference for character: '{character}'")
+        
+        # Create WHITE background (not transparent!)
+        image = Image.new('RGB', self.canvas_size, (255, 255, 255))
         draw = ImageDraw.Draw(image)
         
         # Get text bounding box
@@ -53,11 +58,20 @@ class ReferenceGenerator:
         text_width = bbox[2] - bbox[0]
         text_height = bbox[3] - bbox[1]
         
+        logger.info(f"Character bbox: {bbox}, width: {text_width}, height: {text_height}")
+        
         # Center the text
         x = (self.canvas_size[0] - text_width) // 2 - bbox[0]
         y = (self.canvas_size[1] - text_height) // 2 - bbox[1]
         
-        # Draw the character in black
-        draw.text((x, y), character, font=self._font, fill=(0, 0, 0, 255))
+        logger.info(f"Drawing at position: ({x}, {y})")
+        
+        # Draw in BLACK
+        draw.text((x, y), character, font=self._font, fill=(0, 0, 0))
+        
+        # SAVE DEBUG IMAGE
+        debug_path = f"/tmp/reference_{ord(character)}.png"
+        image.save(debug_path)
+        logger.info(f"Reference image saved to: {debug_path}")
         
         return image

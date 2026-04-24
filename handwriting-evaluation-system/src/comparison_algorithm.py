@@ -5,8 +5,11 @@ Computes similarity between images using hybrid approach (SSIM + contour matchin
 import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
+import logging
 from typing import Optional
 from .models import ComparisonResult
+
+logger = logging.getLogger(__name__)
 
 class ComparisonAlgorithm:
     def __init__(self):
@@ -24,6 +27,19 @@ class ComparisonAlgorithm:
         Returns:
             ComparisonResult with individual scores and final score
         """
+        # Check if images are valid
+        ref_white_pixels = np.sum(reference == 255)  # White pixels in binary
+        user_white_pixels = np.sum(user_drawing == 255)
+        
+        logger.info(f"Reference white pixels: {ref_white_pixels}")
+        logger.info(f"User white pixels: {user_white_pixels}")
+        
+        if ref_white_pixels < 100:
+            logger.warning("Reference image appears blank!")
+        
+        if user_white_pixels < 100:
+            logger.warning("User drawing appears blank!")
+        
         # Ensure images are the same size
         if reference.shape != user_drawing.shape:
             user_drawing = cv2.resize(user_drawing, (reference.shape[1], reference.shape[0]))
@@ -36,6 +52,8 @@ class ComparisonAlgorithm:
         
         # Combine metrics
         final_score = self.combine_metrics(ssim_score, contour_score)
+        
+        logger.info(f"Comparison scores - SSIM: {ssim_score:.3f}, Contour: {contour_score:.3f}, Final: {final_score:.1f}")
         
         return ComparisonResult(
             ssim_score=ssim_score,

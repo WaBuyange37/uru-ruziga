@@ -7,8 +7,12 @@ import numpy as np
 from PIL import Image
 import base64
 import io
+import time
+import logging
 from typing import Tuple
 from .models import ProcessedImage
+
+logger = logging.getLogger(__name__)
 
 class ImageProcessor:
     def __init__(self):
@@ -16,7 +20,7 @@ class ImageProcessor:
     
     def preprocess_image(self, image: Image.Image) -> ProcessedImage:
         """
-        Apply complete preprocessing pipeline to an image
+        Apply identical preprocessing to both reference and user images
         
         Args:
             image: PIL Image to process
@@ -24,20 +28,32 @@ class ImageProcessor:
         Returns:
             ProcessedImage with grayscale, binary, and bounding box
         """
-        # Resize and center
+        # 1. Convert to RGB (in case it's RGBA or other format)
+        if image.mode != 'RGB':
+            # Create white background
+            rgb_image = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'RGBA':
+                rgb_image.paste(image, mask=image.split()[3])  # Use alpha as mask
+            else:
+                rgb_image.paste(image)
+            image = rgb_image
+        
+        # 2. Resize to 256x256
         resized = self.resize_and_center(image)
         
-        # Convert to grayscale
+        # 3. Convert to grayscale
         grayscale = self.convert_to_grayscale(resized)
         
-        # Convert to numpy array
+        # 4. Convert to numpy array
         gray_array = np.array(grayscale)
         
-        # Apply binary threshold
+        # 5. Apply binary threshold
         binary = self.apply_binary_threshold(gray_array)
         
-        # Extract bounding box
+        # 6. Extract bounding box
         bbox = self.extract_bounding_box(binary)
+        
+        logger.info(f"Preprocessing complete: bbox={bbox}, binary_shape={binary.shape}")
         
         return ProcessedImage(
             grayscale=gray_array,
@@ -71,15 +87,11 @@ class ImageProcessor:
         Resize image to target size while preserving aspect ratio and centering
         
         Args:
-            image: PIL Image to resize
+            image: PIL Image to resize (must be RGB)
             
         Returns:
-            Resized and centered PIL Image
+            Resized and centered PIL Image (RGB with white background)
         """
-        # Convert to RGBA if not already
-        if image.mode != 'RGBA':
-            image = image.convert('RGBA')
-        
         # Calculate scaling to fit within target size
         img_width, img_height = image.size
         target_width, target_height = self.target_size
@@ -91,13 +103,13 @@ class ImageProcessor:
         # Resize image
         resized = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
-        # Create new image with target size and transparent background
-        result = Image.new('RGBA', self.target_size, (255, 255, 255, 0))
+        # Create new image with target size and WHITE background
+        result = Image.new('RGB', self.target_size, (255, 255, 255))
         
         # Center the resized image
         x_offset = (target_width - new_width) // 2
         y_offset = (target_height - new_height) // 2
-        result.paste(resized, (x_offset, y_offset), resized)
+        result.paste(resized, (x_offset, y_offset))
         
         return result
     
@@ -115,7 +127,7 @@ class ImageProcessor:
     
     def apply_binary_threshold(self, image: np.ndarray) -> np.ndarray:
         """
-        Apply adaptive binary thresholding to handle varying lighting
+        Apply adaptive threshold - works for both font and hand-drawn images
         
         Args:
             image: Grayscale numpy array
@@ -128,10 +140,15 @@ class ImageProcessor:
             image,
             255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY_INV,
-            11,
-            2
+            cv2.THRESH_BINARY_INV,  # Invert: black becomes white, white becomes black
+            11,  # Block size
+            2    # Constant subtracted from mean
         )
+        
+        # SAVE DEBUG IMAGE
+        debug_path = f"/tmp/binary_{int(time.time())}.png"
+        cv2.imwrite(debug_path, binary)
+        logger.info(f"Binary threshold saved to: {debug_path}")
         
         return binary
     
