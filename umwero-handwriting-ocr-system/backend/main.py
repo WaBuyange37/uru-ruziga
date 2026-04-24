@@ -29,6 +29,8 @@ from cache_service import CacheService, CacheConfig, get_cache_service
 from performance_optimizer import PerformanceOptimizer
 from image_processor import ImageProcessingPipeline
 from comparison_algorithm import HybridComparisonAlgorithm
+from database_service import db_service
+from data_collector import data_collector
 
 # Configure logging
 logging.basicConfig(
@@ -236,6 +238,14 @@ async def startup_event():
     logger.info("Starting Umwero Handwriting Evaluation API...")
     
     try:
+        # Initialize database connection
+        db_connected = await db_service.connect()
+        if not db_connected:
+            logger.error("Failed to connect to database")
+            raise Exception("Database connection failed")
+        
+        logger.info("Database connected successfully")
+        
         # Initialize cache service
         cache_config = CacheConfig(
             redis_url=os.getenv("REDIS_URL", "redis://localhost:6379"),
@@ -268,7 +278,12 @@ async def startup_event():
         
         await performance_optimizer.initialize()
         
-        evaluation_engine = EvaluationEngine(font_renderer, cache_service=cache_service, performance_optimizer=performance_optimizer)
+        evaluation_engine = EvaluationEngine(
+            font_renderer, 
+            cache_service=cache_service, 
+            performance_optimizer=performance_optimizer,
+            collect_training_data=True
+        )
         
         # Warm cache with common characters if font renderer is available
         if font_renderer and cache_service:
@@ -291,6 +306,10 @@ async def shutdown_event():
     global cache_service
     
     logger.info("Shutting down Umwero Handwriting Evaluation API...")
+    
+    # Close database connection
+    await db_service.disconnect()
+    logger.info("Database disconnected")
     
     # Close cache service
     if cache_service:
@@ -392,6 +411,7 @@ async def health_check():
         "evaluation_engine": evaluation_engine is not None,
         "font_renderer": font_renderer is not None,
         "cache_service": cache_service is not None,
+        "database": db_service._connected,
     }
     
     # Get cache service health if available
@@ -401,6 +421,13 @@ async def health_check():
             components["cache_service_details"] = cache_health
         except Exception as e:
             components["cache_service_error"] = str(e)
+    
+    # Get database statistics if available
+    try:
+        db_stats = await db_service.get_dataset_statistics()
+        components["database_stats"] = db_stats
+    except Exception as e:
+        components["database_error"] = str(e)
     
     # Check if all critical components are healthy
     all_healthy = all(components.values())
@@ -543,3 +570,373 @@ if __name__ == "__main__":
         reload=True,
         log_level="info"
     )
+
+
+# ─── Dataset Management Endpoints ────────────────────────────────────────────
+
+@app.get("/api/dataset/stats")
+async def get_dataset_statistics():
+    """Get comprehensive dataset statistics for admin dashboard."""
+    try:
+        stats = await db_service.get_dataset_statistics()
+        return {
+            "success": True,
+            "statistics": stats,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Failed to get dataset statistics: {e}")
+        raise EvaluationException(
+            "DATASET_STATS_FAILED",
+            f"Failed to get dataset statistics: {str(e)}"
+        )
+
+
+@app.post("/api/dataset/export")
+async def export_dataset(
+    export_format: str = "json",
+    character_types: Optional[List[str]] = None,
+    quality_labels: Optional[List[str]] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    limit: Optional[int] = None
+):
+    """Export dataset in specified format for ML frameworks."""
+    try:
+        # Validate export format
+        valid_formats = ["json", "csv", "tensorflow", "pytorch"]
+        if export_format not in valid_formats:
+            raise ValueError(f"Invalid export format. Must be one of: {valid_formats}")
+        
+        # Create filters
+        filters = {}
+        if character_types:
+            filters["character_types"] = character_types
+        if quality_labels:
+            filters["quality_labels"] = quality_labels
+        if min_score is not None:
+            filters["min_score"] = min_score
+        if max_score is not None:
+            filters["max_score"] = max_score
+        if limit is not None:
+            filters["limit"] = limit
+        
+        # Generate export filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_filename = f"umwero_dataset_{export_format}_{timestamp}"
+        
+        if export_format in ["json", "csv"]:
+            output_filename += f".{export_format}"
+        
+        output_path = f"exports/{output_filename}"
+        
+        # Export dataset
+        exported_path = await data_collector.export_dataset(
+            export_format=export_format,
+            output_path=output_path,
+            filters=filters
+        )
+        
+        return {
+            "success": True,
+            "export_path": exported_path,
+            "format": export_format,
+            "filters": filters,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Dataset export failed: {e}")
+        raise EvaluationException(
+            "DATASET_EXPORT_FAILED",
+            f"Failed to export dataset: {str(e)}"
+        )
+
+
+@app.get("/api/dataset/training-data")
+async def get_training_data(
+    character_types: Optional[str] = None,
+    quality_labels: Optional[str] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    limit: Optional[int] = 100
+):
+    """Get filtered training data for analysis."""
+    try:
+        # Parse comma-separated values
+        character_type_list = character_types.split(",") if character_types else None
+        quality_label_list = quality_labels.split(",") if quality_labels else None
+        
+        # Get training data
+        training_data = await db_service.get_training_data(
+            character_types=character_type_list,
+            quality_labels=quality_label_list,
+            min_score=min_score,
+            max_score=max_score,
+            limit=limit
+        )
+        
+        # Convert to JSON-serializable format
+        serialized_data = []
+        for attempt in training_data:
+            data = {
+                "id": attempt.id,
+                "character": attempt.character,
+                "character_type": attempt.characterType,
+                "final_score": attempt.finalScore,
+                "is_correct": attempt.isCorrect,
+                "quality_label": attempt.qualityLabel,
+                "submitted_at": attempt.submittedAt.isoformat(),
+                "user_drawing_path": attempt.userDrawing,
+                "reference_image_path": attempt.referenceImage
+            }
+            
+            # Add feature vector if available
+            if attempt.featureVector:
+                data["features"] = {
+                    "contour_area": attempt.featureVector.contourArea,
+                    "aspect_ratio": attempt.featureVector.aspectRatio,
+                    "stroke_count": attempt.featureVector.strokeCount,
+                    "complexity_score": attempt.featureVector.complexityScore
+                }
+            
+            serialized_data.append(data)
+        
+        return {
+            "success": True,
+            "data": serialized_data,
+            "count": len(serialized_data),
+            "filters": {
+                "character_types": character_type_list,
+                "quality_labels": quality_label_list,
+                "min_score": min_score,
+                "max_score": max_score,
+                "limit": limit
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get training data: {e}")
+        raise EvaluationException(
+            "TRAINING_DATA_FAILED",
+            f"Failed to get training data: {str(e)}"
+        )
+
+
+# ─── Performance Metrics Endpoints ───────────────────────────────────────────
+
+@app.post("/api/metrics/record")
+async def record_performance_metric(
+    metric_type: str,
+    component: str,
+    value: float,
+    unit: str,
+    character_type: Optional[str] = None
+):
+    """Record system performance metrics."""
+    try:
+        await db_service.record_performance_metric(
+            metric_type=metric_type,
+            component=component,
+            value=value,
+            unit=unit,
+            character_type=character_type
+        )
+        
+        return {
+            "success": True,
+            "message": "Performance metric recorded",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to record performance metric: {e}")
+        raise EvaluationException(
+            "METRIC_RECORD_FAILED",
+            f"Failed to record performance metric: {str(e)}"
+        )
+
+# ─── ML Pipeline Endpoints ───────────────────────────────────────────────────
+
+@app.post("/api/ml/prepare-dataset")
+async def prepare_training_dataset(
+    character_types: Optional[str] = None,
+    quality_labels: Optional[str] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    train_ratio: float = 0.7,
+    val_ratio: float = 0.15,
+    test_ratio: float = 0.15,
+    stratify_by: str = "character_type",
+    random_seed: int = 42
+):
+    """Prepare training dataset with train/validation/test splits."""
+    try:
+        # Import ML pipeline service
+        from ml_pipeline_service import ml_pipeline_service
+        
+        # Parse comma-separated values
+        character_type_list = character_types.split(",") if character_types else None
+        quality_label_list = quality_labels.split(",") if quality_labels else None
+        
+        # Prepare dataset
+        result = await ml_pipeline_service.prepare_training_dataset(
+            character_types=character_type_list,
+            quality_labels=quality_label_list,
+            min_score=min_score,
+            max_score=max_score,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio,
+            stratify_by=stratify_by,
+            random_seed=random_seed
+        )
+        
+        return {
+            "success": True,
+            "dataset": result,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Dataset preparation failed: {e}")
+        raise EvaluationException(
+            "DATASET_PREPARATION_FAILED",
+            f"Failed to prepare training dataset: {str(e)}"
+        )
+
+
+@app.post("/api/ml/export-framework")
+async def export_for_framework(
+    framework: str,
+    output_dir: str = "ml_exports",
+    include_images: bool = True,
+    include_features: bool = True,
+    normalize_features: bool = True,
+    # Dataset preparation parameters
+    character_types: Optional[str] = None,
+    quality_labels: Optional[str] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None,
+    train_ratio: float = 0.7,
+    val_ratio: float = 0.15,
+    test_ratio: float = 0.15
+):
+    """Export dataset for specific ML framework."""
+    try:
+        from ml_pipeline_service import ml_pipeline_service
+        
+        # Parse parameters
+        character_type_list = character_types.split(",") if character_types else None
+        quality_label_list = quality_labels.split(",") if quality_labels else None
+        
+        # Prepare dataset first
+        dataset_result = await ml_pipeline_service.prepare_training_dataset(
+            character_types=character_type_list,
+            quality_labels=quality_label_list,
+            min_score=min_score,
+            max_score=max_score,
+            train_ratio=train_ratio,
+            val_ratio=val_ratio,
+            test_ratio=test_ratio
+        )
+        
+        # Export for framework
+        export_paths = await ml_pipeline_service.export_for_framework(
+            dataset_splits=dataset_result["splits"],
+            framework=framework,
+            output_dir=output_dir,
+            include_images=include_images,
+            include_features=include_features,
+            normalize_features=normalize_features
+        )
+        
+        return {
+            "success": True,
+            "framework": framework,
+            "export_paths": export_paths,
+            "dataset_metadata": dataset_result["metadata"],
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Framework export failed: {e}")
+        raise EvaluationException(
+            "FRAMEWORK_EXPORT_FAILED",
+            f"Failed to export for {framework}: {str(e)}"
+        )
+
+
+@app.get("/api/ml/supported-frameworks")
+async def get_supported_frameworks():
+    """Get list of supported ML frameworks."""
+    try:
+        from ml_pipeline_service import ml_pipeline_service
+        
+        return {
+            "success": True,
+            "frameworks": ml_pipeline_service.supported_frameworks,
+            "descriptions": {
+                "tensorflow": "TensorFlow TFRecord format for deep learning",
+                "pytorch": "PyTorch Dataset format for deep learning",
+                "sklearn": "NumPy arrays for scikit-learn models",
+                "xgboost": "Optimized format for XGBoost models"
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get supported frameworks: {e}")
+        raise EvaluationException(
+            "FRAMEWORKS_FAILED",
+            f"Failed to get supported frameworks: {str(e)}"
+        )
+
+
+@app.post("/api/ml/validate-quality")
+async def validate_data_quality(
+    character_types: Optional[str] = None,
+    quality_labels: Optional[str] = None,
+    min_score: Optional[float] = None,
+    max_score: Optional[float] = None
+):
+    """Validate data quality for ML training."""
+    try:
+        from ml_pipeline_service import ml_pipeline_service
+        
+        # Parse parameters
+        character_type_list = character_types.split(",") if character_types else None
+        quality_label_list = quality_labels.split(",") if quality_labels else None
+        
+        # Get training data
+        training_data = await db_service.get_training_data(
+            character_types=character_type_list,
+            quality_labels=quality_label_list,
+            min_score=min_score,
+            max_score=max_score
+        )
+        
+        if not training_data:
+            return {
+                "success": False,
+                "message": "No training data found with specified filters"
+            }
+        
+        # Convert to structured format
+        dataset = await ml_pipeline_service._convert_to_structured_dataset(training_data)
+        
+        # Validate quality
+        quality_report = ml_pipeline_service._validate_data_quality(dataset)
+        
+        return {
+            "success": True,
+            "quality_report": quality_report,
+            "recommendations": ml_pipeline_service._generate_quality_recommendations(quality_report),
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Data quality validation failed: {e}")
+        raise EvaluationException(
+            "QUALITY_VALIDATION_FAILED",
+            f"Failed to validate data quality: {str(e)}"
+        )

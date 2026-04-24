@@ -1,6 +1,7 @@
 """
 Main evaluation engine that orchestrates the complete handwriting evaluation pipeline.
-Integrates font rendering, image processing, comparison algorithms, and feedback generation.
+Integrates font rendering, image processing, comparison algorithms, feedback generation,
+and data collection for OCR training datasets.
 """
 
 import logging
@@ -13,6 +14,9 @@ from .font_renderer import FontRenderingService, ReferenceData
 from .image_processor import ImageProcessingPipeline, ProcessedImage, ProcessingConfig
 from .comparison_algorithm import HybridComparisonAlgorithm, ComparisonResult, ComparisonWeights
 from .feedback_generator import FeedbackGenerator, FeedbackReport, FeedbackItem, FeedbackConfig
+from .feature_extractor import FeatureExtractor
+from .database_service import db_service
+from .data_collector import data_collector
 
 logger = logging.getLogger(__name__)
 
@@ -43,14 +47,20 @@ class EvaluationEngine:
                  processing_config: Optional[ProcessingConfig] = None,
                  comparison_weights: Optional[ComparisonWeights] = None,
                  feedback_config: Optional[FeedbackConfig] = None,
-                 cache_service=None):
+                 cache_service=None,
+                 performance_optimizer=None,
+                 collect_training_data: bool = True):
         
         # Initialize components
         self.font_renderer = font_renderer
         self.cache_service = cache_service
+        self.performance_optimizer = performance_optimizer
+        self.collect_training_data = collect_training_data
+        
         self.image_processor = ImageProcessingPipeline(processing_config or ProcessingConfig())
         self.comparison_algorithm = HybridComparisonAlgorithm(comparison_weights or ComparisonWeights())
         self.feedback_generator = FeedbackGenerator(feedback_config or FeedbackConfig())
+        self.feature_extractor = FeatureExtractor()
         
         # Cache for reference data (fallback when cache service is not available)
         self.reference_cache = {}
@@ -64,9 +74,12 @@ class EvaluationEngine:
         # Log component status
         logger.info(f"Font renderer available: {self.font_renderer is not None}")
         logger.info(f"Cache service available: {self.cache_service is not None}")
+        logger.info(f"Performance optimizer available: {self.performance_optimizer is not None}")
+        logger.info(f"Training data collection: {self.collect_training_data}")
         logger.info(f"Image processor: {type(self.image_processor).__name__}")
         logger.info(f"Comparison algorithm: {type(self.comparison_algorithm).__name__}")
         logger.info(f"Feedback generator: {type(self.feedback_generator).__name__}")
+        logger.info(f"Feature extractor: {type(self.feature_extractor).__name__}")
     
     async def evaluate_handwriting(self, 
                                  character: str,
@@ -111,10 +124,46 @@ class EvaluationEngine:
                 character
             )
             
-            # Step 6: Calculate processing time
+            # Step 6: Extract features for ML training
+            feature_vector = self.feature_extractor.extract_all_features(user_processed.processed_image)
+            
+            # Step 7: Calculate processing time
             processing_time = int((time.time() - start_time) * 1000)
             
-            # Step 7: Create final result
+            # Step 8: Collect data for OCR training (if enabled)
+            collection_id = None
+            if self.collect_training_data:
+                try:
+                    collection_id = await self._collect_training_data(
+                        character=character,
+                        user_image_data=user_image_data,
+                        reference_data=reference_data,
+                        user_processed=user_processed,
+                        reference_processed=reference_processed,
+                        comparison_result=comparison_result,
+                        feedback_report=feedback_report,
+                        feature_vector=feature_vector,
+                        session_id=session_id,
+                        user_id=user_id,
+                        processing_time=processing_time
+                    )
+                except Exception as e:
+                    logger.error(f"Data collection failed: {e}")
+                    # Continue with evaluation even if data collection fails
+            
+            # Step 9: Record performance metrics
+            if self.performance_optimizer:
+                try:
+                    await self.performance_optimizer.record_evaluation_metrics(
+                        character=character,
+                        processing_time_ms=processing_time,
+                        score=comparison_result.final_score,
+                        confidence=comparison_result.confidence
+                    )
+                except Exception as e:
+                    logger.error(f"Performance metrics recording failed: {e}")
+            
+            # Step 10: Create final result
             result = EvaluationResult(
                 score=comparison_result.final_score,
                 confidence=comparison_result.confidence,
@@ -129,7 +178,9 @@ class EvaluationEngine:
                     'user_id': user_id,
                     'processing_time_ms': processing_time,
                     'reference_cached': character in self.reference_cache,
-                    'algorithm_version': '1.0.0'
+                    'algorithm_version': '1.0.0',
+                    'collection_id': collection_id,
+                    'feature_extraction_success': feature_vector.get('extraction_success', False)
                 }
             )
             
@@ -345,6 +396,110 @@ class EvaluationEngine:
         
         logger.info(f"Precomputed references for {sum(results.values())}/{len(characters)} characters")
         return results
+    
+    async def _collect_training_data(
+        self,
+        character: str,
+        user_image_data: str,
+        reference_data: Optional[ReferenceData],
+        user_processed: ProcessedImage,
+        reference_processed: ProcessedImage,
+        comparison_result: ComparisonResult,
+        feedback_report: FeedbackReport,
+        feature_vector: dict,
+        session_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        processing_time: int = 0
+    ) -> Optional[str]:
+        """
+        Collect comprehensive training data for OCR dataset.
+        
+        Returns:
+            Collection ID if successful, None if failed
+        """
+        try:
+            # Determine character type
+            character_type = self._determine_character_type(character)
+            
+            # Convert images to base64 for storage
+            import cv2
+            import base64
+            
+            # Convert processed images back to base64
+            def image_to_base64(image_array):
+                _, buffer = cv2.imencode('.png', image_array)
+                return base64.b64encode(buffer).decode('utf-8')
+            
+            processed_user_b64 = image_to_base64(user_processed.processed_image)
+            processed_ref_b64 = image_to_base64(reference_processed.processed_image)
+            
+            # Get skeleton image if available
+            skeleton_b64 = None
+            if hasattr(user_processed, 'skeleton_image') and user_processed.skeleton_image is not None:
+                skeleton_b64 = image_to_base64(user_processed.skeleton_image)
+            
+            # Prepare evaluation results
+            evaluation_results = {
+                "final_score": comparison_result.final_score,
+                "ssim_score": comparison_result.ssim_score,
+                "contour_score": comparison_result.contour_score,
+                "skeleton_score": comparison_result.skeleton_score,
+                "confidence_score": comparison_result.confidence,
+                "evaluation_time_ms": processing_time
+            }
+            
+            # Prepare feedback data
+            feedback_data = {
+                "overall_feedback": feedback_report.summary,
+                "encouragement": feedback_report.encouragement,
+                "missing_strokes": [item.message for item in feedback_report.detailed_feedback if item.category == "missing_strokes"],
+                "proportion_issues": [item.message for item in feedback_report.detailed_feedback if item.category == "proportions"],
+                "positioning_issues": [item.message for item in feedback_report.detailed_feedback if item.category == "positioning"],
+                "topology_issues": [item.message for item in feedback_report.detailed_feedback if item.category == "topology"],
+                "suggestions": [item.suggestion for item in feedback_report.detailed_feedback if item.suggestion],
+                "practice_areas": feedback_report.practice_areas,
+                "feedback_type": "constructive" if comparison_result.final_score >= 70 else "corrective",
+                "priority": "high" if comparison_result.final_score < 40 else "medium"
+            }
+            
+            # Prepare user context
+            user_context = {
+                "user_id": user_id,
+                "session_id": session_id,
+                "drawing_time_ms": None,  # Not available in current implementation
+                "device_info": None       # Not available in current implementation
+            }
+            
+            # Collect the data
+            collection_id = await data_collector.collect_evaluation_data(
+                character=character,
+                character_type=character_type,
+                user_drawing_base64=user_image_data,
+                reference_image_base64=processed_ref_b64,  # Use processed reference
+                processed_image_base64=processed_user_b64,
+                evaluation_results=evaluation_results,
+                feedback_data=feedback_data,
+                feature_vector=feature_vector,
+                user_context=user_context,
+                skeleton_image_base64=skeleton_b64
+            )
+            
+            logger.debug(f"Training data collected: {collection_id}")
+            return collection_id
+            
+        except Exception as e:
+            logger.error(f"Failed to collect training data: {e}")
+            return None
+    
+    def _determine_character_type(self, character: str) -> str:
+        """Determine character type based on character."""
+        vowels = ["a", "e", "i", "o", "u"]
+        if character.lower() in vowels:
+            return "vowel"
+        elif len(character) > 2:
+            return "ligature"
+        else:
+            return "consonant"
 
 
 # Utility functions for testing and debugging
