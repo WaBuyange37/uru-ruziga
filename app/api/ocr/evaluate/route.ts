@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -10,6 +8,7 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_OCR_SERVICE_URL || 'http://localho
 
 interface EvaluationRequest {
   characterId: string
+  userId: string // Required in request body
   strokes: Array<{
     points: Array<{
       x: number
@@ -37,30 +36,20 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
   try {
-    // Get authenticated user
-    const session = await getServerSession(authOptions)
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: { code: 'UNAUTHORIZED', message: 'Authentication required' } },
-        { status: 401 }
-      )
-    }
-
     const body: EvaluationRequest = await request.json()
-    const { characterId, strokes, imageData, lessonId, metadata } = body
+    const { characterId, userId, strokes, imageData, lessonId, metadata } = body
 
     // Validate required fields
-    if (!characterId || !strokes || !imageData) {
+    if (!characterId || !userId || !strokes || !imageData) {
       return NextResponse.json(
-        { error: { code: 'INVALID_REQUEST', message: 'Missing required fields' } },
+        { error: { code: 'INVALID_REQUEST', message: 'Missing required fields: characterId, userId, strokes, imageData' } },
         { status: 400 }
       )
     }
-
     // 1. Create HandwritingAttempt immediately
     const attempt = await prisma.handwritingAttempt.create({
       data: {
-        userId: session.user.id,
+        userId,
         characterId,
         lessonId,
         strokes: strokes as any,
@@ -81,7 +70,7 @@ export async function POST(request: NextRequest) {
           character: characterId,
           image: imageData,
           session_id: attempt.id,
-          user_id: session.user.id,
+          user_id: userId,
         }),
         signal: AbortSignal.timeout(10000), // 10 second timeout
       })
@@ -114,7 +103,7 @@ export async function POST(request: NextRequest) {
         await prisma.datasetEntry.create({
           data: {
             attemptId: attempt.id,
-            userId: session.user.id,
+            userId,
             characterId,
             characterType: 'vowel', // TODO: Get from character reference
             strokesData: strokes as any,
@@ -136,12 +125,12 @@ export async function POST(request: NextRequest) {
       await prisma.userCharacterProgress.upsert({
         where: {
           userId_characterId: {
-            userId: session.user.id,
+            userId,
             characterId,
           },
         },
         create: {
-          userId: session.user.id,
+          userId,
           characterId,
           score: Math.round(evaluation.score),
           attempts: 1,
@@ -168,7 +157,7 @@ export async function POST(request: NextRequest) {
         },
         progress: {
           totalAttempts: (await prisma.handwritingAttempt.count({
-            where: { userId: session.user.id, characterId },
+            where: { userId, characterId },
           })),
           bestScore: Math.round(evaluation.score),
         },
