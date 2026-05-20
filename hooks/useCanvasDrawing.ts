@@ -75,7 +75,7 @@ interface UseCanvasDrawingOptions {
   strokeWidth?: number
   backgroundColor?: string
   onStrokeComplete?: (stroke: Stroke) => void
-  onDrawingComplete?: (export: StrokeDataExport) => void
+  onDrawingComplete?: (data: StrokeDataExport) => void
   enablePerformanceMonitoring?: boolean
   targetFPS?: number
 }
