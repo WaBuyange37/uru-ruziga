@@ -4,6 +4,7 @@
 // NO fake glyphs, NO hallucinated characters, NO phonological groupings
 // =============================================================================
 
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 

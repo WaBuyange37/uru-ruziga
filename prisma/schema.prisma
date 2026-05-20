@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
 }
 
 datasource db {
@@ -375,6 +376,9 @@ model User {
   attempts                UserAttempt[]
   drawings                UserDrawing[]
   characterProgress       UserCharacterProgress[]
+  handwritingAttempts     HandwritingAttempt[]
+  communityEntries        CommunityEntry[]
+  evaluationSessions      EvaluationSession[]
 
   @@index([email])
   @@index([mobileNumber])
@@ -405,6 +409,174 @@ model UserCharacterProgress {
   @@index([characterId])
   @@index([status])
   @@map("user_character_progress")
+}
+
+model HandwritingAttempt {
+  id                 String              @id @default(cuid())
+  userId             String
+  characterId        String
+  lessonId           String?
+  
+  // Complete stroke data
+  strokes            Json                // Array of strokes with points, timestamps, pressure
+  strokeCount        Int                 @default(0)
+  totalPoints        Int                 @default(0)
+  drawingDuration    Int?                // milliseconds
+  
+  // Image storage
+  imageUrl           String?             // Original canvas PNG in Supabase
+  processedImageUrl  String?             // Normalized/processed image
+  skeletonImageUrl   String?             // Skeleton analysis image
+  heatmapUrl         String?             // Error heatmap overlay
+  
+  // Evaluation results
+  score              Float?              // 0-100 final score
+  ssimScore          Float?              // Structural similarity
+  contourScore       Float?              // Contour matching
+  skeletonScore      Float?              // Skeleton similarity
+  confidenceScore    Float?              // Confidence score
+  
+  // Detailed feedback
+  feedback           Json?               // Array of feedback items
+  feedbackType       String?             // constructive, corrective, encouraging
+  practiceAreas      String[]            @default([])
+  
+  // Feature extraction for ML
+  featureVector      Json?               // Extracted features for ML
+  qualityLabel       String?             // excellent, good, fair, poor
+  
+  // Metadata
+  metadata           Json                // Device, input method, canvas size, etc.
+  processingTime     Int?                // Evaluation time in ms
+  
+  // Dataset management
+  includedInDataset  Boolean             @default(false)
+  datasetSplit       String?             // train, val, test
+  datasetVersion     String?             // v1.0, v1.1, etc.
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character          CharacterReference  @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  datasetEntry       DatasetEntry?
+
+  @@index([userId, characterId])
+  @@index([createdAt])
+  @@index([score])
+  @@index([qualityLabel])
+  @@index([includedInDataset])
+  @@index([lessonId])
+  @@map("handwriting_attempts")
+}
+
+model CharacterReference {
+  id              String               @id @default(cuid())
+  umweroChar      String               @unique
+  latinEquivalent String?
+  unicodeMapping  String?
+  characterType   String?              // vowel, consonant, ligature
+  
+  // Reference images
+  imageFontPath   String               // Path to reference image (legacy)
+  fontImageUrl    String?              // Font-rendered reference URL
+  strokeOrder     Json?                // Canonical stroke order data
+  
+  // Metadata
+  metadata        Json                 // Font version, rendering params, etc.
+  difficulty      Int                  @default(1)
+  
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  
+  attempts        HandwritingAttempt[]
+
+  @@index([umweroChar])
+  @@index([characterType])
+  @@index([latinEquivalent])
+  @@map("character_references")
+}
+
+model CommunityEntry {
+  id                String   @id @default(cuid())
+  userId            String
+  
+  // Content
+  text              String   @db.Text
+  language          String   // 'rw' for Kinyarwanda, 'en' for English
+  script            String   @default("latin") // latin, umwero
+  
+  // NLP metadata
+  category          String?  // Topic categorization
+  sentiment         String?  // positive, neutral, negative
+  complexity        Int?     // text complexity score
+  
+  // Processing
+  processed         Boolean  @default(false)
+  processedText     String?  @db.Text
+  tokens            Json?    // Tokenization results
+  embedding         Json?    // Vector embedding
+  
+  // Dataset management
+  includedInDataset Boolean  @default(false)
+  datasetSplit      String?  // train, val, test
+  verified          Boolean  @default(false)
+  
+  metadata          Json     // Context, tags, etc.
+  createdAt         DateTime @default(now())
+  
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([language])
+  @@index([script])
+  @@index([includedInDataset])
+  @@index([processed])
+  @@map("community_entries")
+}
+
+model DatasetEntry {
+  id                 String             @id @default(cuid())
+  attemptId          String             @unique
+  
+  // Core data
+  userId             String             // Anonymized or hashed for privacy
+  characterId        String
+  characterType      String?            // vowel, consonant, ligature
+  
+  // Complete stroke data
+  strokesData        Json               // Complete stroke data
+  imageUrl           String             // URL to stored image
+  processedImageUrl  String?            // Processed/normalized image
+  
+  // Evaluation data
+  score              Float
+  qualityLabel       String?            // excellent, good, fair, poor
+  featureVector      Json?              // ML features
+  
+  // ML metadata
+  timeTaken          Int                // Milliseconds
+  userMetadata       Json               // Anonymized demographics, device info
+  split              String?            // 'train', 'val', or 'test'
+  version            String             @default("1.0")
+  
+  // Quality control
+  verified           Boolean            @default(false)
+  verifiedBy         String?
+  verifiedAt         DateTime?
+  
+  createdAt          DateTime           @default(now())
+  
+  attempt            HandwritingAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([characterId])
+  @@index([characterType])
+  @@index([split])
+  @@index([qualityLabel])
+  @@index([verified])
+  @@index([createdAt])
+  @@map("dataset_entries")
 }
 
 model Certificate {
@@ -715,6 +887,43 @@ model ActivityLog {
   @@index([action])
   @@index([createdAt])
   @@map("activity_logs")
+}
+
+model PerformanceMetric {
+  id            String   @id @default(cuid())
+  metricType    String   // evaluation_time, cache_hit_rate, accuracy, etc.
+  component     String   // evaluation_engine, font_renderer, cache, etc.
+  value         Float
+  unit          String   // ms, percent, score, etc.
+  characterType String?  // Optional: vowel, consonant, ligature
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([metricType])
+  @@index([component])
+  @@index([createdAt])
+  @@index([characterType])
+  @@map("performance_metrics")
+}
+
+model EvaluationSession {
+  id                   String    @id @default(cuid())
+  userId               String
+  sessionType          String    // practice, assessment, challenge
+  startedAt            DateTime  @default(now())
+  endedAt              DateTime?
+  totalAttempts        Int       @default(0)
+  averageScore         Float?
+  charactersPracticed  String[]  @default([])
+  metadata             Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionType])
+  @@index([startedAt])
+  @@map("evaluation_sessions")
 }
 
 enum CharacterType {

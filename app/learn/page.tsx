@@ -167,7 +167,6 @@ async function getLessonsData() {
     }
   }
 }
-}
 
 // 🚀 MAIN SERVER COMPONENT - Pre-fetches all data
 export default async function LearnPage() {
