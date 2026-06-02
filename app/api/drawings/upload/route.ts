@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { uploadDrawing, dataURLtoBlob } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
 import { verify } from 'jsonwebtoken'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,9 +64,9 @@ export async function POST(request: NextRequest) {
         characterId: characterId || null,
         attemptType: 'DRAWING',
         drawingData: imageUrl, // Store URL instead of base64
-        answer: null,
+        answer: Prisma.JsonNull,
         aiScore: aiScore || null,
-        aiMetrics: aiMetrics || null,
+        aiMetrics: aiMetrics || Prisma.JsonNull,
         feedback: feedback || null,
         isCorrect: isCorrect || false,
         timeSpent: timeSpent || 0

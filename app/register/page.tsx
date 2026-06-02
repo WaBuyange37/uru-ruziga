@@ -20,7 +20,7 @@ export default function RegisterPage() {
     e.preventDefault()
     setError('')
     try {
-      await register(username, email, password)
+      await register(username, username, email, password)
       router.push('/')
     } catch (err: any) {
       setError(err.message || 'Failed to register')

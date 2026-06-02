@@ -1,6 +1,6 @@
 // hooks/useTranslation.ts
 import { useLanguage } from '../app/contexts/LanguageContext'
-import { translations, TranslationKey } from '../lib/translations'
+import { translations } from '../lib/translations'
 
 // 🔒 CRITICAL CULTURAL DATA - DO NOT MODIFY 🔒
 // Umwero character mapping (Latin → Umwero)
@@ -383,8 +383,10 @@ export function convertFromUmwero(text: string): string {
 export function useTranslation() {
   const { language } = useLanguage()
   
-  const t = (key: TranslationKey): string => {
-    const translation = translations[language][key] || translations.en[key] || key
+  const t = (key: string): string => {
+    const currentTranslations = translations[language] as Record<string, string>
+    const englishTranslations = translations.en as Record<string, string>
+    const translation = currentTranslations[key] || englishTranslations[key] || key
     
     // If language is Umwero ('um'), convert to Umwero characters
     if (language === 'um') {

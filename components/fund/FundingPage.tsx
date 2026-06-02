@@ -1,5 +1,6 @@
 import { FundingOptions } from "./FundingOptions"
 import { useTranslation } from "../../hooks/useTranslation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function FundingPage() {
   const { t } = useTranslation()

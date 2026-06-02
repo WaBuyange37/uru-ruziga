@@ -15,9 +15,13 @@ export function DroppableCell({ onDrop, number }: DroppableCellProps) {
     }),
   }))
 
+  const setRef = (node: HTMLDivElement | null) => {
+    drop(node)
+  }
+
   return (
     <div
-      ref={drop}
+      ref={setRef}
       className={`w-16 h-16 border-2 ${isOver ? "border-blue-500" : "border-gray-300"} flex items-center justify-center`}
     >
       {number !== null && (

@@ -15,8 +15,12 @@ export function DraggableNumber({ number, isSelected }: DraggableNumberProps) {
     }),
   }))
 
+  const setRef = (node: HTMLDivElement | null) => {
+    drag(node)
+  }
+
   return (
-    <div ref={drag} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div ref={setRef} style={{ opacity: isDragging ? 0.5 : 1 }}>
       <Button variant={isSelected ? "secondary" : "outline"} className="w-full h-full" disabled={isSelected}>
         {number}
       </Button>

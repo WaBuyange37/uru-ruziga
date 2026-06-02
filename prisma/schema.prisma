@@ -30,21 +30,21 @@ model Language {
 }
 
 model Character {
-  id               String                 @id @default(cuid())
-  umweroGlyph      String                 @unique
+  id               String                  @id @default(cuid())
+  umweroGlyph      String                  @unique
   latinEquivalent  String
   type             CharacterType
-  difficulty       Int                    @default(1)
-  strokeCount      Int                    @default(1)
+  difficulty       Int                     @default(1)
+  strokeCount      Int                     @default(1)
   order            Int
   glyphImageUrl    String?
   audioUrl         String?
   videoUrl         String?
   symbolism        String?
   historicalNote   String?
-  isActive         Boolean                @default(true)
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
+  isActive         Boolean                 @default(true)
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
   translations     CharacterTranslation[]
   culturalContexts CulturalContext[]
   lessons          Lesson[]
@@ -237,6 +237,27 @@ model StepTranslation {
   @@map("step_translations")
 }
 
+model LearningStage {
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  displayName        String
+  description        String
+  order              Int
+  masteryThreshold   Int      @default(80)
+  minAttempts        Int      @default(3)
+  requiredAccuracy   Float    @default(0.8)
+  estimatedMinutes   Int      @default(5)
+  interactionType    String   // 'click', 'drag', 'draw', 'text', 'audio'
+  validationRules    Json
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([order])
+  @@index([isActive])
+  @@map("learning_stages")
+}
+
 model LessonProgress {
   id             String         @id @default(cuid())
   userId         String
@@ -254,6 +275,16 @@ model LessonProgress {
   lastAccessedAt DateTime       @default(now())
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
+
+  // Adaptive Learning System Extensions
+  currentStage          String?   // Current learning stage (e.g., RECOGNITION, TRACING)
+  stageCompletionData   Json?     // Stage-by-stage completion details
+  timeSpentPerStage     Json?     // Time tracking per stage in seconds
+  journeyPhase          String?   // Current journey phase (INTRODUCTION, OBSERVE, etc.)
+  journeyStartedAt      DateTime? // When the learning journey started
+  journeyPausedAt       DateTime? // When the journey was paused
+  journeyCompletedAt    DateTime? // When the journey was completed
+
   lesson         Lesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -261,6 +292,8 @@ model LessonProgress {
   @@index([userId, status])
   @@index([userId, completed])
   @@index([lessonId])
+  @@index([userId, currentStage])
+  @@index([journeyPhase])
   @@map("lesson_progress")
 }
 
@@ -281,6 +314,24 @@ model UserAttempt {
   timeSpent        Int         @default(0)
   isCorrect        Boolean     @default(false)
   createdAt        DateTime    @default(now())
+
+  // Adaptive Learning System Extensions
+  learningStage     String?  // Which stage this attempt belongs to (e.g., RECOGNITION, TRACING)
+  journeyPhase      String?  // Which journey phase (INTRODUCTION, OBSERVE, etc.)
+
+  // Enhanced OCR metrics (0-100 scale)
+  shapeAccuracy     Float?   // Structural similarity score
+  strokeOrder       Float?   // Stroke order correctness
+  strokeDirection   Float?   // Stroke direction correctness
+  strokeConsistency Float?   // Consistency across strokes
+  sizeBalance       Float?   // Character proportion balance
+  spacing           Float?   // Spacing for multi-stroke characters
+
+  // Enhanced feedback
+  feedbackType      String?  // 'corrective' | 'constructive' | 'encouraging'
+  visualOverlay     Json?    // Overlay data for visual feedback
+  improvementSteps  String[] @default([]) // Specific improvement suggestions
+
   character        Character?  @relation(fields: [characterId], references: [id])
   step             LessonStep  @relation(fields: [stepId], references: [id], onDelete: Cascade)
   user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -288,6 +339,8 @@ model UserAttempt {
   @@index([userId, createdAt])
   @@index([stepId])
   @@index([characterId])
+  @@index([learningStage])
+  @@index([journeyPhase])
   @@map("user_attempts")
 }
 
@@ -331,34 +384,34 @@ model UserAchievement {
 }
 
 model User {
-  id                      String            @id @default(cuid())
-  email                   String            @unique
+  id                      String                  @id @default(cuid())
+  email                   String                  @unique
   name                    String?
   password                String
-  role                    Role              @default(STUDENT)
-  preferredLanguage       String            @default("en")
-  theme                   String            @default("light")
-  mobileNumber            String?           @unique
+  role                    Role                    @default(STUDENT)
+  preferredLanguage       String                  @default("en")
+  theme                   String                  @default("light")
+  mobileNumber            String?                 @unique
   fullName                String
-  username                String            @unique
+  username                String                  @unique
   birthday                DateTime?
-  countryCode             String?           @default("RW")
+  countryCode             String?                 @default("RW")
   phoneNumber             String?
   avatar                  String?
   bio                     String?
   country                 String?
-  emailVerified           Boolean           @default(false)
+  emailVerified           Boolean                 @default(false)
   verificationToken       String?
   verificationTokenExpiry DateTime?
   resetToken              String?
   resetTokenExpiry        DateTime?
-  provider                AuthProvider      @default(EMAIL)
+  provider                AuthProvider            @default(EMAIL)
   providerId              String?
   company                 String?
   jobTitle                String?
   lastLoginAt             DateTime?
-  createdAt               DateTime          @default(now())
-  updatedAt               DateTime          @updatedAt
+  createdAt               DateTime                @default(now())
+  updatedAt               DateTime                @updatedAt
   cart                    Cart?
   certificates            Certificate[]
   chatMessages            ChatMessage[]
@@ -391,75 +444,94 @@ model User {
 }
 
 model UserCharacterProgress {
-  id          String                    @id @default(cuid())
+  id          String                  @id @default(cuid())
   userId      String
   characterId String
-  status      CharacterProgressStatus   @default(NOT_STARTED)
-  score       Int                       @default(0)
-  timeSpent   Int                       @default(0) // in seconds
-  attempts    Int                       @default(0)
+  status      CharacterProgressStatus @default(NOT_STARTED)
+  score       Int                     @default(0)
+  timeSpent   Int                     @default(0) // in seconds
+  attempts    Int                     @default(0)
   lastAttempt DateTime?
-  createdAt   DateTime                  @default(now())
-  updatedAt   DateTime                  @updatedAt
-  user        User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  character   Character                 @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  // Adaptive Learning System Extensions
+  masteryScore      Int      @default(0)  // 0-100 composite mastery score
+  accuracyRate      Float    @default(0)  // Percentage of correct attempts (0-1)
+  confidenceScore   Float    @default(0)  // Consistency metric (0-100)
+  completionStatus  String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | LEARNED | MASTERED
+
+  // Stage-specific tracking
+  currentStage      String?  // Current learning stage (e.g., RECOGNITION, TRACING)
+  completedStages   String[] @default([]) // Array of completed stage names
+  stageScores       Json?    // Scores per stage { "RECOGNITION": 85, "TRACING": 90 }
+  stageAttempts     Json?    // Attempts per stage { "RECOGNITION": 5, "TRACING": 8 }
+
+  // Journey tracking
+  journeyPhase      String?  // Current journey phase (INTRODUCTION, OBSERVE, etc.)
+  completedPhases   String[] @default([]) // Completed journey phases
+
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character   Character               @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
   @@unique([userId, characterId])
   @@index([userId])
   @@index([characterId])
   @@index([status])
+  @@index([completionStatus])
+  @@index([currentStage])
   @@map("user_character_progress")
 }
 
 model HandwritingAttempt {
-  id                 String              @id @default(cuid())
-  userId             String
-  characterId        String
-  lessonId           String?
-  
+  id          String  @id @default(cuid())
+  userId      String
+  characterId String
+  lessonId    String?
+
   // Complete stroke data
-  strokes            Json                // Array of strokes with points, timestamps, pressure
-  strokeCount        Int                 @default(0)
-  totalPoints        Int                 @default(0)
-  drawingDuration    Int?                // milliseconds
-  
+  strokes         Json // Array of strokes with points, timestamps, pressure
+  strokeCount     Int  @default(0)
+  totalPoints     Int  @default(0)
+  drawingDuration Int? // milliseconds
+
   // Image storage
-  imageUrl           String?             // Original canvas PNG in Supabase
-  processedImageUrl  String?             // Normalized/processed image
-  skeletonImageUrl   String?             // Skeleton analysis image
-  heatmapUrl         String?             // Error heatmap overlay
-  
+  imageUrl          String? // Original canvas PNG in Supabase
+  processedImageUrl String? // Normalized/processed image
+  skeletonImageUrl  String? // Skeleton analysis image
+  heatmapUrl        String? // Error heatmap overlay
+
   // Evaluation results
-  score              Float?              // 0-100 final score
-  ssimScore          Float?              // Structural similarity
-  contourScore       Float?              // Contour matching
-  skeletonScore      Float?              // Skeleton similarity
-  confidenceScore    Float?              // Confidence score
-  
+  score           Float? // 0-100 final score
+  ssimScore       Float? // Structural similarity
+  contourScore    Float? // Contour matching
+  skeletonScore   Float? // Skeleton similarity
+  confidenceScore Float? // Confidence score
+
   // Detailed feedback
-  feedback           Json?               // Array of feedback items
-  feedbackType       String?             // constructive, corrective, encouraging
-  practiceAreas      String[]            @default([])
-  
+  feedback      Json? // Array of feedback items
+  feedbackType  String? // constructive, corrective, encouraging
+  practiceAreas String[] @default([])
+
   // Feature extraction for ML
-  featureVector      Json?               // Extracted features for ML
-  qualityLabel       String?             // excellent, good, fair, poor
-  
+  featureVector Json? // Extracted features for ML
+  qualityLabel  String? // excellent, good, fair, poor
+
   // Metadata
-  metadata           Json                // Device, input method, canvas size, etc.
-  processingTime     Int?                // Evaluation time in ms
-  
+  metadata       Json // Device, input method, canvas size, etc.
+  processingTime Int? // Evaluation time in ms
+
   // Dataset management
-  includedInDataset  Boolean             @default(false)
-  datasetSplit       String?             // train, val, test
-  datasetVersion     String?             // v1.0, v1.1, etc.
-  
-  createdAt          DateTime            @default(now())
-  updatedAt          DateTime            @updatedAt
-  
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  character          CharacterReference  @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  datasetEntry       DatasetEntry?
+  includedInDataset Boolean @default(false)
+  datasetSplit      String? // train, val, test
+  datasetVersion    String? // v1.0, v1.1, etc.
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character    CharacterReference @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  datasetEntry DatasetEntry?
 
   @@index([userId, characterId])
   @@index([createdAt])
@@ -471,25 +543,25 @@ model HandwritingAttempt {
 }
 
 model CharacterReference {
-  id              String               @id @default(cuid())
-  umweroChar      String               @unique
+  id              String  @id @default(cuid())
+  umweroChar      String  @unique
   latinEquivalent String?
   unicodeMapping  String?
-  characterType   String?              // vowel, consonant, ligature
-  
+  characterType   String? // vowel, consonant, ligature
+
   // Reference images
-  imageFontPath   String               // Path to reference image (legacy)
-  fontImageUrl    String?              // Font-rendered reference URL
-  strokeOrder     Json?                // Canonical stroke order data
-  
+  imageFontPath String // Path to reference image (legacy)
+  fontImageUrl  String? // Font-rendered reference URL
+  strokeOrder   Json? // Canonical stroke order data
+
   // Metadata
-  metadata        Json                 // Font version, rendering params, etc.
-  difficulty      Int                  @default(1)
-  
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
-  
-  attempts        HandwritingAttempt[]
+  metadata   Json // Font version, rendering params, etc.
+  difficulty Int  @default(1)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts HandwritingAttempt[]
 
   @@index([umweroChar])
   @@index([characterType])
@@ -498,34 +570,34 @@ model CharacterReference {
 }
 
 model CommunityEntry {
-  id                String   @id @default(cuid())
-  userId            String
-  
+  id     String @id @default(cuid())
+  userId String
+
   // Content
-  text              String   @db.Text
-  language          String   // 'rw' for Kinyarwanda, 'en' for English
-  script            String   @default("latin") // latin, umwero
-  
+  text     String @db.Text
+  language String // 'rw' for Kinyarwanda, 'en' for English
+  script   String @default("latin") // latin, umwero
+
   // NLP metadata
-  category          String?  // Topic categorization
-  sentiment         String?  // positive, neutral, negative
-  complexity        Int?     // text complexity score
-  
+  category   String? // Topic categorization
+  sentiment  String? // positive, neutral, negative
+  complexity Int? // text complexity score
+
   // Processing
-  processed         Boolean  @default(false)
-  processedText     String?  @db.Text
-  tokens            Json?    // Tokenization results
-  embedding         Json?    // Vector embedding
-  
+  processed     Boolean @default(false)
+  processedText String? @db.Text
+  tokens        Json? // Tokenization results
+  embedding     Json? // Vector embedding
+
   // Dataset management
-  includedInDataset Boolean  @default(false)
-  datasetSplit      String?  // train, val, test
-  verified          Boolean  @default(false)
-  
-  metadata          Json     // Context, tags, etc.
-  createdAt         DateTime @default(now())
-  
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  includedInDataset Boolean @default(false)
+  datasetSplit      String? // train, val, test
+  verified          Boolean @default(false)
+
+  metadata  Json // Context, tags, etc.
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
@@ -537,38 +609,38 @@ model CommunityEntry {
 }
 
 model DatasetEntry {
-  id                 String             @id @default(cuid())
-  attemptId          String             @unique
-  
+  id        String @id @default(cuid())
+  attemptId String @unique
+
   // Core data
-  userId             String             // Anonymized or hashed for privacy
-  characterId        String
-  characterType      String?            // vowel, consonant, ligature
-  
+  userId        String // Anonymized or hashed for privacy
+  characterId   String
+  characterType String? // vowel, consonant, ligature
+
   // Complete stroke data
-  strokesData        Json               // Complete stroke data
-  imageUrl           String             // URL to stored image
-  processedImageUrl  String?            // Processed/normalized image
-  
+  strokesData       Json // Complete stroke data
+  imageUrl          String // URL to stored image
+  processedImageUrl String? // Processed/normalized image
+
   // Evaluation data
-  score              Float
-  qualityLabel       String?            // excellent, good, fair, poor
-  featureVector      Json?              // ML features
-  
+  score         Float
+  qualityLabel  String? // excellent, good, fair, poor
+  featureVector Json? // ML features
+
   // ML metadata
-  timeTaken          Int                // Milliseconds
-  userMetadata       Json               // Anonymized demographics, device info
-  split              String?            // 'train', 'val', or 'test'
-  version            String             @default("1.0")
-  
+  timeTaken    Int // Milliseconds
+  userMetadata Json // Anonymized demographics, device info
+  split        String? // 'train', 'val', or 'test'
+  version      String  @default("1.0")
+
   // Quality control
-  verified           Boolean            @default(false)
-  verifiedBy         String?
-  verifiedAt         DateTime?
-  
-  createdAt          DateTime           @default(now())
-  
-  attempt            HandwritingAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  verified   Boolean   @default(false)
+  verifiedBy String?
+  verifiedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  attempt HandwritingAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
 
   @@index([characterId])
   @@index([characterType])
@@ -891,11 +963,11 @@ model ActivityLog {
 
 model PerformanceMetric {
   id            String   @id @default(cuid())
-  metricType    String   // evaluation_time, cache_hit_rate, accuracy, etc.
-  component     String   // evaluation_engine, font_renderer, cache, etc.
+  metricType    String // evaluation_time, cache_hit_rate, accuracy, etc.
+  component     String // evaluation_engine, font_renderer, cache, etc.
   value         Float
-  unit          String   // ms, percent, score, etc.
-  characterType String?  // Optional: vowel, consonant, ligature
+  unit          String // ms, percent, score, etc.
+  characterType String? // Optional: vowel, consonant, ligature
   metadata      Json?
   createdAt     DateTime @default(now())
 
@@ -907,18 +979,18 @@ model PerformanceMetric {
 }
 
 model EvaluationSession {
-  id                   String    @id @default(cuid())
-  userId               String
-  sessionType          String    // practice, assessment, challenge
-  startedAt            DateTime  @default(now())
-  endedAt              DateTime?
-  totalAttempts        Int       @default(0)
-  averageScore         Float?
-  charactersPracticed  String[]  @default([])
-  metadata             Json?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                  String    @id @default(cuid())
+  userId              String
+  sessionType         String // practice, assessment, challenge
+  startedAt           DateTime  @default(now())
+  endedAt             DateTime?
+  totalAttempts       Int       @default(0)
+  averageScore        Float?
+  charactersPracticed String[]  @default([])
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([sessionType])

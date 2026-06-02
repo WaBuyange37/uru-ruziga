@@ -1,59 +1,73 @@
 // lib/bucket-setup.ts
-// Configure your S3 bucket for Umwero app
+// Supabase Storage bucket setup for Umwero app.
 
-import { S3Client, PutBucketCorsCommand, CreateBucketCommand } from '@aws-sdk/client-s3'
+import { createClient } from '@supabase/supabase-js'
+import { STORAGE_BUCKETS } from './storage'
 
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+const supabaseAdmin =
+  supabaseUrl && supabaseServiceRoleKey
+    ? createClient(supabaseUrl, supabaseServiceRoleKey)
+    : null
+
+const bucketConfigs = [
+  { name: STORAGE_BUCKETS.appAssets, public: true },
+  { name: STORAGE_BUCKETS.characters, public: true },
+  { name: STORAGE_BUCKETS.userDrawings, public: false },
+  { name: STORAGE_BUCKETS.avatars, public: true },
+  { name: STORAGE_BUCKETS.audio, public: true },
+  { name: STORAGE_BUCKETS.lessonMaterials, public: true },
+  { name: STORAGE_BUCKETS.generatedImages, public: true },
+  { name: STORAGE_BUCKETS.communityPosts, public: true },
+]
+
+export async function setupStorageBuckets() {
+  if (!supabaseAdmin) {
+    throw new Error('Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to create Supabase Storage buckets.')
   }
-})
 
-// Configure CORS for your bucket
-export async function setupBucketCors() {
-  try {
-    const corsConfiguration = {
-      CORSRules: [
-        {
-          AllowedHeaders: ['*'],
-          AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
-          AllowedOrigins: ['http://localhost:3000', 'https://yourdomain.com'],
-          ExposeHeaders: ['ETag'],
-          MaxAgeSeconds: 3600,
-        },
-      ],
+  const { data: existingBuckets, error: listError } = await supabaseAdmin.storage.listBuckets()
+
+  if (listError) {
+    throw new Error(`Failed to list Supabase Storage buckets: ${listError.message}`)
+  }
+
+  const existingBucketNames = new Set(existingBuckets?.map(bucket => bucket.name) || [])
+
+  for (const bucket of bucketConfigs) {
+    if (existingBucketNames.has(bucket.name)) {
+      continue
     }
 
-    const command = new PutBucketCorsCommand({
-      Bucket: process.env.AWS_S3_BUCKET || 'uru-ruziga-storage',
-      CORSConfiguration: corsConfiguration,
+    const { error } = await supabaseAdmin.storage.createBucket(bucket.name, {
+      public: bucket.public,
+      fileSizeLimit: 10 * 1024 * 1024,
     })
 
-    await s3Client.send(command)
-    console.log('✅ Bucket CORS configured successfully')
-  } catch (error) {
-    console.error('❌ CORS setup failed:', error)
+    if (error) {
+      throw new Error(`Failed to create Supabase bucket "${bucket.name}": ${error.message}`)
+    }
   }
 }
 
-// Get bucket URL
-export function getBucketUrl() {
-  const bucketName = process.env.AWS_S3_BUCKET || 'uru-ruziga-storage'
-  const region = process.env.AWS_REGION || 'us-east-1'
-  
-  if (region === 'us-east-1') {
-    return `https://${bucketName}.s3.amazonaws.com`
-  } else {
-    return `https://${bucketName}.s3.${region}.amazonaws.com`
+export function getBucketUrl(bucketName = STORAGE_BUCKETS.appAssets) {
+  if (!supabaseUrl) {
+    throw new Error('Set SUPABASE_URL to build Supabase Storage bucket URLs.')
   }
+
+  return `${supabaseUrl.replace(/\/$/, '')}/storage/v1/object/public/${bucketName}`
 }
 
-// Run setup
 if (require.main === module) {
-  setupBucketCors().then(() => {
-    console.log('🪣 Bucket URL:', getBucketUrl())
-    console.log('🎉 Your bucket is ready!')
-  })
+  setupStorageBuckets()
+    .then(() => {
+      console.log('Supabase Storage buckets are ready.')
+      console.log('Default public bucket URL:', getBucketUrl())
+    })
+    .catch(error => {
+      console.error(error)
+      process.exit(1)
+    })
 }

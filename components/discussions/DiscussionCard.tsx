@@ -61,6 +61,7 @@ export function DiscussionCard({ discussion }: DiscussionCardProps) {
   const [comments, setComments] = useState<Comment[]>([])
   const [commentsCount, setCommentsCount] = useState(discussion._count?.comments || 0)
   const [loadingComments, setLoadingComments] = useState(false)
+  const mediaUrls = discussion.mediaUrls || []
 
   // Check if user liked this discussion
   useEffect(() => {
@@ -183,21 +184,21 @@ export function DiscussionCard({ discussion }: DiscussionCardProps) {
           </div>
 
           {/* Media Gallery */}
-          {discussion.mediaUrls && discussion.mediaUrls.length > 0 && (
+          {mediaUrls.length > 0 && (
             <div className={`mt-3 rounded-2xl overflow-hidden border border-gray-200 ${
-              discussion.mediaUrls.length === 1 ? '' : 
-              discussion.mediaUrls.length === 2 ? 'grid grid-cols-2 gap-0.5' :
-              discussion.mediaUrls.length === 3 ? 'grid grid-cols-2 gap-0.5' :
+              mediaUrls.length === 1 ? '' :
+              mediaUrls.length === 2 ? 'grid grid-cols-2 gap-0.5' :
+              mediaUrls.length === 3 ? 'grid grid-cols-2 gap-0.5' :
               'grid grid-cols-2 gap-0.5'
             }`}>
-              {discussion.mediaUrls.slice(0, 4).map((url, index) => {
+              {mediaUrls.slice(0, 4).map((url, index) => {
                 const isVideo = url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')
                 
                 return (
                   <div 
                     key={index} 
                     className={`relative ${
-                      discussion.mediaUrls.length === 3 && index === 0 ? 'col-span-2' : ''
+                      mediaUrls.length === 3 && index === 0 ? 'col-span-2' : ''
                     }`}
                   >
                     {isVideo ? (

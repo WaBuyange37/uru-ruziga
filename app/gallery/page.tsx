@@ -87,7 +87,7 @@ export default function GalleryPage() {
 
   const handleAddToCart = (product: any) => {
     addToCart({
-      id: product.id,
+      productId: product.id,
       title: product.name,
       price: product.price,
       quantity: 1

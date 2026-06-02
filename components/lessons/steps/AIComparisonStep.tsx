@@ -52,8 +52,8 @@ export function AIComparisonStep({
 
   // Get user drawing from previous step progress
   useEffect(() => {
-    if (progress?.attempts) {
-      const practiceAttempt = Array.from(progress.attempts.values())
+    if (progress?.userAttempts?.length) {
+      const practiceAttempt = progress.userAttempts
         .find(attempt => attempt.stepId.includes('PRACTICE_CANVAS'));
       
       if (practiceAttempt?.drawingData) {

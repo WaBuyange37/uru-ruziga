@@ -12,7 +12,7 @@ export default function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await register(fullName, email, password)
+      await register(fullName, email.split('@')[0], email, password)
       // Handle successful registration (e.g., redirect to login page)
     } catch (error) {
       console.error("Registration failed:", error)

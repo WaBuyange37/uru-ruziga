@@ -185,8 +185,8 @@ export class UmweroCanvasValidator {
       const refEdges = this.detectEdges(refGray)
       
       // Normalize
-      const userNorm = tf.div(userEdges, 255)
-      const refNorm = tf.div(refEdges, 255)
+      const userNorm = tf.div(userEdges, 255) as tf.Tensor2D
+      const refNorm = tf.div(refEdges, 255) as tf.Tensor2D
       
       // Calculate edge similarity using correlation
       const correlation = this.calculateCorrelation(userNorm, refNorm)
@@ -266,7 +266,7 @@ export class UmweroCanvasValidator {
     return tf.tidy(() => {
       const gray = this.toGrayscale(tensor)
       // Pixels darker than threshold become 1, others become 0
-      const binary = tf.cast(tf.less(gray, threshold), 'float32')
+      const binary = tf.cast(tf.less(gray, threshold), 'float32') as tf.Tensor2D
       return binary
     })
   }
@@ -295,9 +295,9 @@ export class UmweroCanvasValidator {
       const sobelY = tf.tensor2d([[-1, -2, -1], [0, 0, 0], [1, 2, 1]])
       
       // Reshape for conv2d
-      const input = grayTensor.expandDims(0).expandDims(-1)
-      const kernelX = sobelX.expandDims(2).expandDims(3)
-      const kernelY = sobelY.expandDims(2).expandDims(3)
+      const input = grayTensor.expandDims(0).expandDims(-1) as tf.Tensor4D
+      const kernelX = sobelX.expandDims(2).expandDims(3) as tf.Tensor4D
+      const kernelY = sobelY.expandDims(2).expandDims(3) as tf.Tensor4D
       
       // Apply convolution
       const gradX = tf.conv2d(input, kernelX, 1, 'same')

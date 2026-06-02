@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
           description: ua.achievement.description,
           icon: ua.achievement.icon || '🏆',
           points: ua.achievement.points,
-          unlockedAt: ua.unlockedAt.toISOString()
+          unlockedAt: ua.unlockedAt?.toISOString() || null
         })),
         new: [], // Could track new achievements in session
         totalPoints

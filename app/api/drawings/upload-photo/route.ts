@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
 import { verify } from 'jsonwebtoken'
+import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,11 +88,13 @@ export async function POST(request: NextRequest) {
         userId,
         stepId: stepId || 'photo-upload',
         characterId: characterId || null,
-        attemptType: 'PHOTO_UPLOAD',
+        attemptType: 'DRAWING',
         drawingData: imageUrl,
-        answer: relatedAttemptId ? { relatedAttemptId } : null,
+        answer: relatedAttemptId ? { relatedAttemptId } : Prisma.JsonNull,
         aiScore: null, // Can be evaluated later
-        aiMetrics: null,
+        aiMetrics: Prisma.JsonNull,
+        evaluationType: 'PHOTO_UPLOAD',
+        uploadedImageUrl: imageUrl,
         feedback: 'Thank you for contributing real handwriting data!',
         isCorrect: true, // Contribution is always valuable
         timeSpent: 0

@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 import { hasPermission } from '@/lib/permissions'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
-import { put } from '@vercel/blob'
+import { STORAGE_BUCKETS, uploadFile } from '@/lib/storage'
 
 const prisma = new PrismaClient()
 
@@ -90,21 +90,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Upload to Vercel Blob Storage
-    // Note: You can also use Supabase Storage or AWS S3
-    const blob = await put(file.name, file, {
-      access: 'public',
-      addRandomSuffix: true,
-    })
+    const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
+    const storageKey = `${STORAGE_BUCKETS.lessonMaterials}/${fileType}/${Date.now()}-${safeFileName}`
+    const upload = await uploadFile(file, storageKey, file.type)
 
     // If lessonId provided, update the lesson
     if (lessonId) {
       const updateData: any = {}
       
       if (fileType === 'video') {
-        updateData.videoUrl = blob.url
+        updateData.videoUrl = upload.publicUrl
       } else if (fileType === 'image') {
-        updateData.thumbnailUrl = blob.url
+        updateData.thumbnailUrl = upload.publicUrl
       }
       
       if (Object.keys(updateData).length > 0) {
@@ -117,7 +114,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      url: blob.url,
+      url: upload.publicUrl,
+      bucket: upload.bucket,
+      path: upload.path,
       filename: file.name,
       size: file.size,
       type: file.type,

@@ -68,7 +68,7 @@ export default function CreatePostCard({ onPostCreated }: CreatePostCardProps) {
       const formData = new FormData()
       formData.append('file', file)
 
-      // Upload to your image storage (Cloudinary, S3, etc.)
+      // Upload to Supabase Storage when the feed upload endpoint is enabled.
       // For now, we'll use a base64 data URL as fallback
       return new Promise((resolve) => {
         const reader = new FileReader()

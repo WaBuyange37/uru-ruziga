@@ -593,6 +593,7 @@ export function useCanvasDrawing(options: UseCanvasDrawingOptions = {}) {
     canvasSize,
     clearCanvas,
     undoStroke,
+    undoLastStroke: undoStroke,
     getCanvasDataURL,
     performanceMetrics,
     exportDrawingData,

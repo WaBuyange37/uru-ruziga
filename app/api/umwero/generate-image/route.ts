@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, generateImageSchema } from '@/lib/validators'
-import { put } from '@vercel/blob'
+import { STORAGE_BUCKETS, uploadFile } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -71,18 +71,15 @@ export async function POST(request: NextRequest) {
     // For now, we'll upload the SVG and let the browser render it
     // In production, you'd use sharp or canvas to convert to PNG
     
+    const fileName = `umwero-${Date.now()}.svg`
     const svgBlob = new Blob([svg], { type: 'image/svg+xml' })
-    const svgFile = new File([svgBlob], `umwero-${Date.now()}.svg`, { type: 'image/svg+xml' })
-
-    // Upload to Vercel Blob
-    const blob = await put(svgFile.name, svgFile, {
-      access: 'public',
-      addRandomSuffix: true,
-    })
+    const upload = await uploadFile(svgBlob, `${STORAGE_BUCKETS.generatedImages}/${fileName}`, 'image/svg+xml')
 
     return NextResponse.json({
       success: true,
-      imageUrl: blob.url,
+      imageUrl: upload.publicUrl,
+      bucket: upload.bucket,
+      path: upload.path,
       width,
       height,
       format: 'svg',

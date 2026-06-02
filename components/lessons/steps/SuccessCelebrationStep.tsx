@@ -31,7 +31,8 @@ export function SuccessCelebrationStep({
   translation,
   lessonTranslation,
   onComplete,
-  onNext
+  onNext,
+  progress
 }: ExtendedStepProps) {
   const [showConfetti, setShowConfetti] = useState(true);
   const [nextLesson, setNextLesson] = useState<any>(null);
