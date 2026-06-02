@@ -10,6 +10,101 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+type SeedMode = 'local-clean' | 'remote-safe-upsert';
+
+type SeedSafetyContext = {
+  databaseUrl: string;
+  databaseHost: string;
+  nodeEnv: string;
+  seedCleanRequested: boolean;
+  isLocalDatabase: boolean;
+  isSupabaseDatabase: boolean;
+  cleanAllowed: boolean;
+  seedMode: SeedMode;
+  preflightOnly: boolean;
+};
+
+function getDatabaseHost(databaseUrl: string): string {
+  if (!databaseUrl) return 'unknown';
+
+  try {
+    return new URL(databaseUrl).hostname || 'unknown';
+  } catch {
+    const hostMatch = databaseUrl.match(/@([^/:?]+)(?::\d+)?(?:\/|\?|$)/);
+    return hostMatch?.[1] || 'unknown';
+  }
+}
+
+function isLocalDatabaseHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase();
+
+  return [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    '0.0.0.0',
+    'postgres',
+    'postgresql',
+    'db',
+    'database',
+    'host.docker.internal'
+  ].includes(normalizedHost);
+}
+
+function isSupabaseDatabaseHost(host: string, databaseUrl: string): boolean {
+  const normalizedHost = host.toLowerCase();
+  const normalizedUrl = databaseUrl.toLowerCase();
+
+  return (
+    normalizedHost.includes('supabase.co') ||
+    normalizedHost.includes('supabase.com') ||
+    normalizedHost.includes('supabase') ||
+    normalizedUrl.includes('supabase.co') ||
+    normalizedUrl.includes('supabase.com')
+  );
+}
+
+function getSeedSafetyContext(): SeedSafetyContext {
+  const databaseUrl = process.env.DATABASE_URL || '';
+  const databaseHost = getDatabaseHost(databaseUrl);
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const seedCleanRequested = process.env.SEED_CLEAN === 'true';
+  const isLocalDatabase = isLocalDatabaseHost(databaseHost);
+  const isSupabaseDatabase = isSupabaseDatabaseHost(databaseHost, databaseUrl);
+  const cleanAllowed = seedCleanRequested && nodeEnv === 'development' && isLocalDatabase && !isSupabaseDatabase;
+  const preflightOnly = process.argv.includes('--preflight') || process.argv.includes('--dry-run');
+
+  return {
+    databaseUrl,
+    databaseHost,
+    nodeEnv,
+    seedCleanRequested,
+    isLocalDatabase,
+    isSupabaseDatabase,
+    cleanAllowed,
+    seedMode: cleanAllowed ? 'local-clean' : 'remote-safe-upsert',
+    preflightOnly
+  };
+}
+
+function printSeedSafetyContext(context: SeedSafetyContext) {
+  console.log('Environment:', context.nodeEnv);
+  console.log('Database host:', context.databaseHost);
+  console.log('Supabase/remote detected:', context.isSupabaseDatabase || !context.isLocalDatabase);
+  console.log('SEED_CLEAN requested:', context.seedCleanRequested);
+  console.log('Clean allowed:', context.cleanAllowed);
+  console.log('Seed mode:', context.seedMode);
+
+  if (context.seedCleanRequested && !context.cleanAllowed) {
+    console.warn('⚠️  SEED_CLEAN was requested but blocked by the remote database guard.');
+    console.warn('   Destructive cleaning is allowed only for NODE_ENV=development and a local non-Supabase database host.');
+  }
+
+  if (context.seedMode === 'remote-safe-upsert') {
+    console.warn('🛡️  Remote-safe mode: no TRUNCATE, deleteMany, or identity reset will run.');
+  }
+}
+
 // Helper function to get correct Umwero display character from UMWERO_MAP
 function getUmweroDisplayChar(latinChar: string): string {
   const UMWERO_MAP: { [key: string]: string } = {
@@ -136,17 +231,21 @@ function getCharacterCodeSuffix(characterId: string): string {
 }
 
 async function main() {
+  const safety = getSeedSafetyContext();
+
   console.log('🌱 UMWERO — Orthographically Correct Seed\n');
-  console.log('Environment:', process.env.NODE_ENV || 'development');
-  console.log('Database:', process.env.DATABASE_URL?.split('@')[1]?.split('/')[1] || 'unknown');
+  printSeedSafetyContext(safety);
   console.log('');
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CLEAN DATABASE (ONLY IN DEVELOPMENT)
-  // ═══════════════════════════════════════════════════════════════════════════
-  const shouldClean = process.env.SEED_CLEAN === 'true' || process.env.NODE_ENV === 'development';
+  if (safety.preflightOnly) {
+    console.log('✅ Seed preflight complete. No database writes were executed.');
+    return;
+  }
 
-  if (shouldClean) {
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLEAN DATABASE (ONLY WHEN EXPLICITLY REQUESTED AGAINST LOCAL DEVELOPMENT DB)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (safety.cleanAllowed) {
     console.log('🧹 Cleaning database...');
     const tableNames = [
       'user_achievements', 'user_attempts', 'lesson_progress', 'step_translations',
@@ -178,7 +277,7 @@ async function main() {
       throw e;
     }
   } else {
-    console.log('ℹ️  Skipping clean (production mode or SEED_CLEAN=false)\n');
+    console.log('ℹ️  Skipping clean. Running idempotent upserts only.\n');
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
