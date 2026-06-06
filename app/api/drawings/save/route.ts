@@ -9,6 +9,13 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[OCR diagnostic] endpoint hit', {
+      endpoint: '/api/drawings/save',
+      bucketUploadAttempted: false,
+      ocrServiceCalled: false,
+      referenceGenerationTriggered: false,
+    })
+
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     
     if (!token) {
@@ -41,6 +48,13 @@ export async function POST(request: NextRequest) {
         isCorrect: (aiScore || 100) >= 70,
         timeSpent: timeSpent || 0,
       }
+    })
+
+    console.info('[OCR diagnostic] database record created', {
+      endpoint: '/api/drawings/save',
+      model: 'UserDrawing',
+      recordId: drawing.id,
+      drawingDataStorage: drawing.drawingData.startsWith('data:image/') ? 'raw-base64-data-url' : 'url',
     })
 
     // Update or create lesson progress

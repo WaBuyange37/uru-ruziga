@@ -8,7 +8,7 @@ import pickle
 import logging
 import asyncio
 from typing import Dict, List, Optional, Any, Union
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import numpy as np
 from PIL import Image
 import io
@@ -22,6 +22,14 @@ except ImportError:
     logging.warning("Redis not available, falling back to memory cache")
 
 from .font_renderer import ReferenceData, CharacterMetrics
+
+
+@dataclass
+class CacheConfig:
+    redis_url: str = "redis://localhost:6379"
+    default_ttl: int = 3600
+    reference_ttl: int = 86400
+    feature_ttl: int = 43200
 
 
 class CacheService:
@@ -193,20 +201,28 @@ class CacheService:
         """Warm cache with commonly used characters"""
         logging.info(f"Warming cache for {len(characters)} characters...")
         
+        results: Dict[str, bool] = {}
         tasks = []
         for char in characters:
             # Check if already cached
             cached_ref = await self.get_reference_data(char)
-            if not cached_ref:
+            if cached_ref:
+                results[char] = True
+            else:
                 # Need to generate and cache
                 task = self._warm_character(char, font_renderer)
                 tasks.append(task)
         
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            task_results = await asyncio.gather(*tasks, return_exceptions=True)
+            pending_characters = [char for char in characters if char not in results]
+            for char, result in zip(pending_characters, task_results):
+                results[char] = result is True
             logging.info(f"Cache warming completed for {len(tasks)} characters")
         else:
             logging.info("All characters already cached")
+
+        return results
     
     async def _warm_character(self, character: str, font_renderer):
         """Warm cache for a single character"""
@@ -236,9 +252,11 @@ class CacheService:
                 'quality_score': float(quality)
             }
             await self.set_feature_vector(character, features)
+            return True
             
         except Exception as e:
             logging.error(f"Failed to warm cache for character '{character}': {e}")
+            return False
     
     async def get_evaluation_result(self, character: str, image_hash: str) -> Optional[Dict[str, Any]]:
         """Get cached evaluation result"""
@@ -331,6 +349,14 @@ class CacheService:
                 logging.error(f"Failed to get Redis stats: {e}")
         
         return stats
+
+    async def health_check(self) -> Dict[str, Any]:
+        """Return cache health in the shape expected by the API layer."""
+        stats = await self.get_cache_stats()
+        return {
+            **stats,
+            'healthy': (not self.use_redis) or stats.get('redis_connected', False),
+        }
     
     async def clear_cache(self):
         """Clear all cached data"""
@@ -343,6 +369,11 @@ class CacheService:
             
         except Exception as e:
             logging.error(f"Failed to clear cache: {e}")
+
+    async def clear_all_cache(self) -> bool:
+        """Compatibility wrapper for API cache management."""
+        await self.clear_cache()
+        return True
     
     async def close(self):
         """Close Redis connection"""
@@ -350,19 +381,17 @@ class CacheService:
             await self.redis_client.close()
 
 
+async def get_cache_service(config: CacheConfig) -> CacheService:
+    """Factory used by the FastAPI startup path."""
+    return CacheService(redis_url=config.redis_url, ttl=config.default_ttl)
+
+
 # Cache warming utility
 class CacheWarmer:
     """Utility for warming cache with common Umwero characters"""
     
     # Common Umwero characters for cache warming
-    COMMON_CHARACTERS = [
-        # Vowels
-        'a', 'e', 'i', 'o', 'u',
-        # Common consonants
-        'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'w', 'y', 'z',
-        # Uppercase variants
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'R', 'S', 'T', 'U', 'V', 'W', 'Y', 'Z'
-    ]
+    COMMON_CHARACTERS = ['"', "|", "}", "{", ":"] + list("BCDFGHJKLMNPRSTVWYZ")
     
     @staticmethod
     async def warm_common_characters(cache_service: CacheService, font_renderer):

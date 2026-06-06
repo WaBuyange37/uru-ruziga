@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { STORAGE_BUCKETS, uploadFile } from '@/lib/storage'
+import { verifyToken } from '@/lib/jwt'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -8,7 +10,6 @@ const PYTHON_SERVICE_URL = process.env.PYTHON_OCR_SERVICE_URL || 'http://localho
 
 interface EvaluationRequest {
   characterId: string
-  userId: string // Required in request body
   strokes: Array<{
     points: Array<{
       x: number
@@ -32,32 +33,136 @@ interface EvaluationRequest {
   }
 }
 
+function getBearerToken(request: NextRequest): string | null {
+  const authorization = request.headers.get('authorization')
+  if (!authorization?.startsWith('Bearer ')) return null
+  return authorization.slice('Bearer '.length)
+}
+
+function dataUrlToBuffer(dataUrl: string): { buffer: Buffer; contentType: string } {
+  const match = dataUrl.match(/^data:(.+);base64,(.+)$/)
+  if (!match) {
+    throw new Error('imageData must be a base64 data URL')
+  }
+
+  return {
+    buffer: Buffer.from(match[2], 'base64'),
+    contentType: match[1],
+  }
+}
+
+function sanitizePathSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'unknown'
+}
+
+async function resolveCharacterReference(characterId: string) {
+  const existingReference = await prisma.characterReference.findUnique({
+    where: { id: characterId },
+  })
+  if (existingReference) return existingReference
+
+  const character = await prisma.character.findUnique({
+    where: { id: characterId },
+    select: {
+      id: true,
+      umweroGlyph: true,
+      latinEquivalent: true,
+      type: true,
+      difficulty: true,
+      glyphImageUrl: true,
+      isActive: true,
+    },
+  })
+
+  if (!character?.isActive) return null
+
+  const referenceUrl = character.glyphImageUrl ?? `characters/references/${sanitizePathSegment(character.id)}.png`
+  return prisma.characterReference.upsert({
+    where: { umweroChar: character.umweroGlyph },
+    update: {
+      latinEquivalent: character.latinEquivalent,
+      characterType: character.type.toLowerCase(),
+      imageFontPath: referenceUrl,
+      fontImageUrl: character.glyphImageUrl,
+      difficulty: character.difficulty,
+      metadata: {
+        source: character.glyphImageUrl ? 'character.glyphImageUrl' : 'deterministic-reference-path',
+        characterId: character.id,
+      },
+    },
+    create: {
+      umweroChar: character.umweroGlyph,
+      latinEquivalent: character.latinEquivalent,
+      characterType: character.type.toLowerCase(),
+      imageFontPath: referenceUrl,
+      fontImageUrl: character.glyphImageUrl,
+      difficulty: character.difficulty,
+      metadata: {
+        source: character.glyphImageUrl ? 'character.glyphImageUrl' : 'deterministic-reference-path',
+        characterId: character.id,
+      },
+    },
+  })
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now()
   
   try {
+    const token = getBearerToken(request)
+    if (!token) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Authentication required' } }, { status: 401 })
+    }
+
+    const decoded = await verifyToken(token)
+    if (!decoded?.userId) {
+      return NextResponse.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid or expired token' } }, { status: 401 })
+    }
+
     const body: EvaluationRequest = await request.json()
-    const { characterId, userId, strokes, imageData, lessonId, metadata } = body
+    const { characterId, strokes, imageData, lessonId, metadata } = body
+    const userId = decoded.userId
 
     // Validate required fields
-    if (!characterId || !userId || !strokes || !imageData) {
+    if (!characterId || !strokes || !imageData) {
       return NextResponse.json(
-        { error: { code: 'INVALID_REQUEST', message: 'Missing required fields: characterId, userId, strokes, imageData' } },
+        { error: { code: 'INVALID_REQUEST', message: 'Missing required fields: characterId, strokes, imageData' } },
         { status: 400 }
       )
     }
+
+    const reference = await resolveCharacterReference(characterId)
+    if (!reference) {
+      return NextResponse.json(
+        { error: { code: 'CHARACTER_NOT_FOUND', message: 'Character not found' } },
+        { status: 404 }
+      )
+    }
+
+    const { buffer, contentType } = dataUrlToBuffer(imageData)
+    const uploadKey = `${STORAGE_BUCKETS.userDrawings}/${userId}/${characterId}/legacy-ocr/${Date.now()}-${crypto.randomUUID()}.png`
+    const upload = await uploadFile(buffer, uploadKey, contentType, { upsert: false })
+    const imageUrl = upload.publicUrl
+
     // 1. Create HandwritingAttempt immediately
     const attempt = await prisma.handwritingAttempt.create({
       data: {
         userId,
-        characterId,
+        characterId: reference.id,
         lessonId,
         strokes: strokes as any,
         strokeCount: strokes.length,
         totalPoints: strokes.reduce((sum, stroke) => sum + stroke.points.length, 0),
         drawingDuration: metadata.totalDuration,
-        imageUrl: imageData,
-        metadata: metadata as any,
+        imageUrl,
+        metadata: {
+          ...metadata,
+          storage: {
+            bucket: upload.bucket,
+            path: upload.path,
+          },
+          requestedCharacterId: characterId,
+        } as any,
       },
     })
 
@@ -69,6 +174,8 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           character: characterId,
           image: imageData,
+          image_url: imageUrl,
+          reference_image_url: reference.fontImageUrl ?? reference.imageFontPath,
           session_id: attempt.id,
           user_id: userId,
         }),
@@ -104,10 +211,10 @@ export async function POST(request: NextRequest) {
           data: {
             attemptId: attempt.id,
             userId,
-            characterId,
-            characterType: 'vowel', // TODO: Get from character reference
+            characterId: reference.id,
+            characterType: reference.characterType,
             strokesData: strokes as any,
-            imageUrl: imageData,
+            imageUrl,
             score: evaluation.score,
             qualityLabel: updatedAttempt.qualityLabel,
             timeTaken: metadata.totalDuration,

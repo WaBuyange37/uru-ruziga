@@ -1,35 +1,52 @@
 """
-Hybrid comparison algorithm combining SSIM, contour matching, and skeletonization
-for accurate handwriting evaluation with robust error handling.
+Hybrid comparison algorithm combining SSIM, contour matching, skeletonization,
+stroke direction, and shape alignment for accurate handwriting evaluation.
+
+Weights (production):
+  SSIM            30 %
+  Contour         25 %
+  Skeleton        20 %
+  Stroke Direction 15 %
+  Shape Alignment  10 %
 """
 
 import logging
 from typing import Tuple, List, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np
 import cv2
 from skimage.metrics import structural_similarity as ssim
 from scipy.spatial.distance import directed_hausdorff
 
 from .image_processor import ProcessedImage, FeatureVector
+from .stroke_analyzer import compute_stroke_direction_score, compute_shape_alignment_score
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class ComparisonWeights:
-    """Weights for different comparison metrics"""
-    ssim_weight: float = 0.4
-    contour_weight: float = 0.3
-    skeleton_weight: float = 0.3
-    
+    """Weights for the five comparison metrics (must sum to 1.0)."""
+    ssim_weight: float = 0.30
+    contour_weight: float = 0.25
+    skeleton_weight: float = 0.20
+    stroke_direction_weight: float = 0.15
+    shape_alignment_weight: float = 0.10
+
     def __post_init__(self):
-        # Normalize weights to sum to 1.0
-        total = self.ssim_weight + self.contour_weight + self.skeleton_weight
-        if total > 0:
+        total = (
+            self.ssim_weight
+            + self.contour_weight
+            + self.skeleton_weight
+            + self.stroke_direction_weight
+            + self.shape_alignment_weight
+        )
+        if total > 0 and abs(total - 1.0) > 1e-6:
             self.ssim_weight /= total
             self.contour_weight /= total
             self.skeleton_weight /= total
+            self.stroke_direction_weight /= total
+            self.shape_alignment_weight /= total
 
 
 @dataclass
@@ -46,154 +63,276 @@ class SkeletonAnalysis:
 
 @dataclass
 class ComparisonResult:
-    """Complete comparison result with all metrics"""
+    """Complete comparison result with all five metrics."""
     ssim_score: float
     contour_score: float
     skeleton_score: float
+    stroke_direction_score: float
+    shape_alignment_score: float
     final_score: float
     confidence: float
     analysis: SkeletonAnalysis
-    processing_metadata: Dict[str, any]
-    
+    processing_metadata: Dict[str, object]
+
     # Individual metric success flags
     ssim_success: bool = True
     contour_success: bool = True
     skeleton_success: bool = True
+    stroke_direction_success: bool = True
+    shape_alignment_success: bool = True
 
 
 class HybridComparisonAlgorithm:
     """
-    Sophisticated multi-metric comparison system for handwriting evaluation.
-    Combines SSIM, contour matching, and skeleton analysis with robust error handling.
+    Five-metric comparison system for production handwriting evaluation.
+
+    Metrics and weights:
+      SSIM             30 % — pixel-level structural similarity
+      Contour          25 % — shape outline matching
+      Skeleton         20 % — topological stroke structure
+      Stroke Direction 15 % — dominant angle histogram comparison
+      Shape Alignment  10 % — spatial mass distribution
     """
-    
+
     def __init__(self, weights: ComparisonWeights = None):
         self.weights = weights or ComparisonWeights()
-        self.min_contour_area = 10  # Minimum area for valid contour
-        self.min_skeleton_pixels = 5  # Minimum pixels for valid skeleton
-        
-        logger.info(f"HybridComparisonAlgorithm initialized with weights: "
-                   f"SSIM={self.weights.ssim_weight:.2f}, "
-                   f"Contour={self.weights.contour_weight:.2f}, "
-                   f"Skeleton={self.weights.skeleton_weight:.2f}")
-    
-    def compare_images(self, reference: ProcessedImage, user_drawing: ProcessedImage) -> ComparisonResult:
+        self.min_contour_area = 10
+        self.min_skeleton_pixels = 5
+
+        logger.info(
+            "HybridComparisonAlgorithm initialised — "
+            f"SSIM={self.weights.ssim_weight:.2f}, "
+            f"Contour={self.weights.contour_weight:.2f}, "
+            f"Skeleton={self.weights.skeleton_weight:.2f}, "
+            f"StrokeDir={self.weights.stroke_direction_weight:.2f}, "
+            f"ShapeAlign={self.weights.shape_alignment_weight:.2f}"
+        )
+
+    # ── Public entry point ────────────────────────────────────────────────────
+
+    def compare_images(
+        self, reference: ProcessedImage, user_drawing: ProcessedImage
+    ) -> ComparisonResult:
         """
-        Compare reference and user images using hybrid algorithm.
-        
+        Compare reference and user images using the five-metric hybrid algorithm.
+
         Args:
-            reference: Processed reference image from font
-            user_drawing: Processed user drawing
-            
+            reference:    Processed reference image from font renderer.
+            user_drawing: Processed user drawing.
+
         Returns:
-            ComparisonResult with scores and detailed analysis
+            ComparisonResult with all five scores, final score, and analysis.
         """
         try:
-            # Initialize result tracking
-            ssim_score = 0.0
-            contour_score = 0.0
-            skeleton_score = 0.0
-            
-            ssim_success = False
-            contour_success = False
-            skeleton_success = False
-            
-            processing_metadata = {
-                'reference_shape': reference.normalized.shape,
-                'user_shape': user_drawing.normalized.shape,
-                'algorithm_version': '1.0.0'
+            ssim_score = contour_score = skeleton_score = 0.0
+            stroke_dir_score = shape_align_score = 0.0
+            ssim_ok = contour_ok = skeleton_ok = stroke_dir_ok = shape_align_ok = False
+            skeleton_analysis = self._create_empty_skeleton_analysis()
+
+            meta: Dict[str, object] = {
+                "reference_shape": reference.normalized.shape,
+                "user_shape": user_drawing.normalized.shape,
+                "algorithm_version": "2.0.0",
             }
-            
-            # 1. SSIM Analysis (40% weight)
+
+            # 1. SSIM (30 %)
             try:
                 ssim_score = self.compute_ssim(reference.normalized, user_drawing.normalized)
-                ssim_success = True
-                logger.debug(f"SSIM computation successful: {ssim_score:.3f}")
-            except Exception as e:
-                logger.warning(f"SSIM computation failed: {e}")
-                ssim_score = 0.0
-                processing_metadata['ssim_error'] = str(e)
-            
-            # 2. Contour Matching (30% weight)
+                ssim_ok = True
+                logger.debug(f"SSIM: {ssim_score:.3f}")
+            except Exception as exc:
+                logger.warning(f"SSIM failed: {exc}")
+                meta["ssim_error"] = str(exc)
+
+            # 2. Contour (25 %)
             try:
-                contour_score = self.compute_contour_similarity(reference.normalized, user_drawing.normalized)
-                contour_success = True
-                logger.debug(f"Contour computation successful: {contour_score:.3f}")
-            except Exception as e:
-                logger.warning(f"Contour computation failed: {e}")
-                contour_score = 0.0
-                processing_metadata['contour_error'] = str(e)
-            
-            # 3. Skeleton Analysis (30% weight)
-            skeleton_analysis = None
+                contour_score = self.compute_contour_similarity(
+                    reference.normalized, user_drawing.normalized
+                )
+                contour_ok = True
+                logger.debug(f"Contour: {contour_score:.3f}")
+            except Exception as exc:
+                logger.warning(f"Contour failed: {exc}")
+                meta["contour_error"] = str(exc)
+
+            # 3. Skeleton (20 %)
             try:
                 skeleton_score, skeleton_analysis = self.compute_skeleton_similarity(
                     reference.skeleton, user_drawing.skeleton
                 )
-                skeleton_success = True
-                logger.debug(f"Skeleton computation successful: {skeleton_score:.3f}")
-            except Exception as e:
-                logger.warning(f"Skeleton computation failed: {e}")
-                skeleton_score = 0.0
-                skeleton_analysis = self._create_empty_skeleton_analysis()
-                processing_metadata['skeleton_error'] = str(e)
-            
-            # 4. Adjust weights based on successful computations
-            adjusted_weights = self._adjust_weights_for_failures(
-                ssim_success, contour_success, skeleton_success
+                skeleton_ok = True
+                logger.debug(f"Skeleton: {skeleton_score:.3f}")
+            except Exception as exc:
+                logger.warning(f"Skeleton failed: {exc}")
+                meta["skeleton_error"] = str(exc)
+
+            # 4. Stroke Direction (15 %)
+            try:
+                stroke_dir_score = compute_stroke_direction_score(
+                    reference.normalized, user_drawing.normalized
+                )
+                stroke_dir_ok = True
+                logger.debug(f"StrokeDir: {stroke_dir_score:.3f}")
+            except Exception as exc:
+                logger.warning(f"StrokeDir failed: {exc}")
+                meta["stroke_direction_error"] = str(exc)
+
+            # 5. Shape Alignment (10 %)
+            try:
+                shape_align_score = compute_shape_alignment_score(
+                    reference.normalized, user_drawing.normalized
+                )
+                shape_align_ok = True
+                logger.debug(f"ShapeAlign: {shape_align_score:.3f}")
+            except Exception as exc:
+                logger.warning(f"ShapeAlign failed: {exc}")
+                meta["shape_alignment_error"] = str(exc)
+
+            # Adjust weights for any failed metrics
+            aw = self._adjust_weights_for_failures(
+                ssim_ok, contour_ok, skeleton_ok, stroke_dir_ok, shape_align_ok
             )
-            
-            # 5. Calculate final score using exact formula
-            final_score = (
-                adjusted_weights.ssim_weight * ssim_score +
-                adjusted_weights.contour_weight * contour_score +
-                adjusted_weights.skeleton_weight * skeleton_score
+
+            # Weighted sum → 0-100
+            raw = (
+                aw.ssim_weight * ssim_score
+                + aw.contour_weight * contour_score
+                + aw.skeleton_weight * skeleton_score
+                + aw.stroke_direction_weight * stroke_dir_score
+                + aw.shape_alignment_weight * shape_align_score
             )
-            
-            # 6. Normalize to 0-100 range and clamp
-            final_score = np.clip(final_score * 100, 0.0, 100.0)
-            
-            # 7. Calculate confidence based on successful metrics
+            final_score = float(np.clip(raw * 100.0, 0.0, 100.0))
+
+            # Strongly different topology must not pass merely because the
+            # centered canvases share blank background or coarse proportions.
+            if contour_score < 0.30 and skeleton_score < 0.45:
+                final_score = min(final_score, 45.0)
+                meta["structural_cap"] = 45.0
+            elif contour_score < 0.45 and skeleton_score < 0.55:
+                final_score = min(final_score, 60.0)
+                meta["structural_cap"] = 60.0
+
             confidence = self._calculate_confidence(
-                ssim_success, contour_success, skeleton_success,
-                ssim_score, contour_score, skeleton_score
+                ssim_ok, contour_ok, skeleton_ok, stroke_dir_ok, shape_align_ok,
+                ssim_score, contour_score, skeleton_score,
+                stroke_dir_score, shape_align_score,
             )
-            
-            processing_metadata.update({
-                'adjusted_weights': adjusted_weights.__dict__,
-                'successful_metrics': sum([ssim_success, contour_success, skeleton_success]),
-                'total_metrics': 3
+
+            meta.update({
+                "adjusted_weights": aw.__dict__,
+                "successful_metrics": sum(
+                    [ssim_ok, contour_ok, skeleton_ok, stroke_dir_ok, shape_align_ok]
+                ),
+                "total_metrics": 5,
             })
-            
+
             return ComparisonResult(
                 ssim_score=ssim_score,
                 contour_score=contour_score,
                 skeleton_score=skeleton_score,
+                stroke_direction_score=stroke_dir_score,
+                shape_alignment_score=shape_align_score,
                 final_score=final_score,
                 confidence=confidence,
                 analysis=skeleton_analysis,
-                processing_metadata=processing_metadata,
-                ssim_success=ssim_success,
-                contour_success=contour_success,
-                skeleton_success=skeleton_success
+                processing_metadata=meta,
+                ssim_success=ssim_ok,
+                contour_success=contour_ok,
+                skeleton_success=skeleton_ok,
+                stroke_direction_success=stroke_dir_ok,
+                shape_alignment_success=shape_align_ok,
             )
-            
-        except Exception as e:
-            logger.error(f"Comparison algorithm failed: {e}")
-            # Return minimal result in case of complete failure
+
+        except Exception as exc:
+            logger.error(f"Comparison algorithm failed: {exc}")
             return ComparisonResult(
                 ssim_score=0.0,
                 contour_score=0.0,
                 skeleton_score=0.0,
+                stroke_direction_score=0.0,
+                shape_alignment_score=0.0,
                 final_score=0.0,
                 confidence=0.0,
                 analysis=self._create_empty_skeleton_analysis(),
-                processing_metadata={'error': str(e)},
+                processing_metadata={"error": str(exc)},
                 ssim_success=False,
                 contour_success=False,
-                skeleton_success=False
+                skeleton_success=False,
+                stroke_direction_success=False,
+                shape_alignment_success=False,
             )
-    
+
+    def apply_stroke_evidence(
+        self,
+        result: ComparisonResult,
+        user_strokes: Optional[List[dict]] = None,
+        expected_stroke_count: Optional[int] = None,
+    ) -> ComparisonResult:
+        """Apply canvas-stroke evidence without replacing image-shape scoring."""
+        if not user_strokes:
+            result.processing_metadata["stroke_evidence"] = "unavailable"
+            return result
+
+        point_sets = [
+            stroke.get("points", [])
+            for stroke in user_strokes
+            if isinstance(stroke, dict) and stroke.get("points")
+        ]
+        points = [
+            point
+            for stroke_points in point_sets
+            for point in stroke_points
+            if isinstance(point, dict) and isinstance(point.get("x"), (int, float))
+            and isinstance(point.get("y"), (int, float))
+        ]
+        actual_count = len(point_sets)
+        if len(points) < 2:
+            result.final_score = min(result.final_score, 35.0)
+            result.processing_metadata["stroke_evidence"] = {
+                "actual_strokes": actual_count,
+                "point_count": len(points),
+                "cap": 35.0,
+            }
+            return result
+
+        xs = np.array([point["x"] for point in points], dtype=np.float64)
+        ys = np.array([point["y"] for point in points], dtype=np.float64)
+        width = max(float(xs.max() - xs.min()), 1.0)
+        height = max(float(ys.max() - ys.min()), 1.0)
+        normalized_points = np.column_stack(((xs - xs.min()) / width, (ys - ys.min()) / height))
+
+        direction_bins = np.zeros(12, dtype=np.float64)
+        for stroke_points in point_sets:
+            for start, end in zip(stroke_points, stroke_points[1:]):
+                dx = float(end["x"] - start["x"])
+                dy = float(end["y"] - start["y"])
+                length = float(np.hypot(dx, dy))
+                if length <= 0:
+                    continue
+                angle = (np.arctan2(dy, dx) + 2 * np.pi) % (2 * np.pi)
+                direction_bins[min(int(angle / (2 * np.pi) * len(direction_bins)), len(direction_bins) - 1)] += length
+
+        direction_diversity = float(np.count_nonzero(direction_bins) / len(direction_bins))
+        count_score = 1.0
+        count_difference = None
+        if expected_stroke_count is not None and expected_stroke_count > 0:
+            count_difference = abs(actual_count - expected_stroke_count)
+            count_score = min(actual_count, expected_stroke_count) / max(actual_count, expected_stroke_count)
+            result.final_score *= 0.70 + 0.30 * count_score
+            if count_difference >= max(2, expected_stroke_count):
+                result.final_score = min(result.final_score, 60.0)
+
+        result.final_score = float(np.clip(result.final_score, 0.0, 100.0))
+        result.processing_metadata["stroke_evidence"] = {
+            "actual_strokes": actual_count,
+            "expected_strokes": expected_stroke_count,
+            "stroke_count_difference": count_difference,
+            "stroke_count_score": count_score,
+            "normalized_point_count": int(normalized_points.shape[0]),
+            "direction_diversity": direction_diversity,
+        }
+        return result
+
     def compute_ssim(self, img1: np.ndarray, img2: np.ndarray) -> float:
         """
         Compute Structural Similarity Index (SSIM) between two images.
@@ -214,7 +353,7 @@ class HybridComparisonAlgorithm:
         img2_float = img2.astype(np.float64) / 255.0
         
         # Compute SSIM with appropriate parameters for binary images
-        ssim_score, _ = ssim(
+        ssim_score = ssim(
             img1_float, 
             img2_float, 
             data_range=1.0,
@@ -541,62 +680,71 @@ class HybridComparisonAlgorithm:
                         intersections += 1
         return intersections
     
-    def _adjust_weights_for_failures(self, ssim_success: bool, contour_success: bool, skeleton_success: bool) -> ComparisonWeights:
-        """Adjust weights proportionally when some metrics fail"""
-        if ssim_success and contour_success and skeleton_success:
-            # All metrics successful, use original weights
+    def _adjust_weights_for_failures(
+        self,
+        ssim_ok: bool,
+        contour_ok: bool,
+        skeleton_ok: bool,
+        stroke_dir_ok: bool,
+        shape_align_ok: bool,
+    ) -> ComparisonWeights:
+        """Redistribute weight from failed metrics proportionally to successful ones."""
+        if all([ssim_ok, contour_ok, skeleton_ok, stroke_dir_ok, shape_align_ok]):
             return self.weights
-        
-        # Calculate new weights based on successful metrics
-        successful_weights = []
-        if ssim_success:
-            successful_weights.append(self.weights.ssim_weight)
-        if contour_success:
-            successful_weights.append(self.weights.contour_weight)
-        if skeleton_success:
-            successful_weights.append(self.weights.skeleton_weight)
-        
-        if not successful_weights:
-            # All metrics failed - return zero weights
-            return ComparisonWeights(0.0, 0.0, 0.0)
-        
-        # Normalize successful weights
-        total_successful = sum(successful_weights)
-        
-        new_ssim = (self.weights.ssim_weight / total_successful) if ssim_success else 0.0
-        new_contour = (self.weights.contour_weight / total_successful) if contour_success else 0.0
-        new_skeleton = (self.weights.skeleton_weight / total_successful) if skeleton_success else 0.0
-        
-        return ComparisonWeights(new_ssim, new_contour, new_skeleton)
-    
-    def _calculate_confidence(self, ssim_success: bool, contour_success: bool, skeleton_success: bool,
-                            ssim_score: float, contour_score: float, skeleton_score: float) -> float:
-        """Calculate confidence based on successful metrics and their agreement"""
-        successful_count = sum([ssim_success, contour_success, skeleton_success])
-        
-        if successful_count == 0:
+
+        pairs = [
+            (ssim_ok,        self.weights.ssim_weight),
+            (contour_ok,     self.weights.contour_weight),
+            (skeleton_ok,    self.weights.skeleton_weight),
+            (stroke_dir_ok,  self.weights.stroke_direction_weight),
+            (shape_align_ok, self.weights.shape_alignment_weight),
+        ]
+        total_ok = sum(w for ok, w in pairs if ok)
+        if total_ok == 0:
+            return ComparisonWeights(0.0, 0.0, 0.0, 0.0, 0.0)
+
+        def _w(ok, w):
+            return (w / total_ok) if ok else 0.0
+
+        return ComparisonWeights(
+            ssim_weight=_w(ssim_ok, self.weights.ssim_weight),
+            contour_weight=_w(contour_ok, self.weights.contour_weight),
+            skeleton_weight=_w(skeleton_ok, self.weights.skeleton_weight),
+            stroke_direction_weight=_w(stroke_dir_ok, self.weights.stroke_direction_weight),
+            shape_alignment_weight=_w(shape_align_ok, self.weights.shape_alignment_weight),
+        )
+
+    def _calculate_confidence(
+        self,
+        ssim_ok: bool,
+        contour_ok: bool,
+        skeleton_ok: bool,
+        stroke_dir_ok: bool,
+        shape_align_ok: bool,
+        ssim_score: float,
+        contour_score: float,
+        skeleton_score: float,
+        stroke_dir_score: float,
+        shape_align_score: float,
+    ) -> float:
+        """Confidence = fraction of successful metrics × agreement bonus."""
+        flags = [ssim_ok, contour_ok, skeleton_ok, stroke_dir_ok, shape_align_ok]
+        scores = [
+            s for ok, s in zip(
+                flags,
+                [ssim_score, contour_score, skeleton_score, stroke_dir_score, shape_align_score],
+            )
+            if ok
+        ]
+        n_ok = sum(flags)
+        if n_ok == 0:
             return 0.0
-        
-        # Base confidence from number of successful metrics
-        base_confidence = successful_count / 3.0
-        
-        # Agreement bonus: if successful metrics agree, increase confidence
-        successful_scores = []
-        if ssim_success:
-            successful_scores.append(ssim_score)
-        if contour_success:
-            successful_scores.append(contour_score)
-        if skeleton_success:
-            successful_scores.append(skeleton_score)
-        
-        if len(successful_scores) > 1:
-            # Calculate standard deviation of successful scores
-            score_std = np.std(successful_scores)
-            # Lower std means better agreement, higher confidence
-            agreement_bonus = np.exp(-score_std * 5) * 0.3  # Max 30% bonus
-            base_confidence = min(1.0, base_confidence + agreement_bonus)
-        
-        return float(base_confidence)
+
+        base = n_ok / 5.0
+        if len(scores) > 1:
+            agreement_bonus = float(np.exp(-np.std(scores) * 5)) * 0.3
+            base = min(1.0, base + agreement_bonus)
+        return float(base)
     
     def _create_empty_skeleton_analysis(self) -> SkeletonAnalysis:
         """Create empty skeleton analysis for error cases"""

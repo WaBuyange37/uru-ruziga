@@ -1,540 +1,389 @@
 """
-Intelligent feedback generation system for handwriting evaluation.
-Generates actionable, human-readable feedback for handwriting improvement.
+Production-grade feedback generator for Umwero handwriting evaluation.
+
+Produces specific, actionable feedback — never vague messages like "Looks bad."
+
+Response shape (mirrors the required API contract):
+  {
+    "strengths": ["..."],
+    "issues":    ["..."],
+    "tips":      ["..."]
+  }
 """
 
 import logging
-from typing import List, Dict, Tuple, Optional
+from typing import List, Tuple, Optional
 from dataclasses import dataclass
-from enum import Enum
 import numpy as np
 
-from .image_processor import ProcessedImage, FeatureVector
+from .image_processor import ProcessedImage
 from .comparison_algorithm import ComparisonResult, SkeletonAnalysis
 
 logger = logging.getLogger(__name__)
 
 
-class FeedbackCategory(Enum):
-    STRUCTURE = "structure"
-    POSITIONING = "positioning"
-    PROPORTIONS = "proportions"
-    STROKES = "strokes"
-    TOPOLOGY = "topology"
-    QUALITY = "quality"
-
-
-class FeedbackSeverity(Enum):
-    CRITICAL = "critical"
-    MAJOR = "major"
-    MINOR = "minor"
-    POSITIVE = "positive"
-
+# ─── Data classes ─────────────────────────────────────────────────────────────
 
 @dataclass
 class FeedbackItem:
-    """Individual feedback item with detailed information"""
+    """Single feedback item (kept for backward-compat with evaluation_engine)."""
     category: str
     severity: str
     message: str
     suggestion: str
     confidence: float
-    
+
     def __post_init__(self):
-        # Ensure confidence is in valid range
         self.confidence = max(0.0, min(1.0, self.confidence))
 
 
 @dataclass
 class FeedbackReport:
-    """Complete feedback report for a handwriting evaluation"""
+    """Complete feedback report returned by generate_feedback()."""
     score: float
     passed: bool
+    # Flat list used by evaluation_engine.py
     primary_feedback: List[str]
     detailed_feedback: List[FeedbackItem]
     positive_aspects: List[str]
     improvement_priority: List[str]
+    # Structured dict for the new /api/evaluate endpoint
+    structured: dict
+    # Convenience alias used by data_collector
+    summary: str
+    encouragement: str
+    practice_areas: List[str]
 
 
 @dataclass
 class FeedbackConfig:
-    """Configuration for feedback generation"""
-    min_confidence_threshold: float = 0.6
-    max_feedback_items: int = 5
+    """Configuration for feedback generation."""
+    min_confidence_threshold: float = 0.55
+    max_feedback_items: int = 6
     include_positive_feedback: bool = True
-    prioritize_critical_issues: bool = True
-    character_specific_feedback: bool = True
+    pass_mark: float = 70.0
 
+
+# ─── Thresholds ───────────────────────────────────────────────────────────────
+
+_EXCELLENT = 90.0
+_GOOD      = 70.0
+_FAIR      = 50.0
+
+
+# ─── Main class ───────────────────────────────────────────────────────────────
 
 class FeedbackGenerator:
     """
-    Intelligent feedback generation system that analyzes drawing comparison results
-    and generates actionable, human-readable improvement suggestions.
+    Generates specific, actionable feedback from comparison results.
+
+    All messages are concrete and character-aware — no generic "try again" text.
     """
-    
+
     def __init__(self, feedback_config: FeedbackConfig = None):
         self.config = feedback_config or FeedbackConfig()
-        
-        # Feedback templates for different issues
-        self._initialize_feedback_templates()
-        
-        logger.info(f"FeedbackGenerator initialized with config: {self.config}")
-    
-    def _initialize_feedback_templates(self):
-        """Initialize feedback message templates"""
-        self.feedback_templates = {
-            # Structural issues
-            'missing_strokes': {
-                'message': "Some strokes appear to be missing from your character",
-                'suggestion': "Make sure to include all the essential strokes that make up this character",
-                'category': FeedbackCategory.STRUCTURE,
-                'severity': FeedbackSeverity.CRITICAL
-            },
-            'extra_strokes': {
-                'message': "Your drawing has additional strokes not present in the reference",
-                'suggestion': "Focus on the essential strokes and avoid adding unnecessary marks",
-                'category': FeedbackCategory.STRUCTURE,
-                'severity': FeedbackSeverity.MAJOR
-            },
-            'incomplete_strokes': {
-                'message': "Some strokes appear incomplete or disconnected",
-                'suggestion': "Ensure all strokes are fully drawn and properly connected",
-                'category': FeedbackCategory.STROKES,
-                'severity': FeedbackSeverity.MAJOR
-            },
-            
-            # Positioning issues
-            'off_center': {
-                'message': "Your character is not centered properly",
-                'suggestion': "Try to center your character within the drawing area",
-                'category': FeedbackCategory.POSITIONING,
-                'severity': FeedbackSeverity.MINOR
-            },
-            'rotation_error': {
-                'message': "Your character appears to be rotated or tilted",
-                'suggestion': "Keep your character upright and aligned properly",
-                'category': FeedbackCategory.POSITIONING,
-                'severity': FeedbackSeverity.MINOR
-            },
-            
-            # Proportional issues
-            'size_too_small': {
-                'message': "Your character is drawn too small",
-                'suggestion': "Make your character larger to fill more of the available space",
-                'category': FeedbackCategory.PROPORTIONS,
-                'severity': FeedbackSeverity.MINOR
-            },
-            'size_too_large': {
-                'message': "Your character is drawn too large",
-                'suggestion': "Make your character smaller to fit better within the boundaries",
-                'category': FeedbackCategory.PROPORTIONS,
-                'severity': FeedbackSeverity.MINOR
-            },
-            'aspect_ratio_error': {
-                'message': "The proportions of your character are not quite right",
-                'suggestion': "Pay attention to the width-to-height ratio of the character",
-                'category': FeedbackCategory.PROPORTIONS,
-                'severity': FeedbackSeverity.MAJOR
-            },
-            
-            # Topology issues
-            'open_vs_closed': {
-                'message': "Some parts that should be closed appear open, or vice versa",
-                'suggestion': "Check if loops and enclosed areas are properly formed",
-                'category': FeedbackCategory.TOPOLOGY,
-                'severity': FeedbackSeverity.MAJOR
-            },
-            'connection_issues': {
-                'message': "Some strokes don't connect properly where they should",
-                'suggestion': "Make sure strokes meet cleanly at intersection points",
-                'category': FeedbackCategory.STROKES,
-                'severity': FeedbackSeverity.MAJOR
-            },
-            
-            # Quality issues
-            'stroke_thickness': {
-                'message': "Your stroke thickness varies too much",
-                'suggestion': "Try to maintain consistent stroke width throughout",
-                'category': FeedbackCategory.QUALITY,
-                'severity': FeedbackSeverity.MINOR
-            },
-            'stroke_smoothness': {
-                'message': "Some strokes appear jagged or uneven",
-                'suggestion': "Practice drawing smoother, more confident strokes",
-                'category': FeedbackCategory.QUALITY,
-                'severity': FeedbackSeverity.MINOR
-            },
-            
-            # Positive feedback
-            'good_structure': {
-                'message': "Excellent structural accuracy!",
-                'suggestion': "Your character structure is very well executed",
-                'category': FeedbackCategory.STRUCTURE,
-                'severity': FeedbackSeverity.POSITIVE
-            },
-            'good_proportions': {
-                'message': "Great proportions and sizing!",
-                'suggestion': "Your character proportions are spot-on",
-                'category': FeedbackCategory.PROPORTIONS,
-                'severity': FeedbackSeverity.POSITIVE
-            },
-            'good_positioning': {
-                'message': "Perfect positioning and alignment!",
-                'suggestion': "Your character is beautifully centered and aligned",
-                'category': FeedbackCategory.POSITIONING,
-                'severity': FeedbackSeverity.POSITIVE
-            }
-        }
-    
-    def generate_feedback(self, comparison_result: ComparisonResult, 
-                         processed_images: Tuple[ProcessedImage, ProcessedImage],
-                         character: str = None) -> FeedbackReport:
+        logger.info("FeedbackGenerator initialised (production mode)")
+
+    # ── Public API ────────────────────────────────────────────────────────────
+
+    def generate_feedback(
+        self,
+        comparison_result: ComparisonResult,
+        processed_images: Tuple[ProcessedImage, ProcessedImage],
+        character: str = "",
+    ) -> FeedbackReport:
         """
-        Generate comprehensive feedback report based on comparison results.
-        
+        Generate a complete FeedbackReport from comparison results.
+
         Args:
-            comparison_result: Results from hybrid comparison algorithm
-            processed_images: Tuple of (reference, user_drawing) processed images
-            character: Optional character being evaluated for specific feedback
-            
+            comparison_result: Output of HybridComparisonAlgorithm.compare_images()
+            processed_images:  (reference, user_drawing) ProcessedImage tuple
+            character:         The character being evaluated (e.g. "K")
+
         Returns:
-            FeedbackReport with actionable feedback and suggestions
+            FeedbackReport with structured feedback for the API response.
         """
         try:
             reference_img, user_img = processed_images
-            
-            # Collect all feedback items
-            feedback_items = []
-            
-            # 1. Analyze structural issues
-            structural_feedback = self.analyze_structural_issues(
-                comparison_result.analysis, comparison_result
+            score = comparison_result.final_score
+            char_label = f'"{character}"' if character else "this character"
+
+            strengths: List[str] = []
+            issues:    List[str] = []
+            tips:      List[str] = []
+            items:     List[FeedbackItem] = []
+
+            # ── 1. SSIM — overall pixel-level structure ────────────────────
+            ssim = comparison_result.ssim_score
+            if ssim >= 0.80:
+                strengths.append("Overall shape structure closely matches the reference.")
+            elif ssim >= 0.60:
+                issues.append(
+                    f"The overall shape of {char_label} differs from the reference — "
+                    "some areas are misaligned or missing."
+                )
+                tips.append(
+                    "Trace the reference character slowly, paying attention to where "
+                    "each stroke starts and ends."
+                )
+            else:
+                issues.append(
+                    f"The shape of {char_label} is significantly different from the reference. "
+                    "Focus on reproducing the basic outline before adding detail."
+                )
+                tips.append(
+                    "Start by drawing just the main body of the character without "
+                    "worrying about fine details."
+                )
+
+            # ── 2. Contour — outline and proportions ──────────────────────
+            contour = comparison_result.contour_score
+            if contour >= 0.80:
+                strengths.append("Stroke proportions and outline are accurate.")
+            elif contour >= 0.55:
+                issues.append(
+                    "The outline proportions of your character differ from the reference — "
+                    "check the width-to-height ratio."
+                )
+                tips.append(
+                    "Compare the bounding box of your drawing to the reference: "
+                    "is it too wide, too narrow, or too tall?"
+                )
+            else:
+                issues.append(
+                    "The character outline is quite different from the reference. "
+                    "The curves or angles may be incorrect."
+                )
+                tips.append(
+                    "Focus on the dominant curves and angles of the character. "
+                    "Use the stroke guide to see the correct shape."
+                )
+
+            # ── 3. Skeleton — stroke topology ─────────────────────────────
+            skeleton = comparison_result.skeleton_score
+            if skeleton >= 0.80:
+                strengths.append("Stroke connectivity and topology are correct.")
+            elif skeleton >= 0.55:
+                issues.append(
+                    "Some strokes are not connected where they should be, "
+                    "or extra strokes are present."
+                )
+                tips.append(
+                    "Make sure each stroke meets cleanly at junction points — "
+                    "avoid gaps or overlapping lines."
+                )
+            else:
+                issues.append(
+                    "The stroke structure is quite different from the reference. "
+                    "Check whether all required strokes are present and connected."
+                )
+                tips.append(
+                    "Count the number of strokes in the reference and match that "
+                    "in your drawing before refining the shape."
+                )
+
+            # ── 4. Stroke direction ────────────────────────────────────────
+            stroke_dir = getattr(comparison_result, "stroke_direction_score", None)
+            if stroke_dir is not None:
+                if stroke_dir >= 0.80:
+                    strengths.append("Stroke angles and directions are well-matched.")
+                elif stroke_dir >= 0.55:
+                    issues.append(
+                        "The angle of one or more strokes differs from the reference — "
+                        "the top stroke angle may be off."
+                    )
+                    tips.append(
+                        "Pay attention to the direction each stroke travels: "
+                        "diagonal strokes should match the reference angle."
+                    )
+                else:
+                    issues.append(
+                        "Stroke directions are significantly different from the reference. "
+                        "Several strokes appear to be drawn at the wrong angle."
+                    )
+                    tips.append(
+                        "Use the stroke-order guide to see the exact direction "
+                        "each stroke should travel."
+                    )
+
+            # ── 5. Shape alignment ────────────────────────────────────────
+            shape_align = getattr(comparison_result, "shape_alignment_score", None)
+            if shape_align is not None:
+                if shape_align >= 0.80:
+                    strengths.append("Character is well-centred and spatially aligned.")
+                elif shape_align >= 0.55:
+                    issues.append(
+                        "The character is slightly off-centre or shifted — "
+                        "try to centre it within the drawing area."
+                    )
+                    tips.append(
+                        "Draw the character in the middle of the canvas, "
+                        "leaving roughly equal space on all sides."
+                    )
+                else:
+                    issues.append(
+                        "The character is noticeably shifted or misaligned compared "
+                        "to the reference position."
+                    )
+                    tips.append(
+                        "Centre your drawing: the character should occupy the middle "
+                        "of the canvas, not be pushed to one side."
+                    )
+
+            # ── 6. Positioning check (bounding-box centre distance) ────────
+            try:
+                ref_cx = reference_img.bounding_box[0] + reference_img.bounding_box[2] / 2
+                ref_cy = reference_img.bounding_box[1] + reference_img.bounding_box[3] / 2
+                usr_cx = user_img.bounding_box[0] + user_img.bounding_box[2] / 2
+                usr_cy = user_img.bounding_box[1] + user_img.bounding_box[3] / 2
+                dist = np.sqrt((ref_cx - usr_cx) ** 2 + (ref_cy - usr_cy) ** 2)
+                if dist > 40:  # pixels in 256×256 space
+                    direction = ""
+                    if usr_cx < ref_cx - 20:
+                        direction = "left"
+                    elif usr_cx > ref_cx + 20:
+                        direction = "right"
+                    if usr_cy < ref_cy - 20:
+                        direction += (" and upward" if direction else "upward")
+                    elif usr_cy > ref_cy + 20:
+                        direction += (" and downward" if direction else "downward")
+                    if direction:
+                        issues.append(
+                            f"Your character is shifted {direction} relative to the reference."
+                        )
+                        tips.append(
+                            "Centre the character on the canvas — "
+                            "the reference sits in the middle of the drawing area."
+                        )
+            except Exception:
+                pass  # Non-critical
+
+            # ── 7. Size check ─────────────────────────────────────────────
+            try:
+                ref_area = reference_img.bounding_box[2] * reference_img.bounding_box[3]
+                usr_area = user_img.bounding_box[2] * user_img.bounding_box[3]
+                if ref_area > 0 and usr_area > 0:
+                    ratio = usr_area / ref_area
+                    if ratio < 0.45:
+                        issues.append(
+                            "Your character is drawn too small — "
+                            "it should fill more of the canvas."
+                        )
+                        tips.append(
+                            "Draw larger strokes so the character occupies at least "
+                            "half the available drawing area."
+                        )
+                    elif ratio > 2.2:
+                        issues.append(
+                            "Your character is drawn too large — "
+                            "some strokes may be cut off at the edges."
+                        )
+                        tips.append(
+                            "Scale down your drawing so the entire character fits "
+                            "comfortably within the canvas."
+                        )
+            except Exception:
+                pass
+
+            # ── 8. Score-level summary ────────────────────────────────────
+            if score >= _EXCELLENT:
+                summary = (
+                    f"Excellent work on {char_label}! "
+                    "Your handwriting is very close to the reference."
+                )
+                encouragement = "Keep it up — you're mastering this character!"
+            elif score >= _GOOD:
+                summary = (
+                    f"Good job on {char_label}. "
+                    "Your character is recognisable with a few areas to refine."
+                )
+                encouragement = "You're on the right track — a little more practice will perfect it."
+            elif score >= _FAIR:
+                summary = (
+                    f"You're making progress on {char_label}. "
+                    "Focus on the specific issues below to improve your score."
+                )
+                encouragement = "Every attempt builds muscle memory — keep practising!"
+            else:
+                summary = (
+                    f"Your drawing of {char_label} needs more work. "
+                    "Review the stroke guide and try again."
+                )
+                encouragement = (
+                    "Don't be discouraged — even small improvements count. "
+                    "Use the stroke guide to understand the correct form."
+                )
+
+            # ── 9. Practice areas ─────────────────────────────────────────
+            practice_areas: List[str] = []
+            if ssim < 0.60:
+                practice_areas.append("overall shape")
+            if contour < 0.60:
+                practice_areas.append("proportions and outline")
+            if skeleton < 0.60:
+                practice_areas.append("stroke connectivity")
+            if stroke_dir is not None and stroke_dir < 0.60:
+                practice_areas.append("stroke direction")
+            if shape_align is not None and shape_align < 0.60:
+                practice_areas.append("character alignment")
+
+            # ── 10. Build FeedbackItem list (backward-compat) ─────────────
+            for msg in issues:
+                items.append(FeedbackItem(
+                    category="structure",
+                    severity="major",
+                    message=msg,
+                    suggestion=tips[issues.index(msg)] if issues.index(msg) < len(tips) else "",
+                    confidence=0.85,
+                ))
+            for msg in strengths:
+                items.append(FeedbackItem(
+                    category="positive",
+                    severity="positive",
+                    message=msg,
+                    suggestion="",
+                    confidence=0.90,
+                ))
+
+            # Primary feedback list (flat, for evaluation_engine)
+            primary: List[str] = [summary] + issues[:2]
+
+            structured = {
+                "strengths": strengths,
+                "issues":    issues,
+                "tips":      tips,
+            }
+
+            return FeedbackReport(
+                score=score,
+                passed=score >= self.config.pass_mark,
+                primary_feedback=primary,
+                detailed_feedback=items,
+                positive_aspects=strengths,
+                improvement_priority=tips[:3],
+                structured=structured,
+                summary=summary,
+                encouragement=encouragement,
+                practice_areas=practice_areas,
             )
-            feedback_items.extend(structural_feedback)
-            
-            # 2. Analyze positioning issues
-            positioning_feedback = self.analyze_positioning_issues(reference_img, user_img)
-            feedback_items.extend(positioning_feedback)
-            
-            # 3. Analyze proportional issues
-            proportional_feedback = self.analyze_proportional_issues(reference_img, user_img)
-            feedback_items.extend(proportional_feedback)
-            
-            # 4. Analyze stroke quality
-            stroke_feedback = self.analyze_stroke_quality(comparison_result, user_img)
-            feedback_items.extend(stroke_feedback)
-            
-            # 5. Generate positive feedback for good aspects
-            if self.config.include_positive_feedback:
-                positive_feedback = self.analyze_positive_aspects(comparison_result)
-                feedback_items.extend(positive_feedback)
-            
-            # 6. Filter by confidence threshold
-            filtered_feedback = [
-                item for item in feedback_items 
-                if item.confidence >= self.config.min_confidence_threshold
-            ]
-            
-            # 7. Prioritize and limit feedback
-            prioritized_feedback = self.prioritize_feedback(filtered_feedback)
-            
-            # 8. Generate summary messages
-            primary_feedback = self._generate_primary_feedback(prioritized_feedback, comparison_result.final_score)
-            positive_aspects = self._extract_positive_aspects(prioritized_feedback)
-            improvement_priority = self._generate_improvement_priority(prioritized_feedback)
-            
+
+        except Exception as exc:
+            logger.error(f"FeedbackGenerator failed: {exc}")
             return FeedbackReport(
                 score=comparison_result.final_score,
-                passed=comparison_result.final_score >= 70.0,
-                primary_feedback=primary_feedback,
-                detailed_feedback=prioritized_feedback,
-                positive_aspects=positive_aspects,
-                improvement_priority=improvement_priority
-            )
-            
-        except Exception as e:
-            logger.error(f"Feedback generation failed: {e}")
-            # Return minimal feedback in case of error
-            return FeedbackReport(
-                score=comparison_result.final_score,
-                passed=comparison_result.final_score >= 70.0,
-                primary_feedback=["Unable to generate detailed feedback"],
+                passed=comparison_result.final_score >= self.config.pass_mark,
+                primary_feedback=["Unable to generate detailed feedback — please try again."],
                 detailed_feedback=[],
                 positive_aspects=[],
-                improvement_priority=[]
+                improvement_priority=[],
+                structured={"strengths": [], "issues": [], "tips": []},
+                summary="Evaluation completed.",
+                encouragement="Keep practising!",
+                practice_areas=[],
             )
-    
-    def analyze_structural_issues(self, skeleton_analysis: SkeletonAnalysis, 
-                                comparison_result: ComparisonResult) -> List[FeedbackItem]:
-        """Analyze structural issues from skeleton analysis"""
-        feedback_items = []
-        
-        # Check for missing or extra strokes
-        if skeleton_analysis.missing_strokes:
-            feedback_items.append(self._create_feedback_item(
-                'missing_strokes',
-                confidence=0.8
-            ))
-        
-        if skeleton_analysis.extra_strokes:
-            feedback_items.append(self._create_feedback_item(
-                'extra_strokes',
-                confidence=0.8
-            ))
-        
-        # Check structural similarity
-        if skeleton_analysis.structural_similarity < 0.5:
-            feedback_items.append(self._create_feedback_item(
-                'incomplete_strokes',
-                confidence=skeleton_analysis.structural_similarity
-            ))
-        
-        # Check topology issues
-        if skeleton_analysis.topology_match < 0.6:
-            feedback_items.append(self._create_feedback_item(
-                'open_vs_closed',
-                confidence=1.0 - skeleton_analysis.topology_match
-            ))
-        
-        # Check stroke connectivity
-        if skeleton_analysis.stroke_connectivity < 0.7:
-            feedback_items.append(self._create_feedback_item(
-                'connection_issues',
-                confidence=1.0 - skeleton_analysis.stroke_connectivity
-            ))
-        
-        return feedback_items
-    
-    def analyze_positioning_issues(self, reference: ProcessedImage, user: ProcessedImage) -> List[FeedbackItem]:
-        """Analyze positioning and alignment issues"""
-        feedback_items = []
-        
-        # Check centering
-        ref_center = (reference.bounding_box[0] + reference.bounding_box[2] // 2,
-                     reference.bounding_box[1] + reference.bounding_box[3] // 2)
-        user_center = (user.bounding_box[0] + user.bounding_box[2] // 2,
-                      user.bounding_box[1] + user.bounding_box[3] // 2)
-        
-        center_distance = np.sqrt((ref_center[0] - user_center[0])**2 + 
-                                 (ref_center[1] - user_center[1])**2)
-        
-        # Normalize by image size
-        max_distance = np.sqrt(256**2 + 256**2) / 4  # Quarter of diagonal
-        
-        if center_distance > max_distance * 0.3:  # 30% of max acceptable distance
-            confidence = min(1.0, center_distance / max_distance)
-            feedback_items.append(self._create_feedback_item(
-                'off_center',
-                confidence=confidence
-            ))
-        
-        # Check for rotation (simplified check using bounding box aspect ratio difference)
-        ref_aspect = reference.bounding_box[2] / max(1, reference.bounding_box[3])
-        user_aspect = user.bounding_box[2] / max(1, user.bounding_box[3])
-        
-        aspect_diff = abs(ref_aspect - user_aspect) / max(ref_aspect, user_aspect)
-        
-        if aspect_diff > 0.3:  # 30% difference in aspect ratio
-            feedback_items.append(self._create_feedback_item(
-                'rotation_error',
-                confidence=min(1.0, aspect_diff)
-            ))
-        
-        return feedback_items
-    
-    def analyze_proportional_issues(self, reference: ProcessedImage, user: ProcessedImage) -> List[FeedbackItem]:
-        """Analyze proportional and sizing issues"""
-        feedback_items = []
-        
-        # Calculate areas
-        ref_area = reference.bounding_box[2] * reference.bounding_box[3]
-        user_area = user.bounding_box[2] * user.bounding_box[3]
-        
-        if ref_area > 0 and user_area > 0:
-            size_ratio = user_area / ref_area
-            
-            # Check if too small
-            if size_ratio < 0.5:  # User drawing is less than 50% of reference size
-                confidence = min(1.0, (0.5 - size_ratio) / 0.5)
-                feedback_items.append(self._create_feedback_item(
-                    'size_too_small',
-                    confidence=confidence
-                ))
-            
-            # Check if too large
-            elif size_ratio > 2.0:  # User drawing is more than 200% of reference size
-                confidence = min(1.0, (size_ratio - 2.0) / 2.0)
-                feedback_items.append(self._create_feedback_item(
-                    'size_too_large',
-                    confidence=confidence
-                ))
-        
-        # Check aspect ratio
-        ref_aspect = reference.bounding_box[2] / max(1, reference.bounding_box[3])
-        user_aspect = user.bounding_box[2] / max(1, user.bounding_box[3])
-        
-        aspect_error = abs(ref_aspect - user_aspect) / max(ref_aspect, user_aspect)
-        
-        if aspect_error > 0.25:  # 25% aspect ratio error
-            confidence = min(1.0, aspect_error)
-            feedback_items.append(self._create_feedback_item(
-                'aspect_ratio_error',
-                confidence=confidence
-            ))
-        
-        return feedback_items
-    
-    def analyze_stroke_quality(self, comparison_result: ComparisonResult, user_img: ProcessedImage) -> List[FeedbackItem]:
-        """Analyze stroke quality issues"""
-        feedback_items = []
-        
-        # Use SSIM score as a proxy for stroke quality
-        if comparison_result.ssim_score < 0.6:
-            # Low SSIM might indicate stroke quality issues
-            confidence = 1.0 - comparison_result.ssim_score
-            
-            # Randomly choose between thickness and smoothness issues
-            # In a full implementation, this would use more sophisticated analysis
-            if np.random.random() > 0.5:
-                feedback_items.append(self._create_feedback_item(
-                    'stroke_thickness',
-                    confidence=confidence * 0.7  # Lower confidence for inferred issues
-                ))
-            else:
-                feedback_items.append(self._create_feedback_item(
-                    'stroke_smoothness',
-                    confidence=confidence * 0.7
-                ))
-        
-        return feedback_items
-    
-    def analyze_positive_aspects(self, comparison_result: ComparisonResult) -> List[FeedbackItem]:
-        """Identify positive aspects to reinforce good practices"""
-        feedback_items = []
-        
-        # Good structural similarity
-        if comparison_result.skeleton_score > 0.8:
-            feedback_items.append(self._create_feedback_item(
-                'good_structure',
-                confidence=comparison_result.skeleton_score
-            ))
-        
-        # Good overall similarity (SSIM)
-        if comparison_result.ssim_score > 0.8:
-            feedback_items.append(self._create_feedback_item(
-                'good_proportions',
-                confidence=comparison_result.ssim_score
-            ))
-        
-        # Good contour matching
-        if comparison_result.contour_score > 0.8:
-            feedback_items.append(self._create_feedback_item(
-                'good_positioning',
-                confidence=comparison_result.contour_score
-            ))
-        
-        return feedback_items
-    
-    def prioritize_feedback(self, feedback_items: List[FeedbackItem]) -> List[FeedbackItem]:
-        """Prioritize feedback items by importance and limit count"""
-        if not feedback_items:
-            return []
-        
-        # Sort by severity and confidence
-        severity_order = {
-            FeedbackSeverity.CRITICAL.value: 0,
-            FeedbackSeverity.MAJOR.value: 1,
-            FeedbackSeverity.MINOR.value: 2,
-            FeedbackSeverity.POSITIVE.value: 3
-        }
-        
-        sorted_feedback = sorted(
-            feedback_items,
-            key=lambda x: (severity_order.get(x.severity, 999), -x.confidence)
-        )
-        
-        # Limit to max feedback items
-        return sorted_feedback[:self.config.max_feedback_items]
-    
-    def _create_feedback_item(self, template_key: str, confidence: float) -> FeedbackItem:
-        """Create a feedback item from a template"""
-        template = self.feedback_templates.get(template_key)
-        if not template:
-            logger.warning(f"Unknown feedback template: {template_key}")
-            return FeedbackItem(
-                category=FeedbackCategory.QUALITY.value,
-                severity=FeedbackSeverity.MINOR.value,
-                message="General improvement needed",
-                suggestion="Keep practicing to improve your handwriting",
-                confidence=confidence
-            )
-        
-        return FeedbackItem(
-            category=template['category'].value,
-            severity=template['severity'].value,
-            message=template['message'],
-            suggestion=template['suggestion'],
-            confidence=confidence
-        )
-    
-    def _generate_primary_feedback(self, feedback_items: List[FeedbackItem], score: float) -> List[str]:
-        """Generate primary feedback messages"""
-        primary_messages = []
-        
-        # Score-based message
-        if score >= 90:
-            primary_messages.append("Excellent work! Your handwriting is very accurate.")
-        elif score >= 70:
-            primary_messages.append("Good job! Your handwriting meets the passing criteria.")
-        elif score >= 50:
-            primary_messages.append("You're making progress, but there's room for improvement.")
-        else:
-            primary_messages.append("Keep practicing! Focus on the key areas for improvement.")
-        
-        # Add top critical/major issues
-        critical_issues = [
-            item for item in feedback_items 
-            if item.severity in [FeedbackSeverity.CRITICAL.value, FeedbackSeverity.MAJOR.value]
-        ]
-        
-        for issue in critical_issues[:2]:  # Top 2 critical issues
-            primary_messages.append(issue.message)
-        
-        return primary_messages
-    
-    def _extract_positive_aspects(self, feedback_items: List[FeedbackItem]) -> List[str]:
-        """Extract positive feedback messages"""
-        return [
-            item.message for item in feedback_items 
-            if item.severity == FeedbackSeverity.POSITIVE.value
-        ]
-    
-    def _generate_improvement_priority(self, feedback_items: List[FeedbackItem]) -> List[str]:
-        """Generate prioritized improvement suggestions"""
-        improvement_items = [
-            item for item in feedback_items 
-            if item.severity != FeedbackSeverity.POSITIVE.value
-        ]
-        
-        # Sort by severity and return suggestions
-        severity_order = {
-            FeedbackSeverity.CRITICAL.value: 0,
-            FeedbackSeverity.MAJOR.value: 1,
-            FeedbackSeverity.MINOR.value: 2
-        }
-        
-        sorted_items = sorted(
-            improvement_items,
-            key=lambda x: severity_order.get(x.severity, 999)
-        )
-        
-        return [item.suggestion for item in sorted_items[:3]]  # Top 3 priorities
 
 
-# Example usage and testing
+# ── Standalone test ────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    
-    # This would be used with actual comparison results
-    print("FeedbackGenerator initialized successfully")
-    print("Ready to generate feedback for handwriting evaluations")
+    print("FeedbackGenerator (production) initialised successfully.")

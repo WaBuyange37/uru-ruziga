@@ -69,6 +69,14 @@ export async function POST(request: NextRequest) {
 
     const maxSize = 50 * 1024 * 1024 // Max 50MB per file
     const uploadedUrls: string[] = []
+    const uploadedFiles: Array<{
+      url: string
+      originalName: string
+      contentType: string
+      size: number
+      bucket: string
+      path: string
+    }> = []
 
     for (const file of files) {
       console.log(`📄 Processing file: ${file.name} (${file.type}, ${file.size} bytes)`);
@@ -103,12 +111,21 @@ export async function POST(request: NextRequest) {
 
       console.log(`✅ File uploaded successfully: ${upload.publicUrl}`);
       uploadedUrls.push(upload.publicUrl)
+      uploadedFiles.push({
+        url: upload.publicUrl,
+        originalName: file.name,
+        contentType: file.type,
+        size: file.size,
+        bucket: upload.bucket,
+        path: upload.path,
+      })
     }
 
     console.log(`🎉 Upload complete! ${uploadedUrls.length} files processed`);
     return NextResponse.json({
       success: true,
       urls: uploadedUrls,
+      files: uploadedFiles,
       count: files.length,
       message: `${files.length} file(s) uploaded successfully`
     })

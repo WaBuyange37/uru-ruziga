@@ -6,6 +6,7 @@ Applies sophisticated preprocessing to ensure fair and accurate image comparison
 import base64
 import io
 import logging
+import re
 from typing import Tuple, Optional, Dict, Any
 from dataclasses import dataclass
 import numpy as np
@@ -140,28 +141,56 @@ class ImageProcessingPipeline:
         except Exception as e:
             logger.error(f"Image preprocessing failed: {e}")
             raise ValueError(f"Failed to preprocess image: {str(e)}")
-    
+
     def _load_image(self, image_input: str | np.ndarray | Image.Image) -> np.ndarray:
         """Load image from various input formats"""
         if isinstance(image_input, str):
             # Base64 data URL
             if image_input.startswith('data:image/'):
-                # Extract base64 data
-                base64_data = image_input.split(',')[1]
+                header, base64_data = image_input.split(',', 1)
+                mime_match = re.match(r'data:([^;]+);base64$', header)
+                mime_type = mime_match.group(1).lower() if mime_match else 'application/octet-stream'
                 image_bytes = base64.b64decode(base64_data)
+                logger.info("Image loaded: type=%s bytes=%d", mime_type, len(image_bytes))
+
+                if mime_type == 'image/svg+xml' or image_bytes.lstrip().startswith(b'<svg'):
+                    try:
+                        import cairosvg
+                    except ImportError as exc:
+                        raise ValueError("SVG reference requires CairoSVG") from exc
+
+                    image_bytes = cairosvg.svg2png(
+                        bytestring=image_bytes,
+                        output_width=self.config.target_size * 2,
+                        output_height=self.config.target_size * 2,
+                    )
+                    logger.info("SVG reference rasterized successfully")
+
                 pil_image = Image.open(io.BytesIO(image_bytes))
-                return np.array(pil_image)
+                return self._pil_to_white_background(pil_image)
             else:
                 raise ValueError("String input must be base64 data URL")
                 
         elif isinstance(image_input, Image.Image):
-            return np.array(image_input)
+            return self._pil_to_white_background(image_input)
             
         elif isinstance(image_input, np.ndarray):
             return image_input.copy()
             
         else:
             raise ValueError(f"Unsupported image input type: {type(image_input)}")
+
+    def _pil_to_white_background(self, image: Image.Image) -> np.ndarray:
+        """Composite transparency onto white and return a stable RGB image."""
+        image.load()
+        if image.mode in ('RGBA', 'LA') or 'transparency' in image.info:
+            rgba = image.convert('RGBA')
+            background = Image.new('RGBA', rgba.size, (255, 255, 255, 255))
+            background.alpha_composite(rgba)
+            image = background.convert('RGB')
+        elif image.mode not in ('RGB', 'L'):
+            image = image.convert('RGB')
+        return np.array(image)
     
     def _resize_image(self, image: np.ndarray, target_size: int) -> np.ndarray:
         """Resize image to target size while preserving aspect ratio"""
@@ -309,13 +338,14 @@ class ImageProcessingPipeline:
         available_size = target_size - 2 * margin
         
         scale = min(available_size / content_width, available_size / content_height)
-        scale = min(scale, 1.0)  # Don't upscale
         
-        # Resize content if needed
-        if scale < 1.0:
-            new_width = int(content_width * scale)
-            new_height = int(content_height * scale)
-            content = cv2.resize(content, (new_width, new_height), interpolation=cv2.INTER_AREA)
+        # Scale every cropped glyph to the same comparison area. This removes
+        # irrelevant differences caused by font viewBox size or canvas zoom.
+        if abs(scale - 1.0) > 1e-6:
+            new_width = max(1, int(round(content_width * scale)))
+            new_height = max(1, int(round(content_height * scale)))
+            interpolation = cv2.INTER_AREA if scale < 1.0 else cv2.INTER_NEAREST
+            content = cv2.resize(content, (new_width, new_height), interpolation=interpolation)
             content_height, content_width = content.shape
         
         # Create centered image
@@ -510,6 +540,10 @@ def create_processing_config(
         binary_threshold_method=threshold_method,
         centering_enabled=enable_centering
     )
+
+
+# Backward-compatible name used by dataset collection code.
+ImageProcessor = ImageProcessingPipeline
 
 
 # Example usage and testing

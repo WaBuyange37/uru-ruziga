@@ -13,13 +13,11 @@ const supabaseAdmin =
     : null
 
 const bucketConfigs = [
-  { name: STORAGE_BUCKETS.appAssets, public: true },
-  { name: STORAGE_BUCKETS.characters, public: true },
+  { name: STORAGE_BUCKETS.characterImages, public: true },
   { name: STORAGE_BUCKETS.userDrawings, public: false },
-  { name: STORAGE_BUCKETS.avatars, public: true },
-  { name: STORAGE_BUCKETS.audio, public: true },
-  { name: STORAGE_BUCKETS.lessonMaterials, public: true },
-  { name: STORAGE_BUCKETS.generatedImages, public: true },
+  { name: STORAGE_BUCKETS.profilePictures, public: true },
+  { name: STORAGE_BUCKETS.audioFiles, public: true },
+  { name: STORAGE_BUCKETS.videoFiles, public: true },
   { name: STORAGE_BUCKETS.communityPosts, public: true },
 ]
 
@@ -52,7 +50,7 @@ export async function setupStorageBuckets() {
   }
 }
 
-export function getBucketUrl(bucketName = STORAGE_BUCKETS.appAssets) {
+export function getBucketUrl(bucketName = STORAGE_BUCKETS.characterImages) {
   if (!supabaseUrl) {
     throw new Error('Set SUPABASE_URL to build Supabase Storage bucket URLs.')
   }

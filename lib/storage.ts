@@ -4,7 +4,17 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const rawSupabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+function isLikelyJwt(value: string | undefined) {
+  return Boolean(value && value.split('.').length === 3)
+}
+
+const supabaseServiceRoleKey =
+  rawSupabaseServiceRoleKey &&
+  rawSupabaseServiceRoleKey !== 'your-supabase-service-role-key' &&
+  isLikelyJwt(rawSupabaseServiceRoleKey)
+    ? rawSupabaseServiceRoleKey
+    : undefined
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 const storageClient = createClient(
@@ -13,13 +23,17 @@ const storageClient = createClient(
 )
 
 export const STORAGE_BUCKETS = {
-  appAssets: 'app-assets',
-  characters: 'characters',
+  appAssets: 'character-images',
+  characters: 'character-images',
+  characterImages: 'character-images',
   userDrawings: 'user-drawings',
-  avatars: 'avatars',
-  audio: 'audio',
-  lessonMaterials: 'lesson-materials',
-  generatedImages: 'generated-images',
+  avatars: 'profile-pictures',
+  profilePictures: 'profile-pictures',
+  audio: 'audio-files',
+  audioFiles: 'audio-files',
+  videoFiles: 'video-files',
+  lessonMaterials: 'video-files',
+  generatedImages: 'character-images',
   communityPosts: 'community-posts',
 } as const
 
@@ -31,14 +45,20 @@ interface StorageLocation {
 }
 
 function assertSupabaseStorageConfigured() {
-  if (!supabaseUrl || (!supabaseServiceRoleKey && !supabaseAnonKey)) {
+  if (!supabaseUrl || !supabaseUrl.startsWith('https://') || !supabaseUrl.includes('.supabase.co')) {
     throw new Error(
-      'Supabase Storage is not configured. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY for server uploads.'
+      `Supabase Storage URL is not configured correctly. Expected SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL to be a https://*.supabase.co URL, got "${supabaseUrl ? '[non-supabase-url]' : '[missing]'}".`
+    )
+  }
+
+  if (!supabaseAnonKey) {
+    throw new Error(
+      'Supabase Storage is not configured. Set SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY.'
     )
   }
 }
 
-function normalizeStorageKey(key: string, defaultBucket = STORAGE_BUCKETS.appAssets): StorageLocation {
+function normalizeStorageKey(key: string, defaultBucket = STORAGE_BUCKETS.userDrawings): StorageLocation {
   const normalized = key.replace(/^\/+/, '')
   const [maybeBucket, ...pathParts] = normalized.split('/')
   const knownBuckets = new Set<string>(Object.values(STORAGE_BUCKETS))
@@ -55,21 +75,38 @@ function normalizeStorageKey(key: string, defaultBucket = STORAGE_BUCKETS.appAss
 export async function uploadFile(
   file: UploadBody,
   key: string,
-  contentType: string = 'image/png'
+  contentType: string = 'image/png',
+  options: { upsert?: boolean } = {}
 ) {
   assertSupabaseStorageConfigured()
 
   const { bucket, path } = normalizeStorageKey(key)
+  console.info('[OCR diagnostic] storage upload starting', {
+    bucket,
+    path,
+    upsert: options.upsert ?? true,
+    contentType,
+  })
   const { data, error } = await storageClient.storage.from(bucket).upload(path, file, {
     contentType,
     cacheControl: '3600',
-    upsert: true,
+    upsert: options.upsert ?? true,
   })
 
   if (error) {
-    console.error('Supabase Storage upload failed:', error)
+    console.error('Supabase Storage upload failed:', {
+      bucket,
+      path,
+      message: error.message,
+      error,
+    })
     throw error
   }
+
+  console.info('[OCR diagnostic] storage upload complete', {
+    bucket,
+    path,
+  })
 
   return {
     ...data,
@@ -102,7 +139,12 @@ export async function getFileUrl(
       .createSignedUrl(path, options.expiresIn ?? 3600)
 
     if (error) {
-      console.error('Supabase signed URL generation failed:', error)
+      console.error('Supabase signed URL generation failed:', {
+        bucket,
+        path,
+        message: error.message,
+        error,
+      })
       throw error
     }
 
@@ -119,7 +161,12 @@ export async function deleteFile(key: string) {
   const { error } = await storageClient.storage.from(bucket).remove([path])
 
   if (error) {
-    console.error('Supabase Storage delete failed:', error)
+    console.error('Supabase Storage delete failed:', {
+      bucket,
+      path,
+      message: error.message,
+      error,
+    })
     throw error
   }
 }

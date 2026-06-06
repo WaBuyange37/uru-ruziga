@@ -42,6 +42,12 @@ export interface EvaluationRequest {
   metadata: DrawingMetadata
 }
 
+export interface LearningAttemptRequest extends EvaluationRequest {
+  stepId?: string
+  learningStage: string
+  journeyPhase: string
+}
+
 export interface FeedbackItem {
   category: string
   severity: string
@@ -114,12 +120,14 @@ export class OCRApiClient {
   async evaluate(request: EvaluationRequest): Promise<EvaluationResponse> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
     try {
       const response = await fetch(`${this.baseUrl}/evaluate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(request),
         signal: controller.signal,
@@ -140,6 +148,69 @@ export class OCRApiClient {
         throw new Error('Evaluation request timed out')
       }
       
+      throw error
+    }
+  }
+
+  /**
+   * Submit an authenticated adaptive-learning attempt.
+   */
+  async submitLearningAttempt(request: LearningAttemptRequest): Promise<EvaluationResponse> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+
+    try {
+      const response = await fetch('/api/learning/attempt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.error?.message || `HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      return {
+        success: data.success,
+        attemptId: data.attempt?.userAttemptId,
+        evaluation: {
+          score: data.evaluation?.score ?? 0,
+          passed: Boolean(data.evaluation?.passed),
+          confidence: data.evaluation?.confidence ?? 0,
+          feedback: data.evaluation?.feedback ?? [],
+          detailedFeedback: Object.entries(data.evaluation?.metrics ?? {}).map(([category, value]) => ({
+            category,
+            severity: 'info',
+            message: `${category}: ${value}`,
+            suggestion: '',
+            confidence: typeof value === 'number' ? value : 0,
+          })),
+          processingTime: 0,
+        },
+        progress: data.progression
+          ? {
+              totalAttempts: data.progression.completedStages?.length ?? 0,
+              bestScore: data.progression.masteryScore ?? 0,
+            }
+          : undefined,
+      }
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Learning attempt request timed out')
+      }
+
       throw error
     }
   }

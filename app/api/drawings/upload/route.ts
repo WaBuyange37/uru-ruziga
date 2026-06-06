@@ -6,6 +6,13 @@ import { Prisma } from '@prisma/client'
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[OCR diagnostic] endpoint hit', {
+      endpoint: '/api/drawings/upload',
+      bucketUploadExpected: 'user-drawings',
+      ocrServiceCalled: false,
+      referenceGenerationTriggered: false,
+    })
+
     // Verify authentication
     const token = request.headers.get('authorization')?.replace('Bearer ', '')
     if (!token) {
@@ -50,11 +57,22 @@ export async function POST(request: NextRequest) {
     const imageBlob = dataURLtoBlob(drawingData)
 
     // Upload to Supabase Storage
+    console.info('[OCR diagnostic] bucket upload attempted', {
+      endpoint: '/api/drawings/upload',
+      bucket: 'user-drawings',
+      pathPattern: '<userId>/<characterId>/<timestamp>.png',
+      upsert: false,
+    })
     const imageUrl = await uploadDrawing(
       userId,
       characterId || lessonId || 'practice',
       imageBlob
     )
+    console.info('[OCR diagnostic] bucket upload succeeded', {
+      endpoint: '/api/drawings/upload',
+      bucket: 'user-drawings',
+      imageUrlCreated: Boolean(imageUrl),
+    })
 
     // Save attempt to database with image URL
     const attempt = await prisma.userAttempt.create({

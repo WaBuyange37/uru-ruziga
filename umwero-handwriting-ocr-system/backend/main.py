@@ -7,44 +7,71 @@ import os
 import time
 import logging
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, List, Optional
 import uuid
+import base64
+import io
+import urllib.error
+import urllib.parse
+import urllib.request
+from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
+from dotenv import dotenv_values
 import uvicorn
 
-# Add src to Python path
-import sys
-import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
+
+def load_backend_env() -> None:
+    """Load backend-local env values with root project env as fallback."""
+    backend_dir = Path(__file__).resolve().parent
+    backend_env = backend_dir / ".env"
+    root_env = backend_dir.parent.parent / ".env"
+    merged = {
+        **dotenv_values(root_env),
+        **dotenv_values(backend_env),
+    }
+
+    for key, value in merged.items():
+        if value is not None and key not in os.environ:
+            os.environ[key] = value
+
+
+load_backend_env()
 
 # Import our evaluation components
-from evaluation_engine import EvaluationEngine, EvaluationResult
-from font_renderer import FontRenderingService
-from cache_service import CacheService, CacheConfig, get_cache_service
-from performance_optimizer import PerformanceOptimizer
-from image_processor import ImageProcessingPipeline
-from comparison_algorithm import HybridComparisonAlgorithm
-from database_service import db_service
-from data_collector import data_collector
+from src.evaluation_engine import EvaluationEngine, EvaluationResult
+from src.font_renderer import FontRenderingService
+from src.cache_service import CacheService, CacheConfig, get_cache_service
+from src.performance_optimizer import PerformanceOptimizer
+from src.image_processor import ImageProcessingPipeline
+from src.comparison_algorithm import HybridComparisonAlgorithm
+from src.database_service import db_service
+from src.data_collector import data_collector
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    force=True,
 )
 logger = logging.getLogger(__name__)
 
 # Pydantic models for request/response validation
 class EvaluationRequest(BaseModel):
     character: str = Field(..., min_length=1, max_length=10, description="Character to evaluate")
-    image: str = Field(..., regex=r'^data:image/(png|jpeg);base64,', description="Base64 encoded image")
+    image: Optional[str] = Field(None, pattern=r'^data:image/(png|jpeg);base64,', description="Base64 encoded image")
+    image_url: Optional[str] = Field(None, description="Supabase URL for the saved user drawing")
+    reference_image_url: Optional[str] = Field(None, description="Supabase URL for the canonical reference image")
+    character_id: Optional[str] = Field(None, description="Character ID from the main app database")
+    latin_equivalent: Optional[str] = Field(None, description="Latin equivalent for metadata")
     session_id: Optional[str] = Field(None, description="Optional session identifier")
     user_id: Optional[str] = Field(None, description="Optional user identifier")
+    strokes: Optional[List[dict[str, Any]]] = Field(None, description="Raw learner canvas strokes")
+    expected_stroke_count: Optional[int] = Field(None, ge=0, description="Canonical expected stroke count")
 
     @validator('character')
     def validate_character(cls, v):
@@ -54,6 +81,8 @@ class EvaluationRequest(BaseModel):
 
     @validator('image')
     def validate_image_size(cls, v):
+        if v is None:
+            return v
         # Rough estimate of image size (base64 is ~33% larger than binary)
         base64_data = v.split(',')[1] if ',' in v else v
         estimated_size = (len(base64_data) * 3) / 4
@@ -62,6 +91,12 @@ class EvaluationRequest(BaseModel):
         if estimated_size > max_size:
             raise ValueError(f'Image too large: {estimated_size/1024:.1f}KB (max: {max_size/1024}KB)')
         
+        return v
+
+    @validator('image_url')
+    def validate_image_source(cls, v, values):
+        if not v and not values.get('image'):
+            raise ValueError('Either image or image_url is required')
         return v
 
 
@@ -77,15 +112,58 @@ class EvaluationResponse(BaseModel):
     score: float = Field(..., ge=0, le=100, description="Evaluation score (0-100)")
     passed: bool = Field(..., description="Whether the score meets passing criteria (>=70)")
     feedback: List[str] = Field(..., description="Human-readable feedback messages")
+    strengths: List[str] = Field(default_factory=list, description="What the learner did well")
+    weaknesses: List[str] = Field(default_factory=list, description="Areas that need attention")
+    practice_areas: List[str] = Field(default_factory=list, description="Specific improvement advice")
     detailed_feedback: List[FeedbackItem] = Field(..., description="Detailed feedback with categories")
     confidence: float = Field(..., ge=0, le=1, description="Confidence in the evaluation")
     processing_time_ms: int = Field(..., description="Processing time in milliseconds")
+
+
+# ── New production response shape ─────────────────────────────────────────────
+
+class MetricsPayload(BaseModel):
+    ssim: float
+    contour: float
+    skeleton: float
+    strokeDirection: float
+    shapeAlignment: float
+
+
+class FeedbackPayload(BaseModel):
+    strengths: List[str]
+    issues: List[str]
+    tips: List[str]
+
+
+class ProductionEvaluationResponse(BaseModel):
+    """
+    Exact response shape required by the production API contract:
+
+    {
+      "success": true,
+      "score": 87,
+      "confidence": 0.91,
+      "quality": "good",
+      "metrics": { "ssim": 0.89, "contour": 0.84, "skeleton": 0.80,
+                   "strokeDirection": 0.92, "shapeAlignment": 0.88 },
+      "feedback": { "strengths": [...], "issues": [...], "tips": [...] }
+    }
+    """
+    success: bool
+    score: float = Field(..., ge=0, le=100)
+    confidence: float = Field(..., ge=0, le=1)
+    quality: str          # "excellent" | "good" | "fair" | "poor"
+    metrics: MetricsPayload
+    feedback: FeedbackPayload
+    processing_time_ms: int
 
 
 class ReferenceResponse(BaseModel):
     character: str
     image_url: str
     cached: bool
+    metadata: dict = {}
 
 
 class HealthResponse(BaseModel):
@@ -131,6 +209,83 @@ app.add_middleware(
 evaluation_engine: Optional[EvaluationEngine] = None
 font_renderer: Optional[FontRenderingService] = None
 cache_service: Optional[CacheService] = None
+
+
+def _supabase_storage_config():
+    supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    service_role_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+    anon_key = os.getenv("SUPABASE_ANON_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    supabase_key = service_role_key if service_role_key and len(service_role_key.split(".")) == 3 else anon_key
+
+    if not supabase_url or not supabase_key:
+        raise RuntimeError("Supabase URL and key are required for storage access")
+
+    return supabase_url.rstrip("/"), supabase_key
+
+
+def _fetch_url_as_data_url(url: str) -> str:
+    headers = {"User-Agent": "uruziga-ocr/1.0"}
+    supabase_url = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
+    if supabase_url and url.startswith(supabase_url.rstrip("/")):
+        _, supabase_key = _supabase_storage_config()
+        headers.update({
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key,
+        })
+    request = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            content_type = response.headers.get("content-type", "image/png").split(";")[0]
+            data = response.read()
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Failed to fetch image URL: {exc}") from exc
+
+    logger.info("Remote image loaded: type=%s bytes=%d", content_type, len(data))
+    encoded = base64.b64encode(data).decode("utf-8")
+    return f"data:{content_type};base64,{encoded}"
+
+
+def _image_to_png_bytes(image) -> bytes:
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+    return buffer.getvalue()
+
+
+def _safe_path_segment(value: str) -> str:
+    safe = "".join(char if char.isalnum() or char in ("-", "_") else "-" for char in value)
+    safe = "-".join(part for part in safe.split("-") if part)
+    return safe or "unknown"
+
+
+def _upload_reference_image(image, path: str) -> str:
+    supabase_url, supabase_key = _supabase_storage_config()
+    bucket = "character-images"
+    encoded_path = "/".join(urllib.parse.quote(part) for part in path.split("/"))
+    upload_url = f"{supabase_url}/storage/v1/object/{bucket}/{encoded_path}"
+    data = _image_to_png_bytes(image)
+    request = urllib.request.Request(
+        upload_url,
+        data=data,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {supabase_key}",
+            "apikey": supabase_key,
+            "Content-Type": "image/png",
+            "Cache-Control": "3600",
+            "x-upsert": "true",
+        },
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=15):
+            pass
+    except urllib.error.HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Supabase reference upload failed: {exc.code} {details}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Supabase reference upload failed: {exc}") from exc
+
+    return f"{supabase_url}/storage/v1/object/public/{bucket}/{encoded_path}"
 
 
 @app.middleware("http")
@@ -258,7 +413,7 @@ async def startup_event():
         logger.info("Cache service initialized")
         
         # Initialize font renderer
-        font_path = os.getenv("UMWERO_FONT_PATH", "fonts/umwero.ttf")
+        font_path = os.getenv("UMWERO_FONT_PATH", "fonts/Umwero.ttf")
         
         if not os.path.exists(font_path):
             logger.warning(f"Font file not found at {font_path}, using fallback")
@@ -282,12 +437,12 @@ async def startup_event():
             font_renderer, 
             cache_service=cache_service, 
             performance_optimizer=performance_optimizer,
-            collect_training_data=True
+            collect_training_data=os.getenv("PYTHON_LOCAL_DATASET_COLLECTION", "false").lower() == "true"
         )
         
         # Warm cache with common characters if font renderer is available
         if font_renderer and cache_service:
-            common_characters = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+            common_characters = ['"', "|", "}", "{", ":"] + list("BCDFGHJKLMNPRSTVWYZ")
             logger.info("Starting cache warming for common characters...")
             warm_results = await cache_service.warm_cache(common_characters, font_renderer)
             successful_count = sum(1 for success in warm_results.values() if success)
@@ -335,31 +490,55 @@ async def evaluate_character(request: EvaluationRequest):
     try:
         logger.info(f"Evaluating character '{request.character}' for session {request.session_id}")
         
+        user_image_data = _fetch_url_as_data_url(request.image_url) if request.image_url else request.image
+        reference_image_data = (
+            _fetch_url_as_data_url(request.reference_image_url)
+            if request.reference_image_url
+            else None
+        )
+
+        if not user_image_data:
+            raise EvaluationException(
+                "INVALID_REQUEST",
+                "Either image or image_url is required"
+            )
+
         # Perform evaluation
         result = await evaluation_engine.evaluate_handwriting(
             character=request.character,
-            user_image_data=request.image,
+            user_image_data=user_image_data,
+            reference_image_data=reference_image_data,
             session_id=request.session_id,
-            user_id=request.user_id
+            user_id=request.user_id,
+            user_strokes=request.strokes,
+            expected_stroke_count=request.expected_stroke_count,
         )
         
         processing_time = int((time.time() - start_time) * 1000)
         
         # Convert to response format
+        detailed_items = [
+            FeedbackItem(
+                category=item.category,
+                severity=item.severity,
+                message=item.message,
+                suggestion=item.suggestion,
+                confidence=item.confidence
+            )
+            for item in result.detailed_feedback
+        ]
+        strengths = [item.message for item in detailed_items if item.severity in ("success", "info") and item.confidence >= 0.7]
+        weaknesses = [item.message for item in detailed_items if item.severity in ("warning", "error")]
+        practice_areas = [item.suggestion for item in detailed_items if item.suggestion]
+
         response = EvaluationResponse(
             score=result.score,
             passed=result.score >= 70.0,
             feedback=result.feedback,
-            detailed_feedback=[
-                FeedbackItem(
-                    category=item.category,
-                    severity=item.severity,
-                    message=item.message,
-                    suggestion=item.suggestion,
-                    confidence=item.confidence
-                )
-                for item in result.detailed_feedback
-            ],
+            strengths=strengths,
+            weaknesses=weaknesses,
+            practice_areas=practice_areas,
+            detailed_feedback=detailed_items,
             confidence=result.confidence,
             processing_time_ms=processing_time
         )
@@ -378,7 +557,13 @@ async def evaluate_character(request: EvaluationRequest):
 
 
 @app.get("/api/reference/{character}", response_model=ReferenceResponse)
-async def get_reference_image(character: str):
+async def get_reference_image(
+    character: str,
+    upload: bool = Query(False),
+    character_id: Optional[str] = Query(None),
+    latin_equivalent: Optional[str] = Query(None),
+    character_type: Optional[str] = Query(None),
+):
     """Get reference image for a character."""
     if not font_renderer:
         raise EvaluationException(
@@ -387,12 +572,30 @@ async def get_reference_image(character: str):
         )
     
     try:
-        # This would generate/retrieve reference image
-        # For now, return a placeholder response
+        reference_image = await font_renderer.render_character_cached(character, 256)
+        image_url = f"/static/references/{urllib.parse.quote(character)}.png"
+        metadata = {
+            "font_path": font_renderer.font_path,
+            "rendering_engine": font_renderer.selected_engine.value,
+            "size": 256,
+            "generated_at": datetime.utcnow().isoformat(),
+            "character_id": character_id,
+            "latin_equivalent": latin_equivalent,
+            "character_type": character_type,
+        }
+
+        if upload:
+            reference_key = _safe_path_segment(character_id or latin_equivalent or character)
+            image_url = _upload_reference_image(
+                reference_image,
+                f"characters/references/{reference_key}.png"
+            )
+
         return ReferenceResponse(
             character=character,
-            image_url=f"/static/references/{character}.png",
-            cached=True
+            image_url=image_url,
+            cached=False,
+            metadata=metadata
         )
         
     except Exception as e:
@@ -429,8 +632,12 @@ async def health_check():
     except Exception as e:
         components["database_error"] = str(e)
     
-    # Check if all critical components are healthy
-    all_healthy = all(components.values())
+    # Informational dictionaries such as database_stats may be empty even when
+    # the underlying component is healthy, so only evaluate critical booleans.
+    all_healthy = all(
+        components[name]
+        for name in ("evaluation_engine", "font_renderer", "cache_service", "database")
+    )
     
     return HealthResponse(
         status="healthy" if all_healthy else "degraded",

@@ -49,3 +49,8 @@ test_images/
 # OS
 .DS_Store
 Thumbs.db
+
+# Environment files — keep .env.example committed
+.env
+.env.local
+!.env.example

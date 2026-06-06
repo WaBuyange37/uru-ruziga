@@ -196,10 +196,17 @@ class FontRenderingService:
         Returns:
             PIL Image with rendered character, centered and properly scaled
         """
-        # Check if character is supported
-        char_code = ord(character)
-        if char_code not in self.character_map:
-            raise ValueError(f"Character '{character}' not supported by font")
+        if not character:
+            raise ValueError("Character input cannot be empty")
+
+        unsupported = [char for char in character if ord(char) not in self.character_map]
+        if unsupported:
+            raise ValueError(f"Character input '{character}' contains unsupported font values: {unsupported}")
+
+        # Umwero compounds are encoded as font-input sequences. Pillow renders
+        # the complete sequence with the font's spacing and glyph substitutions.
+        if len(character) > 1:
+            return self._render_pillow(character, size)
         
         # Use appropriate rendering engine
         if self.selected_engine == RenderingEngine.FREETYPE:
@@ -328,11 +335,14 @@ class FontRenderingService:
     
     def get_character_metrics(self, character: str) -> CharacterMetrics:
         """Extract detailed metrics for a character"""
-        char_code = ord(character)
-        if char_code not in self.character_map:
-            raise ValueError(f"Character '{character}' not supported by font")
-        
-        if self.selected_engine == RenderingEngine.FREETYPE and FREETYPE_AVAILABLE:
+        if not character:
+            raise ValueError("Character input cannot be empty")
+
+        unsupported = [char for char in character if ord(char) not in self.character_map]
+        if unsupported:
+            raise ValueError(f"Character input '{character}' contains unsupported font values: {unsupported}")
+
+        if len(character) == 1 and self.selected_engine == RenderingEngine.FREETYPE and FREETYPE_AVAILABLE:
             return self._get_freetype_metrics(character)
         else:
             return self._get_fallback_metrics(character)

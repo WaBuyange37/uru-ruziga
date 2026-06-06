@@ -13,7 +13,9 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
-    "db:validate": "tsx scripts/validate-database.ts"
+    "db:validate": "tsx scripts/validate-database.ts",
+    "ocr:references:sync": "tsx scripts/sync-ocr-references.ts",
+    "guardrails:verify": ".kiro/specs/project-guardrails/scripts/verify-guardrails.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

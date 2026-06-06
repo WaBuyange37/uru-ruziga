@@ -6,7 +6,7 @@ and data collection for OCR training datasets.
 
 import logging
 import time
-from typing import Optional, List, Tuple
+from typing import Any, Optional, List, Tuple
 from dataclasses import dataclass
 import asyncio
 
@@ -84,8 +84,11 @@ class EvaluationEngine:
     async def evaluate_handwriting(self, 
                                  character: str,
                                  user_image_data: str,
+                                 reference_image_data: Optional[str] = None,
                                  session_id: Optional[str] = None,
-                                 user_id: Optional[str] = None) -> EvaluationResult:
+                                 user_id: Optional[str] = None,
+                                 user_strokes: Optional[List[dict[str, Any]]] = None,
+                                 expected_stroke_count: Optional[int] = None) -> EvaluationResult:
         """
         Evaluate user handwriting against reference character.
         
@@ -109,12 +112,39 @@ class EvaluationEngine:
             # Step 2: Process user image
             user_processed = self._process_user_image(user_image_data)
             
-            # Step 3: Process reference image (if not cached)
-            reference_processed = self._process_reference_image(reference_data, character)
+            # Step 3: Process reference image from Supabase when provided,
+            # otherwise use the freshly generated/cached font reference.
+            if reference_image_data:
+                logger.info("Reference image loaded: yes, source=character-images")
+                reference_processed = self.image_processor.preprocess_image(reference_image_data)
+                logger.info(
+                    "Reference preprocessing succeeded: bbox=%s foreground_pixels=%d",
+                    reference_processed.bounding_box,
+                    int((reference_processed.normalized > 0).sum()),
+                )
+            else:
+                logger.info("Reference image loaded: no, using font renderer fallback")
+                reference_processed = self._process_reference_image(reference_data, character)
             
             # Step 4: Compare images using hybrid algorithm
             comparison_result = self.comparison_algorithm.compare_images(
                 reference_processed, user_processed
+            )
+            comparison_result = self.comparison_algorithm.apply_stroke_evidence(
+                comparison_result,
+                user_strokes=user_strokes,
+                expected_stroke_count=expected_stroke_count,
+            )
+            logger.info(
+                "Score components: ssim=%.3f contour=%.3f skeleton=%.3f "
+                "direction=%.3f alignment=%.3f final=%.1f confidence=%.3f",
+                comparison_result.ssim_score,
+                comparison_result.contour_score,
+                comparison_result.skeleton_score,
+                comparison_result.stroke_direction_score,
+                comparison_result.shape_alignment_score,
+                comparison_result.final_score,
+                comparison_result.confidence,
             )
             
             # Step 5: Generate feedback
@@ -125,7 +155,7 @@ class EvaluationEngine:
             )
             
             # Step 6: Extract features for ML training
-            feature_vector = self.feature_extractor.extract_all_features(user_processed.processed_image)
+            feature_vector = self.feature_extractor.extract_all_features(user_processed.normalized)
             
             # Step 7: Calculate processing time
             processing_time = int((time.time() - start_time) * 1000)
@@ -152,7 +182,7 @@ class EvaluationEngine:
                     # Continue with evaluation even if data collection fails
             
             # Step 9: Record performance metrics
-            if self.performance_optimizer:
+            if self.performance_optimizer and hasattr(self.performance_optimizer, "record_evaluation_metrics"):
                 try:
                     await self.performance_optimizer.record_evaluation_metrics(
                         character=character,
@@ -275,9 +305,13 @@ class EvaluationEngine:
     def _process_user_image(self, image_data: str) -> ProcessedImage:
         """Process user drawing image"""
         try:
-            logger.debug("Processing user image")
+            logger.info("User image loaded: yes")
             processed = self.image_processor.preprocess_image(image_data)
-            logger.debug(f"User image processed: bbox={processed.bounding_box}")
+            logger.info(
+                "User preprocessing succeeded: bbox=%s foreground_pixels=%d",
+                processed.bounding_box,
+                int((processed.normalized > 0).sum()),
+            )
             return processed
             
         except Exception as e:
@@ -430,13 +464,13 @@ class EvaluationEngine:
                 _, buffer = cv2.imencode('.png', image_array)
                 return base64.b64encode(buffer).decode('utf-8')
             
-            processed_user_b64 = image_to_base64(user_processed.processed_image)
-            processed_ref_b64 = image_to_base64(reference_processed.processed_image)
+            processed_user_b64 = image_to_base64(user_processed.normalized)
+            processed_ref_b64 = image_to_base64(reference_processed.normalized)
             
             # Get skeleton image if available
             skeleton_b64 = None
-            if hasattr(user_processed, 'skeleton_image') and user_processed.skeleton_image is not None:
-                skeleton_b64 = image_to_base64(user_processed.skeleton_image)
+            if user_processed.skeleton is not None:
+                skeleton_b64 = image_to_base64(user_processed.skeleton)
             
             # Prepare evaluation results
             evaluation_results = {

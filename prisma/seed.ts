@@ -771,10 +771,7 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('👥 Users...');
   const users = [
-    { email: '37nzela@gmail.com', username: 'kwizera', password: 'Mugix260', fullName: 'Kwizera Mugisha', role: 'ADMIN', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Creator of Umwero alphabet.', emailVerified: true, provider: 'EMAIL' },
-    { email: 'demo@uruziga.com', username: 'demo', password: 'demo123', fullName: 'Demo Student', role: 'USER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Demo account.', emailVerified: true, provider: 'EMAIL' },
-    { email: 'teacher@uruziga.com', username: 'teacher', password: 'teach123', fullName: 'Umwero Teacher', role: 'TEACHER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Teacher account.', emailVerified: true, provider: 'EMAIL' }
-  ];
+       ];
 
   let usersCreated = 0;
   for (const u of users) {
