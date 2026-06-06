@@ -6,44 +6,10 @@ import { LessonTabs } from './LessonTabs'
 import { LearningPanel } from './LearningPanel'
 import { PracticePanel } from './PracticePanel'
 import { useLessonState } from '@/hooks/useLessonState'
-import { AuthDebugger } from '@/components/debug/AuthDebugger'
 
 interface LessonWorkspaceProps {
   lessonId: string
   onCharacterComplete?: (characterId: string) => void
-}
-
-// API helper to update character progress
-async function updateCharacterProgressAPI(characterId: string, score: number): Promise<boolean> {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) {
-      return false // Will fallback to localStorage
-    }
-
-    const response = await fetch('/api/character-progress', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        characterId,
-        score,
-        timeSpent: 0
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to update progress')
-    }
-
-    const data = await response.json()
-    return data.success
-  } catch (error) {
-    console.error('Error updating character progress:', error)
-    return false
-  }
 }
 
 export function LessonWorkspace({ lessonId, onCharacterComplete }: LessonWorkspaceProps) {
@@ -83,44 +49,9 @@ export function LessonWorkspace({ lessonId, onCharacterComplete }: LessonWorkspa
     }
   }
 
-  // Handle character learning completion
-  const handleCharacterLearned = async (characterId: string, score: number) => {
-    try {
-      // Update progress via API
-      const success = await updateCharacterProgressAPI(characterId, score)
-      
-      if (success) {
-        console.log(`🎉 Character ${characterId} learned with score ${score}!`)
-        
-        // Show success message or redirect
-        // You could add a toast notification here
-        
-        // Optional: Redirect back to learn page after a delay
-        setTimeout(() => {
-          window.location.href = '/learn'
-        }, 3000)
-      } else {
-        // Fallback: save to localStorage
-        const progressKey = `characterProgress_${characterId}`
-        const progressData = {
-          characterId,
-          status: score >= 70 ? 'LEARNED' : 'IN_PROGRESS',
-          score,
-          timeSpent: 0,
-          attempts: 1,
-          lastAttempt: new Date().toISOString()
-        }
-        localStorage.setItem(progressKey, JSON.stringify(progressData))
-        console.log(`📝 Character progress saved to localStorage`)
-      }
-    } catch (error) {
-      console.error('Error handling character learned:', error)
-    }
-  }
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#8B4513] mx-auto mb-4"></div>
           <p className="text-[#8B4513] text-lg">Loading lesson...</p>
@@ -131,17 +62,17 @@ export function LessonWorkspace({ lessonId, onCharacterComplete }: LessonWorkspa
 
   if (error || !lesson || !character) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center max-w-md">
-          <p className="text-red-600 text-xl mb-4">Failed to load lesson</p>
-          <p className="text-gray-600">{error || 'Lesson not found'}</p>
+          <p className="mb-4 text-xl text-black">Failed to load lesson</p>
+          <p className="text-black/65">{error || 'Lesson not found'}</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+    <div className="min-h-screen bg-white">
       {/* Sticky Header */}
       <LessonHeader
         lesson={lesson}
@@ -157,25 +88,21 @@ export function LessonWorkspace({ lessonId, onCharacterComplete }: LessonWorkspa
 
       {/* Main Content Area */}
       <div className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Debug Component - Remove in production */}
-        <AuthDebugger />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Panel: Learning Content */}
-          <LearningPanel
-            lesson={lesson}
-            character={character}
-            activeTab={activeTab}
-          />
-
-          {/* Right Panel: Practice Canvas */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] gap-6 items-start">
+          {/* Primary Panel: Practice Canvas */}
           <PracticePanel
             lesson={lesson}
             character={character}
             practiceMode={practiceMode}
             onModeChange={setPracticeMode}
-            onCharacterLearned={handleCharacterLearned}
             onNextCharacter={handleNextCharacter}
+          />
+
+          {/* Secondary Panel: Reference Content */}
+          <LearningPanel
+            lesson={lesson}
+            character={character}
+            activeTab={activeTab}
           />
         </div>
       </div>

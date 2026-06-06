@@ -1,6 +1,7 @@
 // hooks/useLessonState.ts
 import { useState, useEffect, useCallback } from 'react'
 import { lessonIdToCharacterId } from '@/lib/character-mapping'
+import { STATIC_CONSONANT_LESSONS, STATIC_LIGATURE_LESSONS, STATIC_VOWEL_LESSONS, type StaticLessonData } from '@/lib/static-lessons'
 
 export type TabType = 'overview' | 'culture' | 'strokes' | 'story'
 export type PracticeMode = 'idle' | 'drawing' | 'evaluating' | 'complete'
@@ -88,7 +89,16 @@ export function useLessonState(lessonId: string): LessonState {
         clearTimeout(timeoutId)
         
         if (!res.ok) {
-          throw new Error('Failed to load lesson')
+          const fallbackLesson = getStaticLessonData(lessonId)
+          if (fallbackLesson) {
+            setLesson(fallbackLesson.lesson)
+            setCharacter(fallbackLesson.character)
+            loadProgressInBackground()
+            return
+          }
+
+          const errorText = await res.text().catch(() => '')
+          throw new Error(errorText || `Failed to load lesson (${res.status})`)
         }
 
         const data = await res.json()
@@ -172,6 +182,20 @@ export function useLessonState(lessonId: string): LessonState {
 
 // Static lesson data for faster loading
 function getStaticLessonData(lessonId: string): { lesson: LessonData; character: CharacterData } | null {
+  const allStaticLessons = [
+    ...STATIC_VOWEL_LESSONS,
+    ...STATIC_CONSONANT_LESSONS,
+    ...STATIC_LIGATURE_LESSONS,
+  ]
+  const normalizedLessonId = lessonId.replace(/^lesson-/, '')
+  const lessonFromSharedStatic = allStaticLessons.find((lesson) => {
+    return lesson.id === lessonId || lesson.id === normalizedLessonId || `lesson-${lesson.id}` === lessonId
+  })
+
+  if (lessonFromSharedStatic) {
+    return convertSharedStaticLesson(lessonFromSharedStatic, lessonId)
+  }
+
   // Map common lesson IDs to static data
   const staticLessons: Record<string, { lesson: LessonData; character: CharacterData }> = {
     'lesson-vowel-a': {
@@ -321,7 +345,55 @@ function getStaticLessonData(lessonId: string): { lesson: LessonData; character:
     }
   }
 
-  return staticLessons[lessonId] || null
+  return staticLessons[lessonId] || staticLessons[`lesson-${normalizedLessonId}`] || null
+}
+
+function convertSharedStaticLesson(staticLesson: StaticLessonData, requestedLessonId: string): { lesson: LessonData; character: CharacterData } {
+  const character = staticLesson.character.toLowerCase()
+  const lessonId = requestedLessonId || staticLesson.id
+  const isVowel = staticLesson.type === 'VOWEL'
+
+  return {
+    lesson: {
+      id: lessonId,
+      title: staticLesson.title,
+      description: staticLesson.description,
+      content: JSON.stringify({
+        vowel: isVowel ? character : undefined,
+        consonant: staticLesson.type === 'CONSONANT' ? character : undefined,
+        ligature: staticLesson.type === 'LIGATURE' ? character : undefined,
+        umwero: staticLesson.umwero,
+        glyph: staticLesson.umwero,
+        pronunciation: staticLesson.pronunciation,
+        meaning: staticLesson.meaning,
+        culturalNote: staticLesson.culturalNote,
+        examples: staticLesson.examples,
+      }),
+      type: staticLesson.type,
+      order: staticLesson.order,
+      duration: staticLesson.duration,
+    },
+    character: {
+      id: lessonIdToCharacterId(staticLesson.id),
+      vowel: isVowel ? character : undefined,
+      consonant: staticLesson.type === 'CONSONANT' ? character : undefined,
+      umwero: staticLesson.umwero,
+      title: staticLesson.title,
+      description: staticLesson.description,
+      pronunciation: staticLesson.pronunciation,
+      meaning: staticLesson.meaning,
+      culturalNote: staticLesson.culturalNote,
+      examples: staticLesson.examples.map((example) => ({
+        umwero: '',
+        latin: example,
+        meaning: example,
+      })),
+      strokeGuide: ['Trace the faint reference', 'Keep the stroke steady', 'Submit for feedback'],
+      imageUrl: staticLesson.imageUrl,
+      strokeImageUrl: staticLesson.imageUrl,
+      audioUrl: staticLesson.audioUrl,
+    },
+  }
 }
 
   return {

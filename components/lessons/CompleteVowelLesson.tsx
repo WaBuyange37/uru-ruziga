@@ -7,8 +7,9 @@ import { useState, useRef, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
-import { RefreshCw, ArrowRight, ArrowLeft, Lightbulb, CheckCircle, Circle } from "lucide-react"
+import { RefreshCw, ArrowRight, ArrowLeft, Lightbulb, CheckCircle, Circle, Send } from "lucide-react"
 import { useAuth } from "../../app/contexts/AuthContext"
+import { lessonIdToCharacterId } from "@/lib/character-mapping"
 
 export interface VowelData {
   vowel: string
@@ -22,6 +23,7 @@ export interface VowelData {
 interface Props {
   vowelData: VowelData
   lessonId: string
+  characterId?: string
   vowelNumber: number
   totalVowels: number
   allVowels?: Array<{ vowel: string; completed: boolean }>
@@ -32,25 +34,58 @@ interface Props {
   hasPrevious?: boolean
 }
 
-export function CompleteVowelLesson({ 
-  vowelData, 
-  lessonId, 
+interface StrokePoint {
+  x: number
+  y: number
+  timestamp: number
+  pressure?: number
+}
+
+interface DrawingStroke {
+  points: StrokePoint[]
+  startTime: number
+  endTime: number
+}
+
+interface LearningAttemptResponse {
+  success: boolean
+  error?: string
+  evaluation?: {
+    score: number | null
+    confidence: number
+    feedback: string[]
+    strengths: string[]
+    weaknesses: string[]
+    practiceAreas: string[]
+  }
+}
+
+export function CompleteVowelLesson({
+  vowelData,
+  lessonId,
+  characterId,
   vowelNumber,
   totalVowels,
   allVowels = [],
-  onComplete, 
+  onComplete,
   onNext,
   onPrevious,
   hasNext = false,
   hasPrevious = false
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const currentStrokeRef = useRef<StrokePoint[]>([])
+  const strokesRef = useRef<DrawingStroke[]>([])
+  const drawingStartedAtRef = useRef<number | null>(null)
+  const inputMethodRef = useRef<'mouse' | 'touch' | 'stylus'>('mouse')
   const [isDrawing, setIsDrawing] = useState(false)
   const [showComparison, setShowComparison] = useState(false)
   const [hasDrawn, setHasDrawn] = useState(false)
   const [userDrawingImage, setUserDrawingImage] = useState<string>("")
-  const [aiScore, setAiScore] = useState<number>(0)
-  const [aiFeedback, setAiFeedback] = useState<string>("")
+  const [ocrScore, setOcrScore] = useState<number | null>(null)
+  const [ocrFeedback, setOcrFeedback] = useState<string>("")
+  const [practiceAreas, setPracticeAreas] = useState<string[]>([])
+  const [submissionError, setSubmissionError] = useState<string>("")
   const [isChecking, setIsChecking] = useState(false)
   const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 })
   const { user } = useAuth()
@@ -68,7 +103,7 @@ export function CompleteVowelLesson({
         setCanvasSize({ width: size, height: size })
         canvas.width = size
         canvas.height = size
-        
+
         // Redraw grid after resize
         drawGrid()
       }
@@ -120,7 +155,12 @@ export function CompleteVowelLesson({
     const x = (clientX - rect.left) * (canvas.width / rect.width)
     const y = (clientY - rect.top) * (canvas.height / rect.height)
 
-    return { x, y }
+    const rawPressure = 'nativeEvent' in e && 'pressure' in e.nativeEvent
+      ? e.nativeEvent.pressure
+      : undefined
+    const pressure = typeof rawPressure === 'number' ? rawPressure : undefined
+
+    return { x, y, pressure }
   }
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
@@ -136,6 +176,10 @@ export function CompleteVowelLesson({
 
     setIsDrawing(true)
     setHasDrawn(true)
+    const timestamp = Date.now()
+    drawingStartedAtRef.current ??= timestamp
+    inputMethodRef.current = 'touches' in e ? 'touch' : 'mouse'
+    currentStrokeRef.current = [{ ...coords, timestamp }]
 
     ctx.beginPath()
     ctx.moveTo(coords.x, coords.y)
@@ -154,6 +198,7 @@ export function CompleteVowelLesson({
     const ctx = canvas.getContext('2d')
     if (!ctx) return
 
+    currentStrokeRef.current.push({ ...coords, timestamp: Date.now() })
     ctx.lineTo(coords.x, coords.y)
     ctx.strokeStyle = '#8B4513'
     // Responsive line width based on canvas size
@@ -164,6 +209,15 @@ export function CompleteVowelLesson({
   }
 
   const stopDrawing = () => {
+    if (isDrawing && currentStrokeRef.current.length > 0) {
+      const points = currentStrokeRef.current
+      strokesRef.current.push({
+        points,
+        startTime: points[0].timestamp,
+        endTime: points[points.length - 1].timestamp,
+      })
+      currentStrokeRef.current = []
+    }
     setIsDrawing(false)
   }
 
@@ -180,8 +234,13 @@ export function CompleteVowelLesson({
     setShowComparison(false)
     setHasDrawn(false)
     setUserDrawingImage("")
-    setAiScore(0)
-    setAiFeedback("")
+    setOcrScore(null)
+    setOcrFeedback("")
+    setPracticeAreas([])
+    setSubmissionError("")
+    currentStrokeRef.current = []
+    strokesRef.current = []
+    drawingStartedAtRef.current = null
   }
 
   const checkDrawing = async () => {
@@ -189,93 +248,99 @@ export function CompleteVowelLesson({
     if (!canvas) return
 
     setIsChecking(true)
+    setSubmissionError("")
 
     // Convert canvas to image
     const imageData = canvas.toDataURL('image/png')
     setUserDrawingImage(imageData)
 
-    // Create reference image for the correct character (use same size as canvas)
-    const referenceCanvas = document.createElement('canvas')
-    referenceCanvas.width = canvas.width
-    referenceCanvas.height = canvas.height
-    const refCtx = referenceCanvas.getContext('2d')
-    if (refCtx) {
-      refCtx.fillStyle = 'white'
-      refCtx.fillRect(0, 0, referenceCanvas.width, referenceCanvas.height)
-      // Responsive font size
-      const fontSize = Math.floor(canvas.width * 0.5)
-      refCtx.font = `${fontSize}px UMWEROalpha`
-      refCtx.fillStyle = '#8B4513'
-      refCtx.textAlign = 'center'
-      refCtx.textBaseline = 'middle'
-      refCtx.fillText(vowelData.umwero, referenceCanvas.width / 2, referenceCanvas.height / 2)
-    }
-    const referenceImage = referenceCanvas.toDataURL('image/png')
-
-    // AI Comparison
-    let score = 0
-    let feedback = "Practice completed"
-    
     try {
-      const response = await fetch('/api/drawings/ai-compare', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userDrawingBase64: imageData.split(',')[1],
-          referenceCharacterBase64: referenceImage.split(',')[1],
-          vowel: vowelData.vowel,
-          umweroChar: vowelData.umwero
+      if (!user) {
+        throw new Error('Please sign in before submitting your writing attempt.')
+      }
+
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Your session has expired. Please sign in again.')
+      }
+
+      const strokes = [...strokesRef.current]
+      if (currentStrokeRef.current.length > 0) {
+        const points = currentStrokeRef.current
+        strokes.push({
+          points,
+          startTime: points[0].timestamp,
+          endTime: points[points.length - 1].timestamp,
         })
+      }
+
+      const totalPoints = strokes.reduce((sum, stroke) => sum + stroke.points.length, 0)
+      const now = Date.now()
+      const resolvedCharacterId = characterId || lessonIdToCharacterId(lessonId)
+
+      console.info('[OCR diagnostic] endpoint called', {
+        endpoint: '/api/learning/attempt',
+        characterId: resolvedCharacterId,
+        lessonId,
+        strokeCount: strokes.length,
       })
 
-      if (response.ok) {
-        const result = await response.json()
-        score = result.score
-        feedback = result.feedback
-      } else {
-        // Fallback scoring
-        score = 70
-        feedback = "Drawing saved for review"
-      }
-    } catch (error) {
-      console.error('AI validation error:', error)
-      score = 70
-      feedback = "Drawing saved for review"
-    }
-
-    setAiScore(score)
-    setAiFeedback(feedback)
-    setShowComparison(true)
-    setIsChecking(false)
-
-    // Save to database
-    if (user) {
-      try {
-        const token = localStorage.getItem('token')
-        
-        const response = await fetch('/api/drawings/save', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+      const response = await fetch('/api/learning/attempt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          characterId: resolvedCharacterId,
+          lessonId,
+          imageData,
+          strokes,
+          learningStage: 'TRACING',
+          journeyPhase: 'TRACE',
+          metadata: {
+            canvasSize: { width: canvas.width, height: canvas.height },
+            devicePixelRatio: window.devicePixelRatio || 1,
+            inputMethod: inputMethodRef.current,
+            totalDuration: drawingStartedAtRef.current ? now - drawingStartedAtRef.current : 0,
+            strokeCount: strokes.length,
+            totalPoints,
+            deviceInfo: {
+              userAgent: navigator.userAgent,
+              platform: navigator.platform,
+              isMobile: /Android|iPhone|iPad|iPod/i.test(navigator.userAgent),
+              isTouch: navigator.maxTouchPoints > 0,
+              screenWidth: window.screen.width,
+              screenHeight: window.screen.height,
+            },
           },
-          body: JSON.stringify({
-            vowel: vowelData.vowel,
-            umweroChar: vowelData.umwero,
-            drawingData: imageData,
-            aiScore: score,
-            feedback,
-            lessonId,
-            timeSpent: 0,
-          })
-        })
+        }),
+      })
 
-        if (response.ok && onComplete) {
-          onComplete()
-        }
-      } catch (error) {
-        console.error('Save error:', error)
+      const result = await response.json() as LearningAttemptResponse
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Writing attempt could not be submitted.')
       }
+      if (result.evaluation?.score === null || result.evaluation?.score === undefined) {
+        throw new Error(
+          result.evaluation?.feedback?.join(' ') ||
+          'Your attempt was saved, but the OCR service could not evaluate it.'
+        )
+      }
+
+      setOcrScore(result.evaluation.score)
+      setOcrFeedback(result.evaluation.feedback.join(' ') || 'Python OCR evaluation completed.')
+      setPracticeAreas(result.evaluation.practiceAreas)
+      setShowComparison(true)
+
+    } catch (error) {
+      console.error('Learning attempt submission error:', error)
+      setOcrScore(null)
+      setOcrFeedback("")
+      setPracticeAreas([])
+      setSubmissionError(error instanceof Error ? error.message : 'Writing attempt could not be submitted.')
+    } finally {
+      setIsChecking(false)
     }
   }
 
@@ -293,31 +358,49 @@ export function CompleteVowelLesson({
     }
   }
 
+  const progressValue = Math.round((vowelNumber / totalVowels) * 100)
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#8B4513] to-[#A0522D] py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-[#F3E5AB] mb-2">
-            Inyajwi - The Five Sacred Vowels
-          </h1>
-          <p className="text-[#F3E5AB]/80">Learn the foundation of Umwero alphabet</p>
+    <div className="min-h-screen bg-white py-4 sm:py-6">
+      <div className="mx-auto max-w-7xl px-3 sm:px-6">
+        <div className="mb-5 rounded-lg border border-[#8B4513]/20 bg-white p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-[#8B4513]/25 bg-white font-umwero text-5xl text-[#8B4513]">
+                {vowelData.umwero}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#8B4513]">Lesson {vowelNumber} of {totalVowels}</p>
+                <h1 className="text-2xl font-bold text-black">Vowel {vowelData.vowel.toUpperCase()}</h1>
+                <p className="text-base text-black/65">{vowelData.pronunciation || "Practice the character, submit, then continue."}</p>
+              </div>
+            </div>
+            <div className="min-w-[180px]">
+              <div className="mb-2 flex justify-between text-sm font-medium text-black/65">
+                <span>Progress</span>
+                <span>{progressValue}%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-black/10">
+                <div className="h-full bg-[#8B4513]" style={{ width: `${progressValue}%` }} />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Vowel Progress List at Top */}
         {allVowels.length > 0 && (
-          <div className="mb-6 flex justify-center">
-            <div className="bg-[#F3E5AB] rounded-lg border-2 border-[#8B4513] p-3 inline-flex gap-3">
+          <div className="mb-5 overflow-x-auto">
+            <div className="inline-flex min-w-full gap-2 rounded-lg border border-[#8B4513]/20 bg-white p-2 sm:min-w-0">
               {allVowels.map((v, idx) => (
-                <div 
+                <div
                   key={idx}
-                  className={`flex items-center gap-2 px-3 py-2 rounded ${
-                    idx === vowelNumber - 1 
-                      ? 'bg-[#8B4513] text-[#F3E5AB]' 
+                  className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold ${
+                    idx === vowelNumber - 1
+                      ? 'bg-[#8B4513] text-white'
                       : 'bg-white text-[#8B4513]'
                   }`}
                 >
                   {v.completed ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <CheckCircle className="h-4 w-4" />
                   ) : (
                     <Circle className="h-4 w-4" />
                   )}
@@ -328,134 +411,61 @@ export function CompleteVowelLesson({
           </div>
         )}
 
-        {/* Main Content */}
-        <div className="grid md:grid-cols-2 gap-6">
-          {/* Left - Info */}
-          <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-            <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-              <div className="flex items-center justify-between">
+        <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+          <aside className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg text-black">Character Reference</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex aspect-square items-center justify-center rounded-lg border border-[#8B4513]/20 bg-white font-umwero text-9xl text-[#8B4513]">
+                  {vowelData.umwero}
+                </div>
                 <div>
-                  <CardTitle className="text-2xl text-[#8B4513]">
-                    Vowel: {vowelData.vowel.toUpperCase()}
-                  </CardTitle>
-                  <p className="text-[#D2691E] text-sm mt-1">{vowelData.pronunciation}</p>
+                  <p className="text-sm font-semibold text-black">Meaning</p>
+                  <p className="mt-1 text-base text-black/70">{vowelData.meaning || "Practice this character form."}</p>
                 </div>
-                <Badge className="bg-[#8B4513] text-[#F3E5AB] text-lg px-3 py-1">
-                  {vowelNumber} / {totalVowels}
-                </Badge>
-              </div>
-            </CardHeader>
-
-            <CardContent className="pt-6 space-y-6">
-              <div className="bg-white rounded-lg border-2 border-[#8B4513] p-8 flex items-center justify-center">
-                <div className="text-9xl font-umwero text-[#8B4513]">{vowelData.umwero}</div>
-              </div>
-
-              <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
-                <h3 className="font-bold text-[#8B4513] mb-2">Meaning:</h3>
-                <p className="text-[#8B4513]">{vowelData.meaning}</p>
-              </div>
-
-              <div className="bg-white/70 rounded-lg border border-[#8B4513] p-4">
-                <h3 className="font-bold text-[#8B4513] mb-2 flex items-center gap-2">
-                  🌍 Cultural Context:
-                </h3>
-                <p className="text-[#8B4513] text-sm italic">{vowelData.culturalNote}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Right - Example Words (Always Visible) */}
-          <Card className="bg-[#F3E5AB] border-2 border-[#8B4513]">
-            <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-              <CardTitle className="text-xl text-[#8B4513] flex items-center gap-2">
-                📚 Example Words
-              </CardTitle>
-              <p className="text-[#D2691E] text-sm">
-                See how this vowel is used in Kinyarwanda
-              </p>
-            </CardHeader>
-
-            <CardContent className="pt-6 space-y-4">
-              {/* Example Words from Database */}
-              {vowelData.examples && vowelData.examples.length > 0 ? (
-                <div className="space-y-3">
-                  {vowelData.examples.map((example, idx) => (
-                    <div key={idx} className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="text-3xl font-umwero text-[#8B4513]">
-                          {example.umwero}
+                <details className="rounded-lg border border-[#8B4513]/20 p-3">
+                  <summary className="cursor-pointer text-sm font-semibold text-[#8B4513]">Culture and examples</summary>
+                  {vowelData.culturalNote && <p className="mt-3 text-sm leading-6 text-black/70">{vowelData.culturalNote}</p>}
+                  {vowelData.examples?.length > 0 && (
+                    <div className="mt-3 space-y-2">
+                      {vowelData.examples.slice(0, 3).map((example, idx) => (
+                        <div key={idx} className="flex items-center justify-between rounded-md bg-white p-2">
+                          <span className="font-umwero text-2xl text-[#8B4513]">{example.umwero}</span>
+                          <span className="text-right text-sm text-black/70">{example.latin}</span>
                         </div>
-                        <div className="text-right">
-                          <div className="font-bold text-[#8B4513]">{example.latin}</div>
-                          <div className="text-sm text-[#D2691E]">{example.english}</div>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg border-2 border-[#8B4513] p-4">
-                  <p className="text-[#8B4513]">No examples available yet.</p>
-                </div>
-              )}
+                  )}
+                </details>
+              </CardContent>
+            </Card>
+          </aside>
 
-              {/* Learning Tip */}
-              <div className="bg-blue-50 rounded-lg border border-blue-300 p-4">
-                <h4 className="font-bold text-blue-800 mb-2 flex items-center gap-2">
-                  <Lightbulb className="h-4 w-4" />
-                  Learning Tip
-                </h4>
-                <p className="text-sm text-blue-700">
-                  Practice pronouncing "{vowelData.vowel}" while looking at the Umwero character. 
-                  Connect the sound with the visual form.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Practice Section - Full Width Below */}
-        <Card className="mt-6 bg-[#F3E5AB] border-2 border-[#8B4513]">
+          <Card className="border-[#8B4513]/35">
           {!showComparison ? (
-            /* Drawing Mode */
             <>
-              <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                <div className="flex items-center justify-between">
+              <CardHeader className="border-b border-[#8B4513]/20">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <CardTitle className="text-2xl text-[#8B4513]">
-                      Practice: Glyph '{vowelData.vowel.toUpperCase()}'
-                    </CardTitle>
-                    <p className="text-[#D2691E] text-sm mt-1">
-                      Trace the character carefully - Follow the guide lines for maximum accuracy
-                    </p>
+                    <CardTitle className="text-xl text-black">Practice Canvas</CardTitle>
+                    <p className="mt-1 text-base text-black/65">Draw the character, submit it, then use feedback to decide your next step.</p>
                   </div>
-                  <Badge className="bg-[#8B4513] text-[#F3E5AB] text-sm px-3 py-1">
-                    LESSON PROGRESS: {vowelNumber} of {totalVowels}
-                  </Badge>
+                  <Badge variant="outline">{hasDrawn ? "Ready to submit" : "Draw first"}</Badge>
                 </div>
               </CardHeader>
 
-              <CardContent className="pt-6">
-                <div className="max-w-2xl mx-auto space-y-4">
-                  {/* Canvas with Reference Character */}
-                  <div className="relative bg-white rounded-lg border-4 border-[#8B4513] overflow-hidden aspect-square touch-none">
-                    {/* Reference character layer (faint) */}
+              <CardContent className="pt-5">
+                <div className="mx-auto max-w-3xl space-y-4">
+                  <div className="relative aspect-square overflow-hidden rounded-lg border border-[#8B4513]/30 bg-white touch-none">
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-15">
-                      <div className="text-[20rem] font-umwero text-[#8B4513] leading-none">
+                      <div className="text-[13rem] font-umwero text-[#8B4513] leading-none sm:text-[20rem]">
                         {vowelData.umwero}
                       </div>
                     </div>
-                    
-                    {/* Accuracy badge */}
-                    {hasDrawn && (
-                      <div className="absolute top-4 right-4 bg-amber-100 border-2 border-amber-600 rounded-lg px-4 py-2">
-                        <div className="text-xs text-amber-800 font-semibold">ACCURACY</div>
-                        <div className="text-2xl font-bold text-amber-900">--</div>
-                      </div>
-                    )}
-
-                    {/* Drawing canvas */}
+                    <div className="pointer-events-none absolute inset-x-0 top-1/2 border-t border-dashed border-black/10" />
+                    <div className="pointer-events-none absolute inset-y-0 left-1/2 border-l border-dashed border-black/10" />
                     <canvas
                       ref={canvasRef}
                       className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
@@ -470,80 +480,55 @@ export function CompleteVowelLesson({
                     />
                   </div>
 
-                  {/* Control Buttons */}
-                  <div className="flex items-center justify-center gap-4">
+                  <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1.5fr]">
                     <Button
                       onClick={clearCanvas}
                       variant="outline"
-                      size="lg"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
                       disabled={isChecking}
                     >
-                      <RefreshCw className="mr-2 h-5 w-5" /> UNDO
+                      <RefreshCw className="h-4 w-4" /> Undo
                     </Button>
                     <Button
                       onClick={clearCanvas}
                       variant="outline"
-                      size="lg"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
                       disabled={isChecking}
                     >
-                      <RefreshCw className="mr-2 h-5 w-5" /> CLEAR
+                      Clear
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-6"
-                    >
-                      👁 GUIDE ON
+                    <Button onClick={checkDrawing} disabled={!hasDrawn || isChecking}>
+                      {isChecking ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                      {isChecking ? "Evaluating..." : "Submit Writing"}
                     </Button>
                   </div>
 
-                  {/* Stroke Hint */}
-                  <div className="bg-amber-50 rounded-lg border-2 border-amber-600 p-4">
+                  <div className="rounded-lg border border-[#8B4513]/20 bg-white p-4">
                     <div className="flex items-start gap-3">
-                      <div className="bg-[#8B4513] text-white rounded-full w-8 h-8 flex items-center justify-center flex-shrink-0 mt-1">
-                        💡
-                      </div>
+                      <Lightbulb className="mt-1 h-5 w-5 shrink-0 text-[#8B4513]" />
                       <div>
-                        <p className="text-[#8B4513] text-sm italic">
-                          The stroke for '{vowelData.vowel.toUpperCase()}' starts from the top-left curve and moves clockwise. 
-                          Try to keep a consistent pressure.
+                        <p className="text-sm leading-6 text-black/70">
+                          Keep your stroke steady and use the faint reference as a guide. Each submit is saved as its own attempt.
                         </p>
                       </div>
                     </div>
                   </div>
 
                   {/* Bottom Navigation */}
-                  <div className="flex items-center justify-between pt-4">
+                  {submissionError && (
+                    <div className="rounded-lg border-2 border-red-500 bg-red-50 p-4 text-sm text-red-800">
+                      {submissionError}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-2">
                     <Button
                       onClick={handlePrevious}
                       disabled={!hasPrevious}
                       variant="outline"
-                      size="lg"
-                      className="border-2 border-[#F3E5AB] bg-white text-[#8B4513] hover:bg-[#F3E5AB] disabled:opacity-30 rounded-full px-8"
                     >
-                      <ArrowLeft className="mr-2 h-5 w-5" />
+                      <ArrowLeft className="h-4 w-4" />
                       Previous
                     </Button>
-
-                    <Button
-                      onClick={checkDrawing}
-                      disabled={!hasDrawn || isChecking}
-                      size="lg"
-                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] rounded-full px-8"
-                    >
-                      {isChecking ? (
-                        <>
-                          <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                          Checking...
-                        </>
-                      ) : (
-                        <>
-                          Submit & Check ✓
-                        </>
-                      )}
-                    </Button>
+                    <span className="text-sm text-black/55">Submit to unlock feedback</span>
                   </div>
                 </div>
               </CardContent>
@@ -551,32 +536,37 @@ export function CompleteVowelLesson({
           ) : (
             /* Comparison Mode */
             <>
-              <CardHeader className="border-b-2 border-[#8B4513] pb-4">
-                <CardTitle className="text-xl text-[#8B4513]">Results</CardTitle>
-                <p className="text-[#D2691E] text-sm">How does your writing compare?</p>
+              <CardHeader className="border-b border-[#8B4513]/20">
+                <CardTitle className="text-xl text-black">Feedback</CardTitle>
+                <p className="text-base text-black/65">Review your attempt, then continue or try again.</p>
               </CardHeader>
 
-              <CardContent className="pt-6">
-                <div className="max-w-2xl mx-auto space-y-4">
-                  {/* AI Feedback */}
-                  {aiFeedback && (
-                    <div className={`p-4 rounded-lg border-2 ${
-                      aiScore >= 70 ? 'bg-green-50 border-green-500' : 
-                      aiScore >= 55 ? 'bg-yellow-50 border-yellow-500' : 
-                      'bg-red-50 border-red-500'
-                    }`}>
+              <CardContent className="pt-5">
+                <div className="mx-auto max-w-3xl space-y-4">
+                  {ocrFeedback && ocrScore !== null && (
+                    <div className="rounded-lg border border-[#8B4513]/25 bg-white p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-bold text-[#8B4513]">AI Score:</span>
-                        <span className="text-2xl font-bold">{aiScore}%</span>
+                        <span className="font-bold text-black">Score</span>
+                        <span className="text-2xl font-bold text-[#8B4513]">{Math.round(ocrScore)}%</span>
                       </div>
-                      <p className="text-sm text-[#8B4513]">{aiFeedback}</p>
+                      <p className="text-sm leading-6 text-black/70">{ocrFeedback}</p>
+                      {practiceAreas.length > 0 && (
+                        <div className="mt-3">
+                          <p className="text-sm font-semibold text-black">Practice next:</p>
+                          <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-black/70">
+                            {practiceAreas.map((area) => (
+                              <li key={area}>{area}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <h4 className="text-center font-semibold text-[#8B4513] mb-2">Your Writing</h4>
-                      <div className="bg-white rounded-lg border-2 border-[#8B4513] aspect-square flex items-center justify-center p-2">
+                      <h4 className="text-center font-semibold text-black mb-2">Your Writing</h4>
+                      <div className="bg-white rounded-lg border border-[#8B4513]/25 aspect-square flex items-center justify-center p-2">
                         {userDrawingImage && (
                           <img src={userDrawingImage} alt="Drawing" className="w-full h-full object-contain" />
                         )}
@@ -584,48 +574,43 @@ export function CompleteVowelLesson({
                     </div>
 
                     <div>
-                      <h4 className="text-center font-semibold text-[#8B4513] mb-2">Correct Form</h4>
-                      <div className="bg-white rounded-lg border-2 border-[#8B4513] aspect-square flex items-center justify-center">
+                      <h4 className="text-center font-semibold text-black mb-2">Reference</h4>
+                      <div className="bg-white rounded-lg border border-[#8B4513]/25 aspect-square flex items-center justify-center">
                         <div className="text-9xl font-umwero text-[#8B4513]">{vowelData.umwero}</div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4">
+                  <div className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <Button
                       onClick={clearCanvas}
                       variant="outline"
-                      size="lg"
-                      className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#8B4513] hover:text-[#F3E5AB] rounded-full px-8"
                     >
-                      <RefreshCw className="mr-2 h-5 w-5" /> Try Again
+                      <RefreshCw className="h-4 w-4" /> Try Again
                     </Button>
                     <Button
-                      onClick={handleNext}
-                      disabled={!hasNext}
-                      size="lg"
-                      className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] rounded-full px-8"
+                      onClick={hasNext ? handleNext : onComplete}
                     >
-                      {aiScore >= 55 ? 'Good! Next Character' : 'Continue Anyway'}
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      {hasNext ? "Continue Lesson" : "Finish Lesson"}
+                      <ArrowRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
               </CardContent>
             </>
           )}
-        </Card>
+          </Card>
+        </div>
 
-        {/* Progress Dots */}
         <div className="mt-6 flex justify-center">
           <div className="inline-flex gap-2">
             {Array.from({ length: totalVowels }).map((_, idx) => (
               <div
                 key={idx}
                 className={`w-12 h-2 rounded-full ${
-                  allVowels[idx]?.completed ? 'bg-green-500' 
-                  : idx === vowelNumber - 1 ? 'bg-[#8B4513]' 
-                  : 'bg-[#F3E5AB]'
+                  allVowels[idx]?.completed ? 'bg-[#8B4513]'
+                  : idx === vowelNumber - 1 ? 'bg-[#8B4513]'
+                  : 'bg-black/15'
                 }`}
               />
             ))}

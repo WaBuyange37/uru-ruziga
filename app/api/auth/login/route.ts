@@ -10,12 +10,17 @@ import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  let identifier = ''
+  let password = ''
+
   try {
     // Rate limiting
     const rateLimitResponse = await withRateLimit(request, RATE_LIMITS.AUTH_LOGIN)
     if (rateLimitResponse) return rateLimitResponse
 
-    const { identifier, password } = await request.json()
+    const body = await request.json()
+    identifier = body.identifier
+    password = body.password
 
     // Validate input
     if (!identifier || !password) {
@@ -94,10 +99,55 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
+    const demoLogin = getDevelopmentDemoLogin(identifier, password)
+    if (demoLogin) {
+      return NextResponse.json(demoLogin)
+    }
+
     console.error('Login error:', error)
+
     return NextResponse.json(
       { error: 'Login failed. Please try again.' },
       { status: 500 }
     )
+  }
+}
+
+function getDevelopmentDemoLogin(identifier: string, password: string) {
+  if (process.env.NODE_ENV === 'production') return null
+
+  const normalizedIdentifier = identifier?.toLowerCase().trim()
+  const isDemoIdentifier = normalizedIdentifier === 'demo@uruziga.com' || normalizedIdentifier === 'demo'
+  const demoPassword = process.env.URUZIGA_DEMO_PASSWORD
+  if (!isDemoIdentifier || !demoPassword || password !== demoPassword) return null
+
+  const user = {
+    id: 'demo-development-user',
+    email: 'demo@uruziga.com',
+    mobileNumber: null,
+    fullName: 'Demo Student',
+    username: 'demo',
+    role: 'STUDENT',
+    avatar: null,
+    emailVerified: true,
+  }
+
+  const token = jwt.sign(
+    {
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      developmentDemo: true,
+    },
+    getJwtSecret(),
+    { expiresIn: '7d' }
+  )
+
+  return {
+    success: true,
+    token,
+    user,
+    warning: 'Using development demo login because the database is unavailable.',
   }
 }

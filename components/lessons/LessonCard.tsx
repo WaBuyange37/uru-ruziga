@@ -4,20 +4,14 @@
 import { memo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { 
   Play, 
   CheckCircle, 
-  Lock, 
-  Clock, 
-  Star,
-  Volume2,
-  TrendingUp
+  Lock
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { LessonMetadata, LessonProgress } from '@/types/lesson-progress'
-import Image from 'next/image'
 
 interface LessonCardProps {
   lesson: LessonMetadata
@@ -37,7 +31,7 @@ export const LessonCard = memo(function LessonCard({
   const getStatusBadge = () => {
     if (isLocked) {
       return (
-        <Badge className="bg-gray-200 text-gray-700 border-gray-300">
+        <Badge className="bg-white text-black/65 border-[#8B4513]/25">
           <Lock className="h-3 w-3 mr-1" />
           Locked
         </Badge>
@@ -45,7 +39,7 @@ export const LessonCard = memo(function LessonCard({
     }
     if (progress?.completed) {
       return (
-        <Badge className="bg-green-100 text-green-700 border-green-300">
+        <Badge className="bg-white text-[#8B4513] border-[#8B4513]/35">
           <CheckCircle className="h-3 w-3 mr-1" />
           Completed
         </Badge>
@@ -53,27 +47,19 @@ export const LessonCard = memo(function LessonCard({
     }
     if (progress && progress.attempts > 0) {
       return (
-        <Badge className="bg-blue-100 text-blue-700 border-blue-300">
-          <TrendingUp className="h-3 w-3 mr-1" />
+        <Badge className="bg-white text-[#8B4513] border-[#8B4513]/35">
+          <Play className="h-3 w-3 mr-1" />
           In Progress
         </Badge>
       )
     }
     return (
-      <Badge className="bg-amber-100 text-amber-700 border-amber-300">
+      <Badge className="bg-white text-black/65 border-[#8B4513]/25">
         <Play className="h-3 w-3 mr-1" />
         Start
       </Badge>
     )
   }
-
-  const progressPercentage = progress 
-    ? progress.completed 
-      ? 100 
-      : (progress.currentStep && progress.totalSteps) 
-        ? (progress.currentStep / progress.totalSteps) * 100 
-        : 30
-    : 0
 
   return (
     <motion.div
@@ -86,7 +72,7 @@ export const LessonCard = memo(function LessonCard({
         className={`
           relative overflow-hidden transition-all duration-300
           ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-xl'}
-          ${progress?.completed ? 'border-green-300 bg-green-50/30' : 'border-[#D2691E]/30'}
+          border-[#8B4513]/20 bg-white
         `}
         onClick={!isLocked ? onStart : undefined}
       >
@@ -98,7 +84,7 @@ export const LessonCard = memo(function LessonCard({
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200 }}
             >
-              <div className="bg-green-500 rounded-full p-2">
+              <div className="bg-[#8B4513] rounded-full p-2">
                 <CheckCircle className="h-5 w-5 text-white" />
               </div>
             </motion.div>
@@ -107,9 +93,9 @@ export const LessonCard = memo(function LessonCard({
 
         <CardContent className="p-0">
           {/* Character Display */}
-          <div className="relative h-32 bg-gradient-to-br from-[#F3E5AB] to-[#D2691E]/20 flex items-center justify-center">
+          <div className="relative h-24 bg-white flex items-center justify-center border-b border-[#8B4513]/10">
             {lesson.character && (
-              <div className="text-6xl font-umwero text-[#8B4513]">
+              <div className="text-5xl font-umwero text-[#8B4513]">
                 {lesson.character.umwero}
               </div>
             )}
@@ -120,80 +106,19 @@ export const LessonCard = memo(function LessonCard({
                 Level {lesson.difficulty}
               </Badge>
             </div>
-
-            {/* Audio Button */}
-            {lesson.character && (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="absolute bottom-2 right-2 bg-white/90 hover:bg-white"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  const audio = new Audio(`/UmweroLetaByLeta/${lesson.character!.latin.toLowerCase()}/${lesson.character!.latin}.mp3`)
-                  audio.play()
-                }}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
-            )}
           </div>
 
           {/* Content */}
-          <div className="p-4 space-y-3">
+          <div className="p-4 space-y-4">
             {/* Header */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
                 <h3 className="font-semibold text-[#8B4513] text-lg line-clamp-1">
                   {lesson.title}
                 </h3>
-                {lesson.character && (
-                  <p className="text-sm text-[#D2691E] mt-1">
-                    {lesson.character.latin.toUpperCase()} - {lesson.character.pronunciation}
-                  </p>
-                )}
               </div>
               {getStatusBadge()}
             </div>
-
-            {/* Description */}
-            <p className="text-sm text-gray-600 line-clamp-2">
-              {lesson.description}
-            </p>
-
-            {/* Progress Bar */}
-            {progress && progressPercentage > 0 && (
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-xs text-gray-600">
-                  <span>Progress</span>
-                  <span className="font-medium">{Math.round(progressPercentage)}%</span>
-                </div>
-                <Progress value={progressPercentage} className="h-2" />
-              </div>
-            )}
-
-            {/* Stats */}
-            {progress && (
-              <div className="flex items-center gap-4 text-xs text-gray-600">
-                {progress.score > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                    <span>{progress.score}%</span>
-                  </div>
-                )}
-                {progress.timeSpent > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    <span>{Math.floor(progress.timeSpent / 60)}m</span>
-                  </div>
-                )}
-                {progress.attempts > 0 && (
-                  <div className="flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    <span>{progress.attempts} {progress.attempts === 1 ? 'attempt' : 'attempts'}</span>
-                  </div>
-                )}
-              </div>
-            )}
 
             {/* Action Button */}
             <Button
@@ -202,7 +127,7 @@ export const LessonCard = memo(function LessonCard({
                 ${isLocked 
                   ? 'bg-gray-300 cursor-not-allowed' 
                   : progress?.completed
-                    ? 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-[#8B4513] hover:bg-[#A0522D]'
                     : 'bg-[#8B4513] hover:bg-[#A0522D]'
                 }
               `}
@@ -234,12 +159,6 @@ export const LessonCard = memo(function LessonCard({
                 </>
               )}
             </Button>
-
-            {/* Duration */}
-            <div className="flex items-center justify-center text-xs text-gray-500">
-              <Clock className="h-3 w-3 mr-1" />
-              {lesson.duration} minutes
-            </div>
           </div>
         </CardContent>
       </Card>

@@ -1,19 +1,36 @@
 "use client"
-import { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
+
+import { useEffect, useState } from "react"
+import Image from "next/image"
+import {
+  ArrowRight,
+  BookOpen,
+  CheckCircle2,
+  CreditCard,
+  Database,
+  GraduationCap,
+  Heart,
+  Landmark,
+  Loader2,
+  ScrollText,
+  Shield,
+  Users,
+} from "lucide-react"
+import { useAuth } from "../contexts/AuthContext"
 import { Button } from "../../components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { Card, CardContent } from "../../components/ui/card"
 import { Input } from "../../components/ui/input"
+import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import { Badge } from "../../components/ui/badge"
-import { useTranslation } from "../../hooks/useTranslation"
-import { Heart, Users, Target, TrendingUp, Gift, Star, Award, Globe, Shield, CheckCircle, ArrowRight, CreditCard, Smartphone, Building, Calendar, Mail, Phone } from 'lucide-react'
+import { EmptyState, PageContainer } from "../../components/ui/page"
 
 interface Donation {
   id: string
   amount: number
   message: string | null
-  anonymous: boolean
+  anonymous?: boolean
+  isAnonymous?: boolean
   createdAt: string
   donor?: {
     fullName: string
@@ -28,15 +45,14 @@ interface DonationStats {
 }
 
 export default function FundingPage() {
-  const { t } = useTranslation()
   const { user } = useAuth()
   const [donations, setDonations] = useState<Donation[]>([])
   const [stats, setStats] = useState<DonationStats | null>(null)
   const [loading, setLoading] = useState(false)
   const [donationForm, setDonationForm] = useState({
-    amount: '',
-    message: '',
-    anonymous: false
+    amount: "",
+    message: "",
+    anonymous: false,
   })
 
   useEffect(() => {
@@ -46,53 +62,53 @@ export default function FundingPage() {
 
   const fetchDonations = async () => {
     try {
-      const response = await fetch('/api/donations')
+      const response = await fetch("/api/donations")
       if (response.ok) {
         const data = await response.json()
         setDonations(data.donations)
       }
     } catch (error) {
-      console.error('Error fetching donations:', error)
+      console.error("Error fetching donations:", error)
     }
   }
 
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/donations/stats')
+      const response = await fetch("/api/donations/stats")
       if (response.ok) {
         const data = await response.json()
         setStats(data)
       }
     } catch (error) {
-      console.error('Error fetching stats:', error)
+      console.error("Error fetching stats:", error)
     }
   }
 
   const submitDonation = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) {
-      alert('Please login to make a donation')
+      alert("Please login to make a donation")
       return
     }
 
     setLoading(true)
     try {
-      const response = await fetch('/api/donations', {
-        method: 'POST',
+      const response = await fetch("/api/donations", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           amount: parseFloat(donationForm.amount),
           message: donationForm.message || null,
-          anonymous: donationForm.anonymous
-        })
+          anonymous: donationForm.anonymous,
+        }),
       })
 
       if (response.ok) {
-        alert('Thank you for your donation! 🙏')
-        setDonationForm({ amount: '', message: '', anonymous: false })
+        alert("Thank you for your donation.")
+        setDonationForm({ amount: "", message: "", anonymous: false })
         await fetchDonations()
         await fetchStats()
       } else {
@@ -100,435 +116,331 @@ export default function FundingPage() {
         alert(`Error: ${errorData.message}`)
       }
     } catch (error) {
-      console.error('Error submitting donation:', error)
-      alert('Failed to process donation')
+      console.error("Error submitting donation:", error)
+      alert("Failed to process donation")
     } finally {
       setLoading(false)
     }
   }
 
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('rw-RW', {
-      style: 'currency',
-      currency: 'RWF',
-      minimumFractionDigits: 0
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat("rw-RW", {
+      style: "currency",
+      currency: "RWF",
+      minimumFractionDigits: 0,
     }).format(amount)
-  }
-
-  const getProgressPercentage = () => {
-    if (!stats || stats.goalAmount === 0) return 0
-    return Math.min((stats.totalRaised / stats.goalAmount) * 100, 100)
-  }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  }
 
   const donationTiers = [
-    { 
-      amount: 5000, 
-      title: 'Supporter', 
-      reward: 'Digital thank you card + social media recognition',
-      color: 'from-blue-500 to-cyan-500',
-      icon: <Heart className="h-6 w-6" />
+    { amount: 5000, title: "Supporter" },
+    { amount: 15000, title: "Contributor" },
+    { amount: 50000, title: "Patron" },
+    { amount: 100000, title: "Champion" },
+  ]
+
+  const missionPoints = [
+    "Teach learners across Rwanda and beyond",
+    "Build accessible learning resources",
+    "Digitize Umwero for modern technology",
+    "Preserve stories, language, and cultural knowledge",
+    "Create educational datasets for future language tools",
+  ]
+
+  const impactCards = [
+    {
+      title: "Educate Learners",
+      description: "Lessons and practice tools for students discovering Umwero.",
+      icon: GraduationCap,
     },
-    { 
-      amount: 15000, 
-      title: 'Contributor', 
-      reward: 'Digital certificate + exclusive content access',
-      color: 'from-purple-500 to-pink-500',
-      icon: <Star className="h-6 w-6" />
+    {
+      title: "Build & Improve",
+      description: "Better learning experiences, feedback, and platform reliability.",
+      icon: BookOpen,
     },
-    { 
-      amount: 50000, 
-      title: 'Patron', 
-      reward: 'Umwero learning kit + workshop invitation',
-      color: 'from-orange-500 to-red-500',
-      icon: <Award className="h-6 w-6" />
+    {
+      title: "Preserve Heritage",
+      description: "Documentation for stories, symbols, language, and cultural memory.",
+      icon: ScrollText,
     },
-    { 
-      amount: 100000, 
-      title: 'Champion', 
-      reward: 'Personal thank you call + lifetime premium access',
-      color: 'from-yellow-500 to-amber-500',
-      icon: <Target className="h-6 w-6" />
-    }
+    {
+      title: "Advance Research",
+      description: "Training data and research support for handwriting technology.",
+      icon: Database,
+    },
+    {
+      title: "Empower Communities",
+      description: "Education and outreach for learners, teachers, and families.",
+      icon: Users,
+    },
+  ]
+
+  const allocationRows = [
+    ["Learning Platform", "Lessons, practice tools, translation, and learner experience"],
+    ["Handwriting Research", "Improving Umwero writing feedback and recognition"],
+    ["Cultural Archives", "Preserving stories, references, and documentation"],
+    ["Infrastructure", "Hosting, storage, maintenance, and reliability"],
+    ["Community Programs", "Teaching, outreach, and learner support"],
   ]
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF]">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden bg-[#F3E5AB] border-b-2 border-[#8B4513]">
-        <div className="container mx-auto px-4 py-12 sm:py-16">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-[#8B4513]">
-              {t("supportUmwero")}
+    <PageContainer className="bg-white px-0 py-0">
+      <section className="relative overflow-hidden border-b border-[#8B4513]/15 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 lg:grid-cols-[1fr_0.9fr] lg:px-8 lg:py-16">
+          <div className="flex flex-col justify-center">
+            <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#8B4513]">Fund Uruziga</p>
+            <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight text-black sm:text-5xl lg:text-6xl">
+              Preserve language. Strengthen the future.
             </h1>
-            <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 text-[#D2691E]">
-              Join us in preserving and promoting the Umwero alphabet - a vital part of Kinyarwanda culture and heritage. 
-              Your contribution helps us create educational content, preserve cultural artifacts, and reach more learners worldwide.
+            <p className="mt-5 max-w-2xl text-base leading-7 text-black/72 sm:text-lg">
+              Umwero is a writing system for Kinyarwanda created by Rwandan innovator Kwizera Mugisha. Uruziga helps teach, document, and preserve this work through education, technology, and community learning.
             </p>
-            
-            {/* Trust Badges */}
-            <div className="flex flex-wrap justify-center gap-3 sm:gap-6">
-              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
-                <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Secure Payment</span>
-              </div>
-              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
-                <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Tax Deductible</span>
-              </div>
-              <div className="flex items-center gap-2 bg-[#8B4513] text-[#F3E5AB] px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm">
-                <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Instant Receipt</span>
-              </div>
+
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {[
+                ["Created in Rwanda", Landmark],
+                ["Built for preservation", BookOpen],
+                ["Driven by education", Users],
+              ].map(([label, Icon]) => (
+                <div key={label as string} className="flex items-center gap-3 rounded-lg border border-[#8B4513]/15 bg-white p-3">
+                  <Icon className="h-5 w-5 text-[#8B4513]" />
+                  <span className="text-sm font-semibold text-black">{label as string}</span>
+                </div>
+              ))}
             </div>
           </div>
+
+          <div className="relative min-h-[300px] overflow-hidden rounded-lg border border-[#8B4513]/20 bg-white">
+            <Image
+              src="/pictures/handWritten.png"
+              alt="Handwritten Umwero text"
+              fill
+              priority
+              sizes="(min-width: 1024px) 42vw, 100vw"
+              className="object-contain p-6"
+            />
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container mx-auto px-4 py-8 sm:py-12 max-w-7xl">
-        {/* Progress Overview */}
-        {stats && (
-          <Card className="mb-8 sm:mb-12 bg-[#F3E5AB] border-2 border-[#8B4513] shadow-lg">
-            <CardContent className="p-4 sm:p-6 md:p-8">
-              <div className="text-center mb-6 sm:mb-8">
-                <h2 className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-2">Campaign Progress</h2>
-                <p className="text-sm sm:text-base text-[#D2691E]">Together we're making a difference</p>
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <section className="grid gap-6 lg:grid-cols-[1fr_280px_1.1fr]">
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="p-5 sm:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <span className="h-px w-10 bg-[#8B4513]" />
+                <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">Why Umwero matters</h2>
               </div>
-              
-              <div className="mb-6 sm:mb-8">
-                <div className="flex flex-col sm:flex-row justify-between mb-4 gap-2">
-                  <span className="text-xl sm:text-2xl font-bold text-[#8B4513]">
-                    {formatAmount(stats.totalRaised)}
-                  </span>
-                  <span className="text-lg sm:text-xl text-[#D2691E]">
-                    Goal: {formatAmount(stats.goalAmount)}
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-5 sm:h-6 overflow-hidden">
-                  <div 
-                    className="bg-[#8B4513] h-5 sm:h-6 rounded-full transition-all duration-1000 flex items-center justify-center"
-                    style={{ width: `${getProgressPercentage()}%` }}
-                  >
-                    <span className="text-[#F3E5AB] text-xs sm:text-sm font-semibold">
-                      {getProgressPercentage().toFixed(1)}%
-                    </span>
-                  </div>
-                </div>
+              <div className="space-y-4 text-base leading-7 text-black/72">
+                <p>
+                  Language carries memory, identity, and culture. Umwero gives Kinyarwanda learners a writing experience rooted in their own heritage while still serving modern education and technology.
+                </p>
+                <p>
+                  Your support helps Uruziga preserve knowledge, improve learning tools, and make Umwero easier to practice, study, and share.
+                </p>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                <div className="text-center p-3 bg-white rounded-lg">
-                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
-                    {formatAmount(stats.totalRaised)}
+              <div className="mt-6 space-y-3">
+                {missionPoints.map((item) => (
+                  <div key={item} className="flex gap-3 text-sm text-black">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 flex-none text-[#8B4513]" />
+                    <span>{item}</span>
                   </div>
-                  <div className="text-sm sm:text-base text-[#D2691E]">Total Raised</div>
-                </div>
-                <div className="text-center p-3 bg-white rounded-lg">
-                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
-                    {stats.totalDonors}
-                  </div>
-                  <div className="text-sm sm:text-base text-[#D2691E]">Donors</div>
-                </div>
-                <div className="text-center p-3 bg-white rounded-lg">
-                  <div className="text-2xl sm:text-3xl font-bold text-[#8B4513] mb-1">
-                    {formatAmount(stats.averageDonation)}
-                  </div>
-                  <div className="text-sm sm:text-base text-[#D2691E]">Average Gift</div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Impact Metrics */}
-        <div className="mb-8 sm:mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-center text-[#8B4513] mb-6 sm:mb-8">Our Impact</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-            {[
-              { label: 'Students Reached', value: '2,500+', icon: <Users className="h-4 w-4 sm:h-5 sm:w-5" /> },
-              { label: 'Lessons Created', value: '150+', icon: <Target className="h-4 w-4 sm:h-5 sm:w-5" /> },
-              { label: 'Countries', value: '12', icon: <Globe className="h-4 w-4 sm:h-5 sm:w-5" /> },
-              { label: 'Artifacts Preserved', value: '85+', icon: <Shield className="h-4 w-4 sm:h-5 sm:w-5" /> }
-            ].map((metric, index) => (
-              <Card key={index} className="bg-[#F3E5AB] border-2 border-[#8B4513] shadow-md">
-                <CardContent className="p-4 sm:p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-[#8B4513] text-[#F3E5AB] rounded-full mb-3 sm:mb-4">
-                    {metric.icon}
-                  </div>
-                  <div className="text-xl sm:text-2xl font-bold text-[#8B4513] mb-1">{metric.value}</div>
-                  <div className="text-xs sm:text-sm text-[#D2691E]">{metric.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="flex h-full flex-col items-center justify-center p-6 text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8B4513]">Creator message</p>
+              <blockquote className="mt-5 text-xl font-semibold leading-8 text-black">
+                “A language becomes stronger when people can learn it, write it, and pass it forward.”
+              </blockquote>
+              <div className="mt-6 h-16 w-16 rounded-full border border-[#8B4513]/30 bg-white text-center font-bold leading-[4rem] text-[#8B4513]">
+                KM
+              </div>
+              <p className="mt-3 font-semibold text-black">Kwizera Mugisha</p>
+              <p className="text-sm text-black/60">Founder of Umwero</p>
+            </CardContent>
+          </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Donation Form */}
-          <div className="lg:col-span-2">
-            <Card className="bg-white shadow-xl border-0">
-              <CardHeader>
-                <CardTitle className="text-2xl text-gray-800 flex items-center gap-2">
-                  <Gift className="h-6 w-6 text-amber-600" />
-                  Make Your Contribution
-                </CardTitle>
-                <CardDescription className="text-gray-600">
-                  Choose your donation amount and payment method
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {user ? (
-                  <>
-                    {/* Donation Amount */}
-                    <div>
-                      <h3 className="font-semibold text-gray-800 mb-4">Select Amount</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                        {donationTiers.map((tier) => (
-                          <Button
-                            key={tier.amount}
-                            variant={donationForm.amount === tier.amount.toString() ? "default" : "outline"}
-                            className={`relative overflow-hidden ${donationForm.amount === tier.amount.toString() 
-                              ? 'bg-gradient-to-r ' + tier.color + ' text-white border-0' 
-                              : 'border-gray-300 hover:border-amber-600'
-                            }`}
-                            onClick={() => setDonationForm({ ...donationForm, amount: tier.amount.toString() })}
-                          >
-                            <div className="text-center">
-                              <div className="font-bold">{formatAmount(tier.amount)}</div>
-                              <div className="text-xs opacity-80">{tier.title}</div>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
-                      
-                      <div className="relative">
-                        <Input
-                          type="number"
-                          min="1000"
-                          value={donationForm.amount}
-                          onChange={(e) => setDonationForm({ ...donationForm, amount: e.target.value })}
-                          placeholder="Enter custom amount (RWF)"
-                          className="border-gray-300 text-lg"
-                        />
-                        {donationForm.amount && (
-                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">
-                            {formatAmount(parseFloat(donationForm.amount) || 0)}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Payment Methods */}
-                    <div>
-                      <h3 className="font-semibold text-gray-800 mb-4">Payment Method</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {[
-                          { id: 'card', name: 'Credit/Debit Card', icon: <CreditCard className="h-5 w-5" />, popular: true },
-                          { id: 'paypal', name: 'PayPal', icon: <Building className="h-5 w-5" /> },
-                          { id: 'mobile', name: 'Mobile Money', icon: <Smartphone className="h-5 w-5" /> }
-                        ].map((method) => (
-                          <div
-                            key={method.id}
-                            className="border rounded-lg p-4 cursor-pointer transition-all border-gray-300 hover:border-amber-400"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 rounded bg-gray-100">
-                                {method.icon}
-                              </div>
-                              <div>
-                                <div className="font-medium text-gray-800 flex items-center gap-2">
-                                  {method.name}
-                                  {method.popular && (
-                                    <Badge className="bg-amber-600 text-white text-xs">Popular</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Personal Message (Optional)
-                      </label>
-                      <Textarea
-                        value={donationForm.message}
-                        onChange={(e) => setDonationForm({ ...donationForm, message: e.target.value })}
-                        placeholder="Share why you support Umwero preservation..."
-                        rows={3}
-                        className="border-gray-300"
-                      />
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="anonymous"
-                        checked={donationForm.anonymous}
-                        onChange={(e) => setDonationForm({ ...donationForm, anonymous: e.target.checked })}
-                        className="rounded border-gray-300"
-                      />
-                      <label htmlFor="anonymous" className="text-sm text-gray-700">
-                        Make this donation anonymous
-                      </label>
-                    </div>
-
-                    <Button
-                      onClick={submitDonation}
-                      disabled={loading || !donationForm.amount}
-                      className="w-full bg-gradient-to-r from-amber-600 to-orange-600 text-white hover:from-amber-700 hover:to-orange-700 text-lg py-3"
-                    >
-                      {loading ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          Processing...
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center gap-2">
-                          Donate {donationForm.amount ? formatAmount(parseFloat(donationForm.amount)) : ''}
-                          <ArrowRight className="h-5 w-5" />
-                        </div>
-                      )}
-                    </Button>
-
-                    {/* Security Note */}
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <Shield className="h-4 w-4" />
-                      <span>Secured by 256-bit SSL encryption</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-center py-12">
-                    <Heart className="h-16 w-16 mx-auto mb-4 text-amber-600" />
-                    <h3 className="text-xl font-semibold text-gray-800 mb-2">Login to Donate</h3>
-                    <p className="text-gray-600 mb-6">Join our community of supporters</p>
-                    <Button asChild className="bg-amber-600 hover:bg-amber-700">
-                      <a href="/login">Log In to Continue</a>
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Recent Donations & Tiers */}
-          <div className="space-y-8">
-            {/* Recent Donations */}
-            <Card className="bg-white shadow-xl border-0">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800 flex items-center gap-2">
-                  <Heart className="h-5 w-5 text-amber-600" />
-                  Recent Supporters
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {donations.slice(0, 8).map((donation) => (
-                    <div key={donation.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-800">
-                            {donation.anonymous ? 'Anonymous' : donation.donor?.fullName || 'Anonymous'}
-                          </span>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {formatDate(donation.createdAt)}
-                        </div>
-                        {donation.message && (
-                          <p className="text-sm text-gray-700 mt-1 italic">
-                            "{donation.message}"
-                          </p>
-                        )}
-                      </div>
-                      <Badge className="bg-amber-600 text-white">
-                        {formatAmount(donation.amount)}
-                      </Badge>
-                    </div>
-                  ))}
-                  
-                  {donations.length === 0 && (
-                    <div className="text-center py-8 text-gray-600">
-                      <Heart className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Be the first to support our mission!</p>
-                    </div>
-                  )}
+          <Card className="border-[#8B4513]/30">
+            <CardContent className="p-5 sm:p-6">
+              <div className="mb-5 flex items-center gap-3">
+                <Heart className="h-5 w-5 text-[#8B4513]" />
+                <div>
+                  <h2 className="text-xl font-bold text-black">Make Your Contribution</h2>
+                  <p className="mt-1 text-sm text-black/65">Every contribution helps keep the work moving.</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
 
-            {/* Supporter Tiers */}
-            <Card className="bg-white shadow-xl border-0">
-              <CardHeader>
-                <CardTitle className="text-xl text-gray-800">Supporter Benefits</CardTitle>
-                <CardDescription className="text-gray-600">
-                  Recognition for different contribution levels
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {donationTiers.map((tier) => (
-                  <div key={tier.amount} className="border border-gray-200 rounded-lg p-4">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className={`p-2 rounded bg-gradient-to-r ${tier.color} text-white`}>
-                        {tier.icon}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-800">{tier.title}</h3>
-                        <p className="text-lg font-bold text-amber-600">
-                          {formatAmount(tier.amount)}+
-                        </p>
+              {user ? (
+                <form onSubmit={submitDonation} className="space-y-5">
+                  <div>
+                    <Label className="mb-2 block text-sm font-bold uppercase tracking-[0.12em] text-black">Select Amount</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      {donationTiers.map((tier) => (
+                        <Button
+                          key={tier.amount}
+                          type="button"
+                          variant={donationForm.amount === tier.amount.toString() ? "default" : "outline"}
+                          className="h-auto min-h-[64px] flex-col py-3"
+                          onClick={() => setDonationForm({ ...donationForm, amount: tier.amount.toString() })}
+                        >
+                          <span>{formatAmount(tier.amount)}</span>
+                          <span className="text-xs opacity-80">{tier.title}</span>
+                        </Button>
+                      ))}
+                    </div>
+                    <Input
+                      type="number"
+                      min="1000"
+                      value={donationForm.amount}
+                      onChange={(e) => setDonationForm({ ...donationForm, amount: e.target.value })}
+                      placeholder="Enter custom amount (RWF)"
+                      className="mt-3 border-[#8B4513]/35 bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-sm font-bold uppercase tracking-[0.12em] text-black">Payment Method</Label>
+                    <div className="rounded-lg border border-[#8B4513]/25 bg-white p-4">
+                      <div className="flex items-center gap-3">
+                        <CreditCard className="h-5 w-5 text-[#8B4513]" />
+                        <div>
+                          <p className="font-semibold text-black">Existing donation checkout</p>
+                          <p className="text-sm text-black/65">Payment processing remains handled by the current backend path.</p>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600">{tier.reward}</p>
+                  </div>
+
+                  <div>
+                    <Label className="mb-2 block text-sm font-bold uppercase tracking-[0.12em] text-black">Personal Message (Optional)</Label>
+                    <Textarea
+                      value={donationForm.message}
+                      onChange={(e) => setDonationForm({ ...donationForm, message: e.target.value })}
+                      placeholder="Share why you support Umwero learning..."
+                      rows={3}
+                      className="border-[#8B4513]/35 bg-white"
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-2 text-sm text-black">
+                    <input
+                      type="checkbox"
+                      checked={donationForm.anonymous}
+                      onChange={(e) => setDonationForm({ ...donationForm, anonymous: e.target.checked })}
+                      className="rounded border-[#8B4513]/35"
+                    />
+                    Make this donation anonymous
+                  </label>
+
+                  <Button type="submit" disabled={loading || !donationForm.amount} className="w-full">
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                    Donate Securely
+                  </Button>
+
+                  <p className="flex items-center justify-center gap-2 text-sm text-black/60">
+                    <Shield className="h-4 w-4" />
+                    Secured through the existing payment flow
+                  </p>
+                </form>
+              ) : (
+                <EmptyState
+                  title="Login to donate"
+                  description="Sign in to support the Uruziga mission."
+                  actionLabel="Log In"
+                  onAction={() => (window.location.href = "/login")}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section>
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="p-5 sm:p-6">
+              <h2 className="text-center text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">
+                Your support creates real impact
+              </h2>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                {impactCards.map(({ title, description, icon: Icon }) => (
+                  <div key={title} className="rounded-lg border border-[#8B4513]/15 bg-white p-4 text-center">
+                    <Icon className="mx-auto h-7 w-7 text-[#8B4513]" />
+                    <h3 className="mt-3 font-semibold text-black">{title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-black/65">{description}</p>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
-        {/* Why Support Section */}
-        <div className="mt-16 bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Why Your Support Matters</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
-                <Target className="h-8 w-8 text-amber-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Cultural Preservation</h3>
-              <p className="text-gray-600">
-                Help us digitize and preserve ancient Umwero manuscripts and cultural artifacts for future generations.
+        <section className="grid gap-6 lg:grid-cols-3">
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">Our vision</h2>
+              <p className="mt-4 text-sm leading-6 text-black/70">
+                Uruziga is more than software. It is an educational and cultural preservation initiative helping learners access language, identity, and heritage through practical tools.
               </p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
-                <Users className="h-8 w-8 text-amber-600" />
+              {stats && (
+                <div className="mt-5 rounded-lg border border-[#8B4513]/20 bg-white p-4">
+                  <p className="text-sm font-semibold text-black">Real campaign progress</p>
+                  <p className="mt-2 text-2xl font-bold text-[#8B4513]">{formatAmount(stats.totalRaised)}</p>
+                  <p className="mt-1 text-sm text-black/65">
+                    {stats.totalDonors} donor{stats.totalDonors === 1 ? "" : "s"} recorded
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">Where contributions go</h2>
+              <div className="mt-4 overflow-hidden rounded-lg border border-[#8B4513]/15">
+                {allocationRows.map(([area, purpose]) => (
+                  <div key={area} className="grid grid-cols-[0.85fr_1.15fr] border-b border-[#8B4513]/10 last:border-b-0">
+                    <div className="p-3 text-sm font-semibold text-black">{area}</div>
+                    <div className="border-l border-[#8B4513]/10 p-3 text-sm text-black/65">{purpose}</div>
+                  </div>
+                ))}
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Education Access</h3>
-              <p className="text-gray-600">
-                Provide free educational resources to schools and communities across Rwanda and beyond.
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-100 rounded-full mb-4">
-                <Globe className="h-8 w-8 text-amber-600" />
+            </CardContent>
+          </Card>
+
+          <Card className="border-[#8B4513]/20">
+            <CardContent className="p-5">
+              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">Community support</h2>
+              <div className="mt-5">
+                {donations.length > 0 ? (
+                  <div className="space-y-3">
+                    {donations.slice(0, 4).map((donation) => {
+                      const isAnonymous = donation.anonymous ?? donation.isAnonymous
+                      return (
+                        <div key={donation.id} className="rounded-lg border border-[#8B4513]/15 p-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-semibold text-black">
+                                {isAnonymous ? "Anonymous" : donation.donor?.fullName || "Anonymous"}
+                              </p>
+                              {donation.message && <p className="mt-1 text-sm text-black/65">{donation.message}</p>}
+                            </div>
+                            <Badge>{formatAmount(donation.amount)}</Badge>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-[#8B4513]/15 bg-white p-5 text-sm leading-6 text-black/65">
+                    Real supporter records will appear here when the donation endpoint returns public donations.
+                  </div>
+                )}
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Global Reach</h3>
-              <p className="text-gray-600">
-                Expand our platform to reach Rwandan diaspora and interested learners worldwide.
-              </p>
-            </div>
-          </div>
-        </div>
+            </CardContent>
+          </Card>
+        </section>
       </div>
-    </div>
+    </PageContainer>
   )
 }

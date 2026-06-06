@@ -32,6 +32,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    if (decoded.developmentDemo && process.env.NODE_ENV !== 'production') {
+      return NextResponse.json({
+        user: {
+          id: 'demo-development-user',
+          email: 'demo@uruziga.com',
+          fullName: 'Demo Student',
+          role: 'STUDENT',
+        },
+      })
+    }
+
     // Get user from database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },

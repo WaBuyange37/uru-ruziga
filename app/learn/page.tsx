@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { LearnPageClient } from '@/components/learn/LearnPageClient'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { STATIC_VOWEL_LESSONS, STATIC_CONSONANT_LESSONS, STATIC_LIGATURE_LESSONS } from '@/lib/static-lessons'
+import { lessonIdToCharacterId } from '@/lib/character-mapping'
 
 // 🔥 CRITICAL: Add Next.js caching for instant subsequent loads
 export const revalidate = 3600 // Cache for 1 hour (lessons rarely change)
@@ -32,6 +33,7 @@ function convertStaticToDbFormat(staticLessons: any[]) {
     duration: lesson.duration,
     videoUrl: null,
     thumbnailUrl: lesson.imageUrl,
+    characterId: lessonIdToCharacterId(lesson.id),
     isPublished: true,
     createdAt: new Date()
   }))
@@ -61,6 +63,7 @@ async function getLessonsData() {
           duration: true,
           videoUrl: true,
           thumbnailUrl: true,
+          characterId: true,
           isPublished: true,
           createdAt: true,
         }
@@ -82,6 +85,7 @@ async function getLessonsData() {
           duration: true,
           videoUrl: true,
           thumbnailUrl: true,
+          characterId: true,
           isPublished: true,
           createdAt: true,
         }
@@ -103,6 +107,7 @@ async function getLessonsData() {
           duration: true,
           videoUrl: true,
           thumbnailUrl: true,
+          characterId: true,
           isPublished: true,
           createdAt: true,
         }
@@ -174,7 +179,7 @@ export default async function LearnPage() {
   const lessonsData = await getLessonsData()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB] px-2 sm:px-4">
+    <div className="min-h-screen bg-white px-2 sm:px-4">
       <Suspense fallback={<LoadingSpinner />}>
         <LearnPageClient 
           initialVowelLessons={lessonsData.vowelLessons}

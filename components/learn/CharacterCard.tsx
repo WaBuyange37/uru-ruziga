@@ -4,11 +4,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Play, Lock, CheckCircle, Clock, Star, Keyboard } from 'lucide-react'
+import { Play, Lock, CheckCircle } from 'lucide-react'
 import Image from 'next/image'
-import { AudioPlayer } from './AudioPlayer'
-import { getAudioPath, getUmweroAscii } from '@/lib/audio-utils'
 
 interface CharacterCardProps {
   character: {
@@ -41,26 +38,13 @@ interface CharacterCardProps {
 }
 
 function CharacterCard({ character, progress, isLocked, onStart, onStatusChange, language = 'en' }: CharacterCardProps) {
-  // Get audio path from our mapping system
-  const audioPath = getAudioPath(character.vowel) || character.audioUrl
-  
   // Use the umwero character directly from the database (already correct from UMWERO_MAP)
   const umweroAscii = character.umwero
-  
-  // Get the latin character for keyboard mapping
-  const latinChar = character.vowel.toLowerCase()
-
-  // Convert example words to Umwero
-  const convertToUmwero = (text: string): string => {
-    // Import the conversion function from audio-utils
-    const { convertToUmwero: convert } = require('@/lib/audio-utils')
-    return convert(text)
-  }
 
   const getStatusColor = () => {
-    if (progress?.status === 'LEARNED') return 'bg-green-100 text-green-700 border-green-300'
-    if (progress?.status === 'IN_PROGRESS') return 'bg-blue-100 text-blue-700 border-blue-300'
-    return 'bg-gray-100 text-gray-700 border-gray-300'
+    if (progress?.status === 'LEARNED') return 'bg-white text-[#8B4513] border-[#8B4513]/35'
+    if (progress?.status === 'IN_PROGRESS') return 'bg-white text-[#8B4513] border-[#8B4513]/35'
+    return 'bg-white text-black/65 border-[#8B4513]/25'
   }
 
   const getStatusText = () => {
@@ -75,7 +59,7 @@ function CharacterCard({ character, progress, isLocked, onStart, onStatusChange,
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Umwero Character Display - Responsive sizing */}
-            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-[#F3E5AB] to-[#D2691E] rounded-xl flex items-center justify-center border-2 border-[#8B4513]">
+            <div className="relative w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl flex items-center justify-center border-2 border-[#8B4513]">
               <span 
                 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#8B4513]" 
                 style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
@@ -106,36 +90,9 @@ function CharacterCard({ character, progress, isLocked, onStart, onStatusChange,
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-4 md:p-6 pt-0">
-        {/* Example Word Section - Mobile optimized */}
-        {character.examples && character.examples.length > 0 && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-3 sm:p-4 rounded-lg border border-green-200">
-            <p className="text-xs text-green-800 font-medium mb-2">
-              {language === 'rw' ? 'Urugero rw\'ijambo' : 'Example Word'}
-            </p>
-            <div className="space-y-2">
-              {character.examples.slice(0, 1).map((example, index) => (
-                <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div className="flex-1">
-                    <span className="text-sm font-medium text-green-900">{example}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-green-700">
-                    <span>{language === 'rw' ? 'Umwero:' : 'Umwero:'}</span>
-                    <span 
-                      className="font-bold text-green-800 bg-white px-2 py-1 rounded border"
-                      style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
-                    >
-                      {convertToUmwero(example)}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
+      <CardContent className="space-y-3 p-3 sm:p-4 md:p-5 pt-0">
         {/* Character Image - Responsive height */}
-        <div className="relative w-full h-24 sm:h-32 bg-gray-50 rounded-lg overflow-hidden">
+        <div className="relative w-full h-20 sm:h-24 bg-white rounded-lg overflow-hidden border border-[#8B4513]/15">
           {character.imageUrl ? (
             <Image
               src={character.imageUrl}
@@ -153,73 +110,6 @@ function CharacterCard({ character, progress, isLocked, onStart, onStatusChange,
               </span>
             </div>
           )}
-        </div>
-
-        {/* Description - Mobile optimized */}
-        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{character.description}</p>
-
-        {/* Keyboard Mapping - Mobile layout */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-blue-50 p-3 rounded-lg border border-blue-200 gap-2">
-          <div className="flex-1">
-            <p className="text-xs text-blue-700 font-medium mb-1">Keyboard Mapping</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span 
-                className="text-xl sm:text-2xl font-bold text-blue-800"
-                style={{ fontFamily: 'UMWEROalpha, Umwero, monospace' }}
-              >
-                {umweroAscii}
-              </span>
-              <span className="text-blue-600">=</span>
-              <div className="bg-white border border-blue-300 rounded px-2 py-1">
-                <span className="text-sm font-mono text-blue-800">{latinChar}</span>
-              </div>
-              <span className="text-blue-600 hidden sm:inline">=</span>
-              <div className="bg-white border border-blue-300 rounded px-2 py-1 hidden sm:block">
-                <span className="text-sm font-mono text-blue-800">ASCII {latinChar.charCodeAt(0)}</span>
-              </div>
-            </div>
-          </div>
-          <Keyboard className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 self-start sm:self-center" />
-        </div>
-
-        {/* Pronunciation with Audio - Mobile layout */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-[#F3E5AB] p-3 rounded-lg gap-2">
-          <div className="flex-1">
-            <p className="text-xs text-[#8B4513] font-medium">Pronunciation</p>
-            <p className="text-sm text-[#D2691E]">{character.pronunciation}</p>
-          </div>
-          {audioPath && (
-            <AudioPlayer
-              src={audioPath}
-              label="Hear Pronunciation"
-              size="sm"
-              variant="ghost"
-              className="text-[#8B4513] hover:bg-[#D2691E] hover:text-white self-start sm:self-center"
-            />
-          )}
-        </div>
-
-        {/* Progress Info - Mobile optimized */}
-        {progress && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-gray-600">
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {Math.floor(progress.timeSpent / 60)}m {progress.timeSpent % 60}s
-              </span>
-              <span className="flex items-center gap-1">
-                <Star className="h-3 w-3 text-yellow-500" />
-                {progress.score}%
-              </span>
-            </div>
-            <Progress value={progress.completed ? 100 : 50} className="h-2" />
-          </div>
-        )}
-
-        {/* Cultural Note Preview - Mobile optimized */}
-        <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-          <p className="text-xs text-amber-800 font-medium mb-1">Cultural Significance</p>
-          <p className="text-xs text-amber-700 line-clamp-2">{character.culturalNote}</p>
         </div>
 
         {/* Action Button - Mobile optimized */}
@@ -255,11 +145,6 @@ function CharacterCard({ character, progress, isLocked, onStart, onStatusChange,
           )}
         </Button>
 
-        {/* Duration - Mobile optimized */}
-        <div className="flex items-center justify-center text-xs text-gray-500">
-          <Clock className="h-3 w-3 mr-1" />
-          {character.duration} minutes
-        </div>
       </CardContent>
     </Card>
   )

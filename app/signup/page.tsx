@@ -75,18 +75,18 @@ function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E] p-3 sm:p-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-white p-3 sm:p-4 py-8">
       <Card className="w-full max-w-md border-2 border-[#8B4513] shadow-xl bg-white">
         <CardHeader className="text-center space-y-3 sm:space-y-4 pb-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-[#8B4513] flex items-center justify-center">
-              <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#F3E5AB]" />
+              <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
             </div>
           </div>
           <CardTitle className="text-2xl sm:text-3xl font-bold text-[#8B4513]">
             Join Uruziga
           </CardTitle>
-          <CardDescription className="text-[#D2691E] text-sm sm:text-base">
+          <CardDescription className="text-[#8B4513] text-sm sm:text-base">
             Create an account to start learning Umwero
           </CardDescription>
         </CardHeader>
@@ -105,7 +105,7 @@ function SignupForm() {
                 placeholder="Enter your full name"
                 required
                 autoComplete="name"
-                className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
+                className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
 
@@ -122,7 +122,7 @@ function SignupForm() {
                 placeholder="Choose a unique username"
                 required
                 autoComplete="username"
-                className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
+                className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
               <p className="text-xs text-gray-600 mt-1 flex items-center gap-1">
                 <span className="text-[#8B4513]">•</span> 3-20 characters, letters, numbers, and underscores only
@@ -142,7 +142,7 @@ function SignupForm() {
                 placeholder="your.email@example.com"
                 required
                 autoComplete="email"
-                className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
+                className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
 
@@ -160,7 +160,7 @@ function SignupForm() {
                   placeholder="Create a strong password"
                   required
                   autoComplete="new-password"
-                  className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
+                  className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
                   type="button"
@@ -171,7 +171,7 @@ function SignupForm() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              <p className={`text-xs mt-1 flex items-center gap-1.5 ${passwordLength ? 'text-green-600' : 'text-gray-600'}`}>
+              <p className={`text-xs mt-1 flex items-center gap-1.5 ${passwordLength ? 'text-[#8B4513]' : 'text-gray-600'}`}>
                 {passwordLength && <CheckCircle2 className="h-3 w-3" />}
                 <span className={!passwordLength ? 'text-[#8B4513]' : ''}>•</span> Minimum 6 characters
               </p>
@@ -191,7 +191,7 @@ function SignupForm() {
                   placeholder="Re-enter your password"
                   required
                   autoComplete="new-password"
-                  className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
+                  className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
                   type="button"
@@ -203,7 +203,7 @@ function SignupForm() {
                 </button>
               </div>
               {formData.confirmPassword && (
-                <p className={`text-xs mt-1 flex items-center gap-1.5 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-xs mt-1 flex items-center gap-1.5 ${passwordsMatch ? 'text-[#8B4513]' : 'text-black'}`}>
                   {passwordsMatch && <CheckCircle2 className="h-3 w-3" />}
                   {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
                 </p>
@@ -238,11 +238,11 @@ function SignupForm() {
           <div className="mt-6 sm:mt-8 text-center space-y-3">
             <p className="text-sm text-[#8B4513]">
               Already have an account?{' '}
-              <Link href="/login" className="font-semibold text-[#D2691E] hover:text-[#8B4513] hover:underline transition-colors">
+              <Link href="/login" className="font-semibold text-[#8B4513] hover:text-black hover:underline transition-colors">
                 Sign In
               </Link>
             </p>
-            <Link href="/" className="text-sm text-[#8B4513] hover:text-[#D2691E] hover:underline block transition-colors">
+            <Link href="/" className="text-sm text-[#8B4513] hover:text-black hover:underline block transition-colors">
               ← Back to Home
             </Link>
           </div>
@@ -255,7 +255,7 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E] p-3 sm:p-4 py-8">
+      <div className="min-h-screen flex items-center justify-center bg-white p-3 sm:p-4 py-8">
         <div className="h-12 w-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
       </div>
     }>

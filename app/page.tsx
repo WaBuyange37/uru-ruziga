@@ -1,535 +1,189 @@
-"use client";
-import { useState, useRef, useEffect } from "react";
-import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import {
-  CircleIcon,
-  BookOpen,
-  Calculator,
-  GamepadIcon,
-  BarChart3,
-  Heart,
-  TrendingUp,
-  Users,
-  Globe,
-  Star
-} from "lucide-react";
-import Link from "next/link";
-import { useTranslation } from "../hooks/useTranslation";
-import { useAuth } from "./contexts/AuthContext";
+"use client"
 
-// ✅ Replace all direct image imports with named ImageAsset components
-import {
-  InkaImage,
-  ImanaImage,
-  IngomaImage,
-  LogoImage,
-} from "../components/ui/ImageAssets";
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { BookOpen, CircleIcon, MessageCircle, Play, PenTool, TrendingUp } from "lucide-react"
+import { useAuth } from "./contexts/AuthContext"
+import { Button } from "../components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
+import { Badge } from "../components/ui/badge"
+import { ImageAsset } from "../components/ui/ImageAssets"
 
 export default function Home() {
-  const { t } = useTranslation();
-  const { user, isAuthenticated, loading } = useAuth();
-  const [activeVideo, setActiveVideo] = useState<string | null>(null);
-  const videoRefs = useRef<{ [key: string]: HTMLIFrameElement | null }>({});
-  const [mounted, setMounted] = useState(false);
+  const { user, isAuthenticated, loading } = useAuth()
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === "videoPlay") {
-        const videoId = event.data.videoId;
-        if (videoId !== activeVideo) {
-          setActiveVideo(videoId);
-          Object.keys(videoRefs.current).forEach((id) => {
-            if (id !== videoId && videoRefs.current[id]) {
-              videoRefs.current[id]?.contentWindow?.postMessage(
-                '{"event":"command","func":"pauseVideo","args":""}',
-                "*"
-              );
-            }
-          });
-        }
-      }
-    };
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, [activeVideo]);
-
-  const videoUrls = [
-    "https://www.youtube.com/embed/NGmQ0_dMtPk?enablejsapi=1",
-    "https://www.youtube.com/embed/tECTtPxsCdg?enablejsapi=1",
-    "https://www.youtube.com/embed/o7_Y7FPmKY4?enablejsapi=1",
-  ];
+    setMounted(true)
+  }, [])
 
   if (!mounted || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB] flex items-center justify-center">
-        <div className="text-[#8B4513] text-lg">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <p className="text-base font-medium text-black">Loading...</p>
       </div>
-    );
+    )
   }
 
-  // ─── Unauthenticated Landing Page ───────────────────────────────────────────
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#FFF8DC] via-[#FFFFFF] to-[#F3E5AB]">
+  const primaryHref = isAuthenticated ? "/dashboard" : "/signup"
+  const primaryLabel = isAuthenticated ? "Continue Learning" : "Start Learning"
 
-        {/* Hero Section */}
-        <section className="relative py-16 px-4 md:px-6 lg:px-8">
-          <div className="container mx-auto text-center max-w-5xl">
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-                <Heart className="h-4 w-4 text-red-500" />
-                <span className="text-sm">Ururimi Rwacu ruraduhuza</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-                <Globe className="h-4 w-4 text-blue-500" />
-                <span className="text-sm">Ndi Umunyarwanda</span>
-              </Badge>
-              <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur">
-                <Star className="h-4 w-4 text-yellow-500" />
-                <span className="text-sm">Umuco wacu Uraturanga</span>
-              </Badge>
-            </div>
-
-            <CircleIcon className="mx-auto h-20 w-20 md:h-24 md:w-24 mb-6 text-[#8B4513] animate-pulse" />
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4 text-[#8B4513]">
-              {t("welcomeToUmwero")}
-            </h1>
-            <p className="text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto">
-              {t("Discover")}
-            </p>
-
-            <Card className="bg-white/80 backdrop-blur border-[#8B4513] shadow-xl mb-8">
-              <CardContent className="p-6 md:p-8">
-                <blockquote className="text-lg md:text-xl italic text-[#8B4513] leading-relaxed">
-                  {t("EveryCulture")}
-                </blockquote>
-                <p className="text-sm md:text-base text-[#D2691E] mt-4 font-semibold">
-                  ~{t("Founder")}
-                </p>
-              </CardContent>
-            </Card>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" asChild className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all">
-                <Link href="/signup">{t("getStarted")}</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild className="gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]">
-                <Link href="/login">{t("alreadyHaveAccount")}</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Three Cultural Pillars */}
-        <section className="py-16 px-4 md:px-6 lg:px-8">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#8B4513] mb-4">
-                {t("ThreePillars")}
-              </h2>
-              <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
-                {t("UnderstandingFoundational")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Imana */}
-              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200 hover:shadow-xl transition-all">
-                <CardHeader className="text-center pb-4">
-                  <div className="mb-4">
-                    {/* ✅ Replaced <Image src={Imana} /> */}
-                    <ImanaImage width={120} height={120} className="mx-auto" />
-                  </div>
-                  <CardTitle className="text-2xl text-purple-800">{t("Imana")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-purple-700 leading-relaxed">
-                    {t("ishushoMana")}<br /><br />
-                    {t("HeroNaHerezo")}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Inka */}
-              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200 hover:shadow-xl transition-all">
-                <CardHeader className="text-center pb-4">
-                  <div className="mb-4">
-                    {/* ✅ Replaced <Image src={inka} /> */}
-                    <InkaImage width={120} height={120} className="mx-auto" />
-                  </div>
-                  <CardTitle className="text-2xl text-blue-800">{t("Inka")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-blue-700 leading-relaxed">
-                    {t("InkaBavuga")}<br /><br />
-                    {t("InkaIrakomeye")}
-                  </p>
-                </CardContent>
-              </Card>
-
-              {/* Ingoma */}
-              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200 hover:shadow-xl transition-all">
-                <CardHeader className="text-center pb-4">
-                  <div className="mb-4">
-                    {/* ✅ Replaced <Image src={ingoma} /> */}
-                    <IngomaImage width={120} height={120} className="mx-auto" />
-                  </div>
-                  <CardTitle className="text-2xl text-amber-800">{t("Ingoma")}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <p className="text-amber-700 leading-relaxed">
-                    {t("IngomaMuKinyarwanda")}<br /><br />
-                    {t("IngomaNkIgikoresho")}
-                    <br />
-                    {t("IngomaNkIkirango")}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Features Preview */}
-        <section className="py-16 px-4 md:px-6 lg:px-8 bg-white/50">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-[#8B4513] mb-4">
-                {t("whatYouGetAccess")}
-              </h2>
-              <p className="text-lg text-[#D2691E] max-w-2xl mx-auto">
-                {t("featuresTool")}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <BookOpen className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs">{t("Essential")}</Badge>
-                  </div>
-                  <CardTitle className="text-[#8B4513] text-lg">{t("interactiveLessonsTitle")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("interactiveLessonsDesc")}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <BarChart3 className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs">{t("Analytics")}</Badge>
-                  </div>
-                  <CardTitle className="text-[#8B4513] text-lg">{t("trackProgressTitle")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("trackProgressDesc")}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <GamepadIcon className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs">Fun</Badge>
-                  </div>
-                  <CardTitle className="text-[#8B4513] text-lg">{t("funGamesTitle")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("funGamesDesc")}</p>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-[#8B4513] hover:shadow-xl transition-all group">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-2">
-                    <Calculator className="h-8 w-8 text-[#8B4513] group-hover:scale-110 transition-transform" />
-                    <Badge variant="outline" className="text-xs">Tools</Badge>
-                  </div>
-                  <CardTitle className="text-[#8B4513] text-lg">{t("translationToolsTitle")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-[#D2691E] text-sm leading-relaxed">{t("translationToolsDesc")}</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </section>
-
-        {/* Call to Action */}
-        <section className="py-16 px-4 md:px-6 lg:px-8">
-          <div className="container mx-auto max-w-4xl">
-            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-              <CardContent className="p-8 text-center">
-                <div className="mb-4 flex justify-center">
-                  {/* ✅ Replaced <Image src={logo} /> */}
-                  <LogoImage width={120} height={120} className="mx-auto" />
-                </div>
-                <h3 className="text-2xl md:text-3xl font-semibold text-amber-800 mb-4">
-                  {t("cultureTitle")}
-                </h3>
-                <p className="text-amber-700 leading-relaxed mb-6 max-w-2xl mx-auto">
-                  {t("cultureDescription")}
-                </p>
-                <Button size="lg" asChild className="gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg">
-                  <Link href="/signup">{t("cultureButton")}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </section>
-      </div>
-    );
-  }
-
-  // ─── Authenticated Home Page ─────────────────────────────────────────────────
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#F3E5AB] via-[#FFFFFF] to-[#F3E5AB]">
-
-      {/* Hero Section with Mission */}
-      <section className="relative py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-br from-[#F3E5AB] via-[#FAEBD7] to-[#F3E5AB]">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-4">
-              <CircleIcon className="h-12 w-12 text-[#8B4513] animate-pulse" />
-            </div>
-            <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-[#8B4513]">
-              {t("welcomeBack")}, {user?.fullName}!
+    <div className="min-h-screen bg-white text-black">
+      <section className="px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1fr_0.9fr] lg:items-center">
+          <div className="rounded-lg border border-[#8B4513]/20 bg-white p-6 sm:p-8">
+            <Badge variant="secondary">Uruziga</Badge>
+            <h1 className="mt-4 text-4xl font-bold leading-tight sm:text-5xl">
+              {isAuthenticated ? `Welcome back, ${user?.fullName || "learner"}` : "Learn the Umwero alphabet"}
             </h1>
-            <p className="text-lg md:text-xl text-[#D2691E] max-w-2xl mx-auto">
-              {t("continueJourney")}
+            <p className="mt-4 max-w-2xl text-base leading-7 text-black/70">
+              Practice characters, translate text, and learn Rwandan writing culture through focused lessons and real progress.
             </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href={primaryHref}>
+                  <BookOpen className="h-4 w-4" />
+                  {primaryLabel}
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/translate">Open Translator</Link>
+              </Button>
+            </div>
           </div>
+          <div className="relative min-h-[280px] overflow-hidden rounded-lg border border-[#8B4513]/20 bg-white">
+            <ImageAsset
+              name="logo"
+              alt="Uruziga Umwero learning visual"
+              fill
+              priority
+              sizes="(min-width: 1024px) 42vw, 100vw"
+              className="object-cover"
+            />
+          </div>
+        </div>
+      </section>
 
-          <Card className="bg-white/80 backdrop-blur-sm border-2 border-[#8B4513] shadow-xl mb-8">
-            <CardHeader className="text-center pb-4">
-              <CardTitle className="text-2xl md:text-3xl text-[#8B4513] flex items-center justify-center gap-2">
-                {t("umweroMovement")}
+      <section className="px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <PenTool className="h-5 w-5 text-[#8B4513]" />
+                Continue Learning
               </CardTitle>
-              <CardDescription className="text-[#D2691E] text-base md:text-lg mt-2">
-                {t("culturalRenaissance")}
-              </CardDescription>
+              <CardDescription>The next useful action is always practice.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-[#8B4513] text-center leading-relaxed">
-                {t("umweroAlphabetDescription")}
-              </p>
-              <blockquote className="border-l-4 border-[#8B4513] pl-4 italic text-[#D2691E] text-center py-4">
-                "{t("umweroQuote")}"
-              </blockquote>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  {/* ✅ Replaced <Image src={Imana} /> */}
-                  <ImanaImage width={80} height={80} className="mx-auto mb-2" />
-                  <h3 className="font-semibold text-[#8B4513] mb-1">{t("Imana")}</h3>
-                  <p className="text-sm text-[#D2691E]">God - The eternal circle</p>
-                </div>
-                <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  {/* ✅ Replaced <Image src={inka} /> */}
-                  <InkaImage width={80} height={80} className="mx-auto mb-2" />
-                  <h3 className="font-semibold text-[#8B4513] mb-1">{t("Inka")}</h3>
-                  <p className="text-sm text-[#D2691E]">Cattle - Symbol of wealth and prosperity</p>
-                </div>
-                <div className="text-center p-4 bg-[#F3E5AB]/50 rounded-lg">
-                  {/* ✅ Replaced <Image src={ingoma} /> */}
-                  <IngomaImage width={80} height={80} className="mx-auto mb-2" />
-                  <h3 className="font-semibold text-[#8B4513] mb-1">{t("Ingoma")}</h3>
-                  <p className="text-sm text-[#D2691E]">Throne - Cultural sovereignty</p>
-                </div>
-              </div>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              <Button asChild className="h-auto justify-start py-4">
+                <Link href="/learn">
+                  <BookOpen className="h-4 w-4" />
+                  Lessons
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto justify-start py-4">
+                <Link href="/dashboard">
+                  <TrendingUp className="h-4 w-4" />
+                  Progress
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="h-auto justify-start py-4">
+                <Link href="/community">
+                  <MessageCircle className="h-4 w-4" />
+                  Ask Community
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 
-          <div className="flex flex-wrap justify-center gap-4">
-            {user?.role === "ADMIN" && (
-              <Button size="lg" asChild className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg">
-                <Link href="/admin">{t("adminDashboard")}</Link>
-              </Button>
-            )}
-            <Button size="lg" asChild className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-lg">
-              <Link href="/dashboard">{t("viewYourProgress")}</Link>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <CircleIcon className="h-5 w-5 text-[#8B4513]" />
+                Cultural Highlight
+              </CardTitle>
+              <CardDescription>The circle is a recurring visual idea in Umwero learning.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-base leading-7 text-black/70">
+                Umwero learning connects sound, shape, and cultural memory. Start with one character, practice it, then move forward with confidence.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">Featured Lessons</h2>
+              <p className="mt-1 text-base text-black/65">Begin with the foundations, then build toward full writing practice.</p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/learn">View All</Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="border-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB] shadow-lg">
-              <Link href="/learn">{t("continueLearn")}</Link>
-            </Button>
           </div>
-        </div>
-      </section>
-
-      {/* Cultural Proverbs Section */}
-      <section className="py-16 px-4 md:px-6 lg:px-8 bg-white">
-        <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-4 text-[#8B4513]">
-            {t("culturalInsights")}
-          </h2>
-          <p className="text-center text-[#D2691E] mb-12 max-w-2xl mx-auto">
-            {t("didYouKnow")}
-          </p>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
-              <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">{t("UmweroCircle")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#8B4513]">{t("HeroHerezo")}</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
-              <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">{t("languagePreservation")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#8B4513]">{t("umweroRoleInPreservation")}</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
-              <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">{t("Measures:")}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#8B4513]">
-                  All Umwero characters use the measurement of 8, symbolizing heritage and intellectual property passed to future generations.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-[#F3E5AB] to-[#FAEBD7] border-2 border-[#8B4513]">
-              <CardHeader>
-                <CardTitle className="text-[#8B4513] text-lg">Founder's Vision</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#8B4513] italic">
-                  "Every culture is protected by its language, and any language may be protected by its own writing system." - Kwizera Mugisha
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Learning Features */}
-      <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-white to-[#F3E5AB]/30">
-        <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
-            {t("features")}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-white border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#8B4513]">
-                  <BookOpen className="h-5 w-5" />
-                  {t("learnUmweroTitle")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">{t("learnUmweroDesc")}</p>
-                <Button asChild size="sm" className="w-full bg-[#8B4513] hover:bg-[#A0522D]">
-                  <Link href="/learn">{t("startLearning")}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#8B4513]">
-                  <Users className="h-5 w-5" />
-                  {t("community")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">{t("connectWithFellowLearners")}</p>
-                <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
-                  <Link href="/community">{t("joinDiscussion")}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#8B4513]">
-                  <Calculator className="h-5 w-5" />
-                  {t("toolsTitle")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">{t("toolsDesc")}</p>
-                <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
-                  <Link href="/translate">{t("translate")}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white border-2 border-[#8B4513] hover:shadow-xl transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#8B4513]">
-                  <GamepadIcon className="h-5 w-5" />
-                  {t("gamesTitle")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-[#D2691E] text-sm mb-4">{t("gamesDesc")}</p>
-                <Button asChild size="sm" variant="outline" className="w-full border-[#8B4513] text-[#8B4513]">
-                  <Link href="/games-and-quizzes">{t("gamesAndQuizzes")}</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Video Tutorials */}
-      <section className="py-16 px-4 md:px-6 lg:px-8 bg-gradient-to-b from-white to-[#F3E5AB]">
-        <div className="container mx-auto max-w-6xl">
-          <h2 className="text-3xl font-bold text-center mb-12 text-[#8B4513]">
-            {t("videoTutorialsTitle")}
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {videoUrls.map((url, index) => (
-              <div key={index} className="aspect-video rounded-lg overflow-hidden shadow-xl border-2 border-[#8B4513]">
-                <iframe
-                  ref={(el) => {
-                    if (el) videoRefs.current[`video-${index}`] = el;
-                  }}
-                  className="w-full h-full"
-                  src={url}
-                  title={`Umwero Tutorial ${index + 1}`}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Vowels", "Start with the core sound shapes.", "a"],
+              ["Consonants", "Build clear character recognition.", "m"],
+              ["Ibihekane", "Practice compound sounds.", "rw"],
+              ["Translator", "Test text conversion as you learn.", "u"],
+            ].map(([title, description, glyph]) => (
+              <Card key={title}>
+                <CardContent className="p-5">
+                  <div className="flex h-20 items-center justify-center rounded-lg bg-white font-umwero text-5xl text-[#8B4513]">
+                    {glyph}
+                  </div>
+                  <h3 className="mt-4 text-lg font-semibold text-black">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-black/65">{description}</p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Support Section */}
-      <section className="py-16 px-4 md:px-6 lg:px-8 bg-[#F3E5AB]">
-        <div className="container mx-auto max-w-4xl text-center">
-          <TrendingUp className="h-12 w-12 text-[#8B4513] mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-4 text-[#8B4513]">
-            {t("supportOurMissionTitle")}
-          </h2>
-          <p className="text-xl mb-8 text-[#D2691E]">
-            {t("supportOurMissionDesc")}
+      <section className="px-4 pb-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-4">
+            <h2 className="text-2xl font-bold">Tutorials</h2>
+            <p className="mt-1 text-base text-black/65">Short videos for learners who want a guided start.</p>
+          </div>
+          <div className="grid gap-4 md:grid-cols-2">
+            {[
+              ["/videos/introTeach1.mp4", "Introduction to Umwero"],
+              ["/videos/imibare1.mp4", "Writing Numbers"],
+            ].map(([src, title]) => (
+              <Card key={src} className="overflow-hidden">
+                <div className="aspect-video bg-black">
+                  <video className="h-full w-full" controls preload="metadata">
+                    <source src={src} type="video/mp4" />
+                  </video>
+                </div>
+                <CardContent className="flex items-center justify-between gap-4 p-4">
+                  <h3 className="font-semibold text-black">{title}</h3>
+                  <Play className="h-4 w-4 text-[#8B4513]" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl rounded-lg border border-[#8B4513]/20 bg-white p-6 text-center sm:p-8">
+          <h2 className="text-2xl font-bold">Support the mission</h2>
+          <p className="mx-auto mt-2 max-w-2xl text-base leading-7 text-black/70">
+            Help keep Umwero lessons, tools, and cultural learning resources available.
           </p>
-          <Button asChild size="lg" className="bg-[#8B4513] text-[#F3E5AB] hover:bg-[#A0522D] shadow-xl">
-            <Link href="/fund">{t("supportTheProject")}</Link>
+          <Button asChild className="mt-5">
+            <Link href="/fund">Support Uruziga</Link>
           </Button>
         </div>
       </section>
     </div>
-  );
+  )
 }
