@@ -1,15 +1,13 @@
 // app/layout.tsx - UPDATED VERSION
 import "../styles/globals.css"
 import "../styles/umwero-font.css"
-import { Inter } from 'next/font/google'
 import { AuthProvider } from "./contexts/AuthContext"
 import { LanguageProvider } from "./contexts/LanguageContext"
 import { CartProvider } from "./contexts/CartContext"
 import { UmweroWrapper } from "../components/UmweroWrapper"
 import LayoutContent from "../components/LayoutContent"
 import { kbSeo } from "../lib/umwero-knowledge-base"
-
-const inter = Inter({ subsets: ["latin"] })
+import { warnAboutRuntimeConfig } from "../lib/runtime-env"
 
 export const metadata = {
   title: kbSeo.siteTitle,
@@ -49,6 +47,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  warnAboutRuntimeConfig()
+
   return (
     <html lang="en">
       <head>
@@ -61,7 +61,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={`${inter.className} bg-[#FFFFFF]`}>
+      <body className="bg-[#FFFFFF]">
         <AuthProvider>
           <LanguageProvider>
             <CartProvider>

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadDrawing, dataURLtoBlob } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
-import { verify } from 'jsonwebtoken'
 import { Prisma } from '@prisma/client'
 import { resolveStoredImageUrl } from '@/lib/image-url'
+import { getAuthenticatedUserId } from '@/lib/auth-session'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,21 +15,10 @@ export async function POST(request: NextRequest) {
     })
 
     // Verify authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const userId = await getAuthenticatedUserId(request)
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    let userId: string
-    try {
-      const decoded = verify(token, process.env.JWT_SECRET!) as { userId: string }
-      userId = decoded.userId
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
         { status: 401 }
       )
     }

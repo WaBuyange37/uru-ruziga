@@ -1,7 +1,7 @@
 // app/api/progress/submit/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
+import { getAuthPayload } from '@/lib/auth-session'
 
 const PASS_MARK = 70 // Minimum score to mark as LEARNED
 
@@ -36,19 +36,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<NextChara
     console.log('Progress submission request:', { characterId, score, timeSpent })
 
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       console.error('No authorization token provided')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    let decoded: { userId: string }
-    try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
-      console.log('JWT decoded successfully, userId:', decoded.userId)
-    } catch (jwtError) {
-      console.error('JWT verification failed:', jwtError)
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const userId = decoded.userId
@@ -216,7 +207,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<NextChara
     // Return more specific error information
     let errorMessage = 'Failed to submit progress'
     if (error instanceof Error) {
-      if (error.message.includes('jwt')) {
+      if (error.message.includes('token')) {
         errorMessage = 'Authentication token is invalid or expired'
       } else if (error.message.includes('character')) {
         errorMessage = 'Character not found in database'

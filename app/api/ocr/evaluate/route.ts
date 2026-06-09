@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { STORAGE_BUCKETS, uploadFile } from '@/lib/storage'
+import { getFileUrl, STORAGE_BUCKETS, uploadFile } from '@/lib/storage'
 import { verifyToken } from '@/lib/jwt'
+import { getAuthTokenFromRequest } from '@/lib/auth-session'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-const PYTHON_SERVICE_URL = process.env.PYTHON_OCR_SERVICE_URL || 'http://localhost:8000'
+const PYTHON_SERVICE_URL =
+  process.env.OCR_API_URL || process.env.PYTHON_OCR_SERVICE_URL || process.env.PYTHON_AI_SERVICE_URL || null
 
 interface EvaluationRequest {
   characterId: string
@@ -34,9 +36,7 @@ interface EvaluationRequest {
 }
 
 function getBearerToken(request: NextRequest): string | null {
-  const authorization = request.headers.get('authorization')
-  if (!authorization?.startsWith('Bearer ')) return null
-  return authorization.slice('Bearer '.length)
+  return getAuthTokenFromRequest(request)
 }
 
 function dataUrlToBuffer(dataUrl: string): { buffer: Buffer; contentType: string } {
@@ -142,7 +142,8 @@ export async function POST(request: NextRequest) {
     const { buffer, contentType } = dataUrlToBuffer(imageData)
     const uploadKey = `${STORAGE_BUCKETS.userDrawings}/${userId}/${characterId}/legacy-ocr/${Date.now()}-${crypto.randomUUID()}.png`
     const upload = await uploadFile(buffer, uploadKey, contentType, { upsert: false })
-    const imageUrl = upload.publicUrl
+    const imageStorageKey = `${STORAGE_BUCKETS.userDrawings}/${upload.path}`
+    const evaluationImageUrl = await getFileUrl(imageStorageKey, { signed: true, expiresIn: 600 })
 
     // 1. Create HandwritingAttempt immediately
     const attempt = await prisma.handwritingAttempt.create({
@@ -154,7 +155,7 @@ export async function POST(request: NextRequest) {
         strokeCount: strokes.length,
         totalPoints: strokes.reduce((sum, stroke) => sum + stroke.points.length, 0),
         drawingDuration: metadata.totalDuration,
-        imageUrl,
+        imageUrl: imageStorageKey,
         metadata: {
           ...metadata,
           storage: {
@@ -168,13 +169,17 @@ export async function POST(request: NextRequest) {
 
     // 2. Call Python OCR service for evaluation
     try {
+      if (!PYTHON_SERVICE_URL) {
+        throw new Error('OCR service URL is not configured')
+      }
+
       const pythonResponse = await fetch(`${PYTHON_SERVICE_URL}/api/evaluate-character`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           character: characterId,
           image: imageData,
-          image_url: imageUrl,
+          image_url: evaluationImageUrl,
           reference_image_url: reference.fontImageUrl ?? reference.imageFontPath,
           session_id: attempt.id,
           user_id: userId,
@@ -207,25 +212,32 @@ export async function POST(request: NextRequest) {
 
       // 4. Create DatasetEntry if quality threshold met (score >= 50)
       if (evaluation.score >= 50) {
-        await prisma.datasetEntry.create({
-          data: {
+        try {
+          await prisma.datasetEntry.create({
+            data: {
+              attemptId: attempt.id,
+              userId,
+              characterId: reference.id,
+              characterType: reference.characterType,
+              strokesData: strokes as any,
+              imageUrl: imageStorageKey,
+              score: evaluation.score,
+              qualityLabel: updatedAttempt.qualityLabel,
+              timeTaken: metadata.totalDuration,
+              userMetadata: {
+                deviceInfo: metadata.deviceInfo,
+                inputMethod: metadata.inputMethod,
+                canvasSize: metadata.canvasSize,
+              } as any,
+              version: '1.0',
+            },
+          })
+        } catch (datasetError) {
+          console.error('Dataset entry creation failed after OCR evaluation', {
             attemptId: attempt.id,
-            userId,
-            characterId: reference.id,
-            characterType: reference.characterType,
-            strokesData: strokes as any,
-            imageUrl,
-            score: evaluation.score,
-            qualityLabel: updatedAttempt.qualityLabel,
-            timeTaken: metadata.totalDuration,
-            userMetadata: {
-              deviceInfo: metadata.deviceInfo,
-              inputMethod: metadata.inputMethod,
-              canvasSize: metadata.canvasSize,
-            } as any,
-            version: '1.0',
-          },
-        })
+            message: datasetError instanceof Error ? datasetError.message : 'Unknown dataset error',
+          })
+        }
       }
 
       // 5. Update UserCharacterProgress
@@ -272,20 +284,50 @@ export async function POST(request: NextRequest) {
 
     } catch (pythonError) {
       console.error('Python OCR service error:', pythonError)
-      
-      // Return partial success - attempt is saved
+
+      try {
+        await prisma.userCharacterProgress.upsert({
+          where: {
+            userId_characterId: {
+              userId,
+              characterId,
+            },
+          },
+          create: {
+            userId,
+            characterId,
+            status: 'IN_PROGRESS',
+            score: 0,
+            attempts: 1,
+            lastAttempt: new Date(),
+          },
+          update: {
+            status: 'IN_PROGRESS',
+            attempts: { increment: 1 },
+            lastAttempt: new Date(),
+          },
+        })
+      } catch (progressError) {
+        console.error('Fallback progress update failed after OCR outage', {
+          userId,
+          characterId,
+          message: progressError instanceof Error ? progressError.message : 'Unknown progress error',
+        })
+      }
+
+      // Return success because the learner attempt is saved; OCR details can arrive later.
       return NextResponse.json({
-        success: false,
+        success: true,
         attemptId: attempt.id,
-        error: {
-          code: 'EVALUATION_SERVICE_ERROR',
-          message: 'Evaluation service temporarily unavailable. Your attempt has been saved.',
-        },
         evaluation: {
           score: null,
           passed: false,
           confidence: 0,
-          feedback: ['Evaluation service temporarily unavailable. Please try again.'],
+          ocrFeedbackAvailable: false,
+          fallback: true,
+          fallbackReason: pythonError instanceof Error ? pythonError.message : 'OCR unavailable',
+          statusLabel: 'Practice recorded',
+          feedback: ['Practice saved; detailed handwriting feedback is still improving.'],
           detailedFeedback: [],
           processingTime: Date.now() - startTime,
         },

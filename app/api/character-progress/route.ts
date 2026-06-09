@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
+import { getAuthPayload } from '@/lib/auth-session'
 
 const PASS_MARK = 70 // Minimum score to mark as LEARNED
 
@@ -26,12 +27,10 @@ export async function GET(request: NextRequest) {
       : null
     
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string; developmentDemo?: boolean }
     const userId = decoded.userId
 
     if (decoded.developmentDemo && process.env.NODE_ENV !== 'production') {
@@ -108,12 +107,10 @@ export async function POST(request: NextRequest) {
     const { characterId, score, timeSpent = 0 } = body
 
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string; developmentDemo?: boolean }
     const userId = decoded.userId
 
     // Validate input

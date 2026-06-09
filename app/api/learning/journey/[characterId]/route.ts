@@ -3,16 +3,14 @@ import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { buildJourneyPhaseStates, getOverallJourneyProgress } from '@/lib/learning-journey';
 import { normalizePublicImageUrl } from '@/lib/image-url';
+import { getAuthTokenFromRequest } from '@/lib/auth-session';
 
 type JwtPayload = {
   userId?: string;
 };
 
 function getBearerToken(request: NextRequest): string | null {
-  const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) return null;
-
-  return authorization.slice('Bearer '.length);
+  return getAuthTokenFromRequest(request);
 }
 
 async function getOptionalUserId(request: NextRequest): Promise<string | null> {

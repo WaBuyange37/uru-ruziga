@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
+import { setAuthCookie } from '@/lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const developmentDemoLogin = getDevelopmentDemoLogin(identifier, password)
     if (developmentDemoLogin) {
-      return NextResponse.json(developmentDemoLogin)
+      return jsonAuthResponse(developmentDemoLogin)
     }
 
     // Find user by username, email, or mobile number
@@ -95,7 +96,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
-    return NextResponse.json({
+    return jsonAuthResponse({
       success: true,
       token,
       user: {
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     const demoLogin = getDevelopmentDemoLogin(identifier, password)
     if (demoLogin) {
-      return NextResponse.json(demoLogin)
+      return jsonAuthResponse(demoLogin)
     }
 
     console.error('Login error:', error)
@@ -130,6 +131,11 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+function jsonAuthResponse(data: any) {
+  const response = NextResponse.json(data)
+  return data.token ? setAuthCookie(response, data.token) : response
 }
 
 function getDevelopmentDemoLogin(identifier: string, password: string) {

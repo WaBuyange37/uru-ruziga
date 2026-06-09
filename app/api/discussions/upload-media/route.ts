@@ -1,10 +1,9 @@
 // app/api/discussions/upload-media/route.ts
 // Media upload for discussions (Supabase Storage)
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { uploadFile } from '@/lib/storage'
+import { getAuthPayload } from '@/lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,26 +20,15 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse
 
     // Authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       console.log('❌ No authentication token provided');
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
       )
     }
-
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, getJwtSecret())
-      console.log('✅ Token verified for user:', decoded.userId);
-    } catch (error) {
-      console.log('❌ Invalid token:', error);
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
+    console.log('✅ Token verified for user:', decoded.userId);
 
     // Parse multipart form data
     const formData = await request.formData()

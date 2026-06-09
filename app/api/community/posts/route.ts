@@ -1,11 +1,11 @@
 // app/api/community/posts/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
-import { verifyToken } from '../../../../lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '../../../../lib/rate-limit'
 import { validateRequest, createPostSchema } from '../../../../lib/validators'
 import { collectFromPost } from '../../../../lib/training-data-collector'
 import { normalizePublicImageUrl, resolveStoredImageUrls } from '../../../../lib/image-url'
+import { getAuthPayload } from '../../../../lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -95,14 +95,9 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = await withRateLimit(request, RATE_LIMITS.POST_CREATE)
     if (rateLimitResponse) return rateLimitResponse
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const decoded = await verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     // Validate input

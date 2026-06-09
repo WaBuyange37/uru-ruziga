@@ -3,6 +3,7 @@ import { Prisma, StepType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getFileUrl, STORAGE_BUCKETS, uploadFile } from '@/lib/storage';
 import { verifyToken } from '@/lib/jwt';
+import { getAuthTokenFromRequest } from '@/lib/auth-session';
 import { buildJourneyPhaseStates } from '@/lib/learning-journey';
 import { resolveUmweroFontInput } from '@/lib/umwero-font-input';
 
@@ -100,9 +101,7 @@ class LearningAttemptPipelineError extends Error {
 }
 
 function getBearerToken(request: NextRequest): string | null {
-  const authorization = request.headers.get('authorization');
-  if (!authorization?.startsWith('Bearer ')) return null;
-  return authorization.slice('Bearer '.length);
+  return getAuthTokenFromRequest(request);
 }
 
 async function requireUserId(request: NextRequest): Promise<string | null> {
@@ -635,7 +634,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const imageUrl = upload.publicUrl;
+    const imageStorageKey = `${STORAGE_BUCKETS.userDrawings}/${upload.path}`;
     console.info('[OCR diagnostic] bucket upload succeeded', {
       endpoint: '/api/learning/attempt',
       bucket: upload.bucket,
@@ -661,7 +660,7 @@ export async function POST(request: NextRequest) {
         stepId: lessonStep.id,
         characterId: character.id,
         attemptType: 'DRAWING',
-        drawingData: imageUrl,
+        drawingData: imageStorageKey,
         answer: {
           storage: {
             bucket: upload.bucket,
@@ -670,7 +669,7 @@ export async function POST(request: NextRequest) {
           strokeCount: body.strokes.length,
           totalPoints
         },
-        uploadedImageUrl: imageUrl,
+        uploadedImageUrl: imageStorageKey,
         timeSpent: Math.round((body.metadata?.totalDuration ?? 0) / 1000),
         learningStage: body.learningStage,
         journeyPhase: body.journeyPhase,
@@ -689,7 +688,7 @@ export async function POST(request: NextRequest) {
         strokeCount: body.strokes.length,
         totalPoints,
         drawingDuration,
-        imageUrl,
+        imageUrl: imageStorageKey,
         metadata: {
           ...(body.metadata ?? {}),
           adaptive: {
@@ -965,7 +964,7 @@ export async function POST(request: NextRequest) {
             characterId: reference.id,
             characterType: reference.characterType,
             strokesData: body.strokes as unknown as Prisma.InputJsonValue,
-            imageUrl,
+            imageUrl: imageStorageKey,
             processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
             score: evaluation.score,
             qualityLabel: attemptQuality,
@@ -994,7 +993,7 @@ export async function POST(request: NextRequest) {
             characterId: reference.id,
             characterType: reference.characterType,
             strokesData: body.strokes as unknown as Prisma.InputJsonValue,
-            imageUrl,
+            imageUrl: imageStorageKey,
             processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
             score: evaluation.score,
             qualityLabel: attemptQuality,
@@ -1038,7 +1037,7 @@ export async function POST(request: NextRequest) {
         userAttemptId: updatedUserAttempt.id,
         handwritingAttemptId: updatedHandwritingAttempt.id,
         datasetEntryId: datasetEntry?.id ?? null,
-        imageUrl,
+        imageUrl: evaluationImageUrl,
         referenceImageUrl,
         storage: {
           bucket: upload.bucket,

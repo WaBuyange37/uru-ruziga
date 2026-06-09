@@ -1,21 +1,17 @@
 // app/api/progress/stats/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from '@/lib/jwt'
+import { getAuthPayload } from '@/lib/auth-session'
 
 // Force dynamic rendering to avoid build-time evaluation
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string }
     
     // Get user info
     const user = await prisma.user.findUnique({

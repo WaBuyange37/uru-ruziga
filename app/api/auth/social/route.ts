@@ -5,6 +5,7 @@ import { sign } from 'jsonwebtoken'
 import { getJwtSecret } from '../../../../lib/jwt'
 import bcrypt from 'bcryptjs'
 import { randomBytes } from 'crypto'
+import { setAuthCookie } from '../../../../lib/auth-session'
 
 const prisma = new PrismaClient()
 
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: 'Authentication successful',
       token,
       user: {
@@ -126,6 +127,8 @@ export async function POST(request: NextRequest) {
         emailVerified: user.emailVerified
       }
     })
+
+    return setAuthCookie(response, token)
 
   } catch (error: any) {
     console.error('Social auth error:', error)

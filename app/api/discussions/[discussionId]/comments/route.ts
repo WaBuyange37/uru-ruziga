@@ -2,10 +2,9 @@
 // Comments API with Umwero support
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, createDiscussionCommentSchema } from '@/lib/validators'
+import { getAuthPayload } from '@/lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,20 +27,10 @@ export async function POST(
     if (rateLimitResponse) return rateLimitResponse
 
     // Authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, getJwtSecret())
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
         { status: 401 }
       )
     }
