@@ -25,6 +25,7 @@ import { EnhancedCharacterGrid } from '@/components/learn/EnhancedCharacterGrid'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useProgressSummary } from '@/hooks/useProgressSummary'
 import { lessonIdToCharacterId } from '@/lib/character-mapping'
+import { kbHome } from '@/lib/umwero-knowledge-base'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -274,7 +275,7 @@ export function LearnPageClient({
               {vowelLessons[0]?.title || "Start Your Umwero Journey"}
             </h1>
             <p className="mt-3 max-w-3xl text-base leading-7 text-black/70">
-              Start with the next available card, practice the character, and return here as your saved progress grows.
+              {kbHome.nextAction}
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button
@@ -321,7 +322,7 @@ export function LearnPageClient({
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-2xl font-bold text-black">Available Lessons</h2>
-              <p className="mt-1 text-base text-black/65">Choose one card. The queue uses your saved progress.</p>
+              <p className="mt-1 text-base text-black/65">Choose one card. The queue uses your saved progress and keeps the next learning action visible.</p>
             </div>
           <div className="relative max-w-md sm:min-w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B4513]/50 pointer-events-none" />

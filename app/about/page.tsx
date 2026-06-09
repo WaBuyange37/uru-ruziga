@@ -1,9 +1,14 @@
 import type { Metadata } from "next"
 import AboutContent from "./AboutContent"
+import { kbSeo } from "../../lib/umwero-knowledge-base"
 
 export const metadata: Metadata = {
-  title: "About Uruziga - The Umwero Movement",
-  description: "Learn about the Umwero Movement and our mission to preserve Kinyarwanda culture and language.",
+  title: `${kbSeo.aboutTitle} - Uruziga`,
+  description: kbSeo.siteDescription,
+  openGraph: {
+    title: `${kbSeo.aboutTitle} - Uruziga`,
+    description: kbSeo.siteDescription,
+  },
 }
 
 export default function AboutPage() {

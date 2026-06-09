@@ -24,6 +24,7 @@ import { Label } from "../../components/ui/label"
 import { Textarea } from "../../components/ui/textarea"
 import { Badge } from "../../components/ui/badge"
 import { EmptyState, PageContainer } from "../../components/ui/page"
+import { kbDefinitions, kbFunding } from "../../lib/umwero-knowledge-base"
 
 interface Donation {
   id: string
@@ -138,37 +139,37 @@ export default function FundingPage() {
   ]
 
   const missionPoints = [
-    "Teach learners across Rwanda and beyond",
-    "Build accessible learning resources",
-    "Digitize Umwero for modern technology",
-    "Preserve stories, language, and cultural knowledge",
-    "Create educational datasets for future language tools",
+    "Teach the Umwero writing system",
+    "Support Kinyarwanda learning resources",
+    "Preserve documented cultural foundations",
+    "Improve handwriting practice tools",
+    "Maintain platform access for learners",
   ]
 
   const impactCards = [
     {
       title: "Educate Learners",
-      description: "Lessons and practice tools for students discovering Umwero.",
+      description: "Lessons and practice tools for learners studying Umwero.",
       icon: GraduationCap,
     },
     {
       title: "Build & Improve",
-      description: "Better learning experiences, feedback, and platform reliability.",
+      description: "Better learning experiences, practice feedback, and platform reliability.",
       icon: BookOpen,
     },
     {
       title: "Preserve Heritage",
-      description: "Documentation for stories, symbols, language, and cultural memory.",
+      description: "Documented references for language, symbols, and cultural memory.",
       icon: ScrollText,
     },
     {
       title: "Advance Research",
-      description: "Training data and research support for handwriting technology.",
+      description: "Handwriting samples and tooling that can support future learning improvements.",
       icon: Database,
     },
     {
       title: "Empower Communities",
-      description: "Education and outreach for learners, teachers, and families.",
+      description: "Education and support for people learning the writing system.",
       icon: Users,
     },
   ]
@@ -176,7 +177,7 @@ export default function FundingPage() {
   const allocationRows = [
     ["Learning Platform", "Lessons, practice tools, translation, and learner experience"],
     ["Handwriting Research", "Improving Umwero writing feedback and recognition"],
-    ["Cultural Archives", "Preserving stories, references, and documentation"],
+    ["Cultural References", "Preserving the symbols and foundations learners meet in Umwero"],
     ["Infrastructure", "Hosting, storage, maintenance, and reliability"],
     ["Community Programs", "Teaching, outreach, and learner support"],
   ]
@@ -191,7 +192,7 @@ export default function FundingPage() {
               Preserve language. Strengthen the future.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-black/72 sm:text-lg">
-              Umwero is a writing system for Kinyarwanda created by Rwandan innovator Kwizera Mugisha. Uruziga helps teach, document, and preserve this work through education, technology, and community learning.
+              {kbFunding.mission} {kbDefinitions.uruziga}
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
@@ -231,10 +232,10 @@ export default function FundingPage() {
               </div>
               <div className="space-y-4 text-base leading-7 text-black/72">
                 <p>
-                  Language carries memory, identity, and culture. Umwero gives Kinyarwanda learners a writing experience rooted in their own heritage while still serving modern education and technology.
+                  {kbFunding.preservation}
                 </p>
                 <p>
-                  Your support helps Uruziga preserve knowledge, improve learning tools, and make Umwero easier to practice, study, and share.
+                  {kbFunding.technology}
                 </p>
               </div>
               <div className="mt-6 space-y-3">
@@ -252,7 +253,7 @@ export default function FundingPage() {
             <CardContent className="flex h-full flex-col items-center justify-center p-6 text-center">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#8B4513]">Creator message</p>
               <blockquote className="mt-5 text-xl font-semibold leading-8 text-black">
-                “A language becomes stronger when people can learn it, write it, and pass it forward.”
+                “Every culture is protected by its language, and any language may be protected by its own writing system.”
               </blockquote>
               <div className="mt-6 h-16 w-16 rounded-full border border-[#8B4513]/30 bg-white text-center font-bold leading-[4rem] text-[#8B4513]">
                 KM
@@ -360,7 +361,7 @@ export default function FundingPage() {
           <Card className="border-[#8B4513]/20">
             <CardContent className="p-5 sm:p-6">
               <h2 className="text-center text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">
-                Your support creates real impact
+                What support helps sustain
               </h2>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {impactCards.map(({ title, description, icon: Icon }) => (
@@ -380,7 +381,7 @@ export default function FundingPage() {
             <CardContent className="p-5">
               <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-[#8B4513]">Our vision</h2>
               <p className="mt-4 text-sm leading-6 text-black/70">
-                Uruziga is more than software. It is an educational and cultural preservation initiative helping learners access language, identity, and heritage through practical tools.
+                Uruziga is the educational platform for learning and practicing Umwero. Its role is to make the writing system easier to study through lessons, practice tools, and learner support.
               </p>
               {stats && (
                 <div className="mt-5 rounded-lg border border-[#8B4513]/20 bg-white p-4">

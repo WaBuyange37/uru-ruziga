@@ -222,7 +222,9 @@ export function OCRPracticeCanvas({
             <div className="flex-1">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-lg">
-                  Score: {Math.round(evaluation.evaluation.score)}%
+                  {typeof evaluation.evaluation.score === 'number'
+                    ? `Score: ${Math.round(evaluation.evaluation.score)}%`
+                    : 'Practice saved'}
                 </h3>
                 <span className="text-sm text-black/60">
                   Confidence: {Math.round(evaluation.evaluation.confidence * 100)}%

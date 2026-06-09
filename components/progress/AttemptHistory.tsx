@@ -23,6 +23,14 @@ export function AttemptHistory({ attempts }: AttemptHistoryProps) {
     return null
   }
 
+  const logImageError = (attemptId: string, url: string) => {
+    console.error('[image-load] Attempt history image failed', {
+      source: 'attempt.drawingData',
+      attemptId,
+      url,
+    })
+  }
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleDateString('en-US', {
@@ -67,6 +75,7 @@ export function AttemptHistory({ attempts }: AttemptHistoryProps) {
                       alt={`Attempt ${attempts.length - index}`}
                       fill
                       className="object-contain"
+                      onError={() => logImageError(attempt.id, attempt.drawingData!)}
                     />
                   </div>
                 )}

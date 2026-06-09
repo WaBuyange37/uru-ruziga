@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verify } from 'jsonwebtoken'
+import { resolveStoredImageUrl } from '@/lib/image-url'
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,8 +84,16 @@ export async function GET(request: NextRequest) {
         (earlyScores.reduce((a, b) => a + b, 0) / earlyScores.length)
       : 0
 
+    const normalizedAttempts = await Promise.all(attempts.map(async (attempt) => ({
+      ...attempt,
+      drawingData: await resolveStoredImageUrl(attempt.drawingData, {
+        source: `userAttempt:${attempt.id}.drawingData`,
+        expiresIn: 3600,
+      }),
+    })))
+
     return NextResponse.json({
-      attempts,
+      attempts: normalizedAttempts,
       stats: {
         ...stats,
         trend: Math.round(trend)

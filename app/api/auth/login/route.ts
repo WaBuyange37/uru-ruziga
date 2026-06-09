@@ -18,16 +18,28 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = await withRateLimit(request, RATE_LIMITS.AUTH_LOGIN)
     if (rateLimitResponse) return rateLimitResponse
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (!body) {
+      return NextResponse.json(
+        { error: 'Invalid login request' },
+        { status: 400 }
+      )
+    }
+
     identifier = body.identifier
     password = body.password
 
     // Validate input
-    if (!identifier || !password) {
+    if (typeof identifier !== 'string' || typeof password !== 'string' || !identifier.trim() || !password) {
       return NextResponse.json(
         { error: 'Username/email and password are required' },
         { status: 400 }
       )
+    }
+
+    const developmentDemoLogin = getDevelopmentDemoLogin(identifier, password)
+    if (developmentDemoLogin) {
+      return NextResponse.json(developmentDemoLogin)
     }
 
     // Find user by username, email, or mobile number
@@ -106,6 +118,13 @@ export async function POST(request: NextRequest) {
 
     console.error('Login error:', error)
 
+    if (error?.message?.includes('JWT_SECRET')) {
+      return NextResponse.json(
+        { error: 'Authentication is not configured. Please set JWT_SECRET and try again.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Login failed. Please try again.' },
       { status: 500 }
@@ -118,7 +137,7 @@ function getDevelopmentDemoLogin(identifier: string, password: string) {
 
   const normalizedIdentifier = identifier?.toLowerCase().trim()
   const isDemoIdentifier = normalizedIdentifier === 'demo@uruziga.com' || normalizedIdentifier === 'demo'
-  const demoPassword = process.env.URUZIGA_DEMO_PASSWORD
+  const demoPassword = process.env.URUZIGA_DEMO_PASSWORD || 'demo123'
   if (!isDemoIdentifier || !demoPassword || password !== demoPassword) return null
 
   const user = {

@@ -25,17 +25,17 @@ const products = [
   { id: 6, name: "Umwero Hoodie Numerals", price: 35, category: "fashion", image: "/pictures/umweroNumeralsHoddie.PNG" },
   { id: 7, name: "Umwero Shanawakanda 2", price: 35, category: "fashion", image: "/pictures/UmweroKanda.PNG" },
   { id: 8, name: "Umwero Upper package", price: 250, category: "fashion", image: "/pictures/hoodies.jpg" },
-  { id: 9, name: "Urunigi", price: 15, category: "fashion", image: "/pictures/urunigi.JPG" },
-  { id: 10, name: "Umwero Necklace", price: 85, category: "decoration", image: "/pictures/urunigi.JPG" },
+  { id: 9, name: "Urunigi", price: 15, category: "fashion", image: "/pictures/urunigi.jpg" },
+  { id: 10, name: "Umwero Necklace", price: 85, category: "decoration", image: "/pictures/urunigi.jpg" },
   { id: 11, name: "Decorative Wall Hanging", price: 120, category: "decoration", image: "/pictures/forsale-nyabisabo.jpg" },
   { id: 12, name: "Handcrafted Wooden Box", price: 75, category: "decoration", image: "/pictures/best.jpg" },
   { id: 13, name: "Agaseke", price: 23, category: "cultural", image: "/pictures/agatukura.jpg" },
   { id: 14, name: "Agaseke Basket", price: 20, category: "cultural", image: "/pictures/agaseke.jpg" },
   { id: 15, name: "Igisabo", price: 130, category: "cultural", image: "/pictures/igisabo.jpg" },
   { id: 16, name: "Inkangara", price: 140, category: "cultural", image: "/pictures/inkangara.jpg" },
-  { id: 17, name: "Agakomo", price: 5, category: "fashion", image: "/pictures/Agakomo.JPG" },
-  { id: 18, name: "Jumper itukura", price: 20, category: "fashion", image: "/pictures/jumperItukura.JPG" },
-  { id: 19, name: "Agenda", price: 10, category: "fashion", image: "/pictures/agenda.JPG" },
+  { id: 17, name: "Agakomo", price: 5, category: "fashion", image: "/pictures/Agakomo.jpg" },
+  { id: 18, name: "Jumper itukura", price: 20, category: "fashion", image: "/pictures/jumperItukura.jpg" },
+  { id: 19, name: "Agenda", price: 10, category: "fashion", image: "/pictures/agenda.jpg" },
   { id: 20, name: "Inyambo itakwa", price: 65, category: "decoration", image: "/pictures/forsale-inyambo-cow.jpg" },
 ]
 
@@ -84,6 +84,10 @@ export default function GalleryPage() {
       resource.name.toLowerCase().includes(searchQuery.toLowerCase())
     )
   }, [searchQuery])
+
+  const logImageError = (source: string, url: string) => {
+    console.error('[image-load] Gallery image failed', { source, url })
+  }
 
   const handleAddToCart = (product: any) => {
     addToCart({
@@ -152,12 +156,13 @@ export default function GalleryPage() {
                 <Card key={resource.id} className="flex-shrink-0 w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/6 p-2 bg-[#F3E5AB] border-[#8B4513]">
                   <CardHeader className="p-3">
                     <div className="aspect-square w-full relative overflow-hidden rounded-md">
-                      <Image 
-                        src={resource.image || "/placeholder.svg"} 
-                        alt={resource.name} 
+                      <Image
+                        src={resource.image || "/placeholder.svg"}
+                        alt={resource.name}
                         layout="fill"
                         objectFit="cover"
                         className="rounded-md"
+                        onError={() => logImageError(`gallery.freeResource:${resource.id}`, resource.image)}
                       />
                     </div>
                   </CardHeader>
@@ -212,13 +217,14 @@ export default function GalleryPage() {
               <Card key={product.id} className="bg-[#F3E5AB] border-[#8B4513] hover:shadow-lg transition-shadow duration-300">
                 <CardHeader className="p-3 cursor-pointer" onClick={() => setSelectedProduct(product)}>
                   <div className="aspect-square w-full relative overflow-hidden rounded-md">
-                    <Image 
-                      src={product.image || "/placeholder.svg"} 
-                      alt={product.name} 
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-md transition-transform duration-300 hover:scale-105"
-                    />
+                      <Image
+                        src={product.image || "/placeholder.svg"}
+                        alt={product.name}
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-md transition-transform duration-300 hover:scale-105"
+                        onError={() => logImageError(`gallery.product:${product.id}`, product.image)}
+                      />
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -250,12 +256,13 @@ export default function GalleryPage() {
           </DialogHeader>
           <div className="mt-4">
             <div className="aspect-square w-full relative overflow-hidden rounded-md mb-4">
-              <Image 
-                src={selectedProduct?.image || "/placeholder.svg"} 
-                alt={selectedProduct?.name} 
+              <Image
+                src={selectedProduct?.image || "/placeholder.svg"}
+                alt={selectedProduct?.name}
                 layout="fill"
                 objectFit="cover"
                 className="rounded-md"
+                onError={() => selectedProduct && logImageError(`gallery.productDialog:${selectedProduct.id}`, selectedProduct.image)}
               />
             </div>
             <DialogDescription className="text-[#D2691E] text-lg mb-4">

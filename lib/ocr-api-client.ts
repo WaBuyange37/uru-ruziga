@@ -57,9 +57,15 @@ export interface FeedbackItem {
 }
 
 export interface EvaluationResult {
-  score: number
+  score: number | null
   passed: boolean
+  ocrPassed?: boolean
   confidence: number
+  ocrFeedbackAvailable?: boolean
+  fallback?: boolean
+  fallbackReason?: string | null
+  statusLabel?: string
+  scoreSource?: string
   feedback: string[]
   detailedFeedback: FeedbackItem[]
   processingTime: number
@@ -184,9 +190,15 @@ export class OCRApiClient {
         success: data.success,
         attemptId: data.attempt?.userAttemptId,
         evaluation: {
-          score: data.evaluation?.score ?? 0,
+          score: data.evaluation?.score ?? null,
           passed: Boolean(data.evaluation?.passed),
+          ocrPassed: Boolean(data.evaluation?.ocrPassed),
           confidence: data.evaluation?.confidence ?? 0,
+          ocrFeedbackAvailable: Boolean(data.evaluation?.ocrFeedbackAvailable),
+          fallback: Boolean(data.evaluation?.fallback),
+          fallbackReason: data.evaluation?.fallbackReason ?? null,
+          statusLabel: data.evaluation?.statusLabel,
+          scoreSource: data.evaluation?.scoreSource,
           feedback: data.evaluation?.feedback ?? [],
           detailedFeedback: Object.entries(data.evaluation?.metrics ?? {}).map(([category, value]) => ({
             category,

@@ -3,6 +3,7 @@ import { uploadDrawing, dataURLtoBlob } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
 import { verify } from 'jsonwebtoken'
 import { Prisma } from '@prisma/client'
+import { resolveStoredImageUrl } from '@/lib/image-url'
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,11 +64,19 @@ export async function POST(request: NextRequest) {
       pathPattern: '<userId>/<characterId>/<timestamp>.png',
       upsert: false,
     })
-    const imageUrl = await uploadDrawing(
+    const imageStorageKey = await uploadDrawing(
       userId,
       characterId || lessonId || 'practice',
       imageBlob
     )
+    const imageUrl = await resolveStoredImageUrl(imageStorageKey, {
+      source: '/api/drawings/upload',
+      expiresIn: 3600,
+    })
+
+    if (!imageUrl) {
+      throw new Error('Failed to create signed drawing URL')
+    }
     console.info('[OCR diagnostic] bucket upload succeeded', {
       endpoint: '/api/drawings/upload',
       bucket: 'user-drawings',
@@ -81,7 +90,7 @@ export async function POST(request: NextRequest) {
         stepId: stepId || 'practice-step',
         characterId: characterId || null,
         attemptType: 'DRAWING',
-        drawingData: imageUrl, // Store URL instead of base64
+        drawingData: imageStorageKey,
         answer: Prisma.JsonNull,
         aiScore: aiScore || null,
         aiMetrics: aiMetrics || Prisma.JsonNull,

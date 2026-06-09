@@ -1,10 +1,15 @@
 import { Metadata } from 'next'
 import { UmweroTranslator } from '../../components/umwero-translator'
 import { SectionHeader } from '../../components/ui/page'
+import { kbDefinitions } from '../../lib/umwero-knowledge-base'
 
 export const metadata: Metadata = {
   title: 'Umwero Translator - Uruziga',
-  description: 'Translate text to and from the Umwero alphabet.',
+  description: 'Translate text to and from Umwero using the existing Uruziga mappings for Kinyarwanda learning.',
+  openGraph: {
+    title: 'Umwero Translator - Uruziga',
+    description: 'Translate text to and from Umwero using the existing Uruziga mappings for Kinyarwanda learning.',
+  },
 }
 
 export default function TranslatePage() {
@@ -15,7 +20,7 @@ export default function TranslatePage() {
           <SectionHeader
             eyebrow="Translator"
             title="Umwero Alphabet Translator"
-            description="Translate between Umwero and Latin with the existing mappings. The vowels are visible by default; deeper tables stay one tap away."
+            description={`Translate between Umwero and Latin with the existing mappings. ${kbDefinitions.umwero}`}
             className="mb-6"
           />
           <UmweroTranslator />

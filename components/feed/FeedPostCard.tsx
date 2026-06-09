@@ -62,6 +62,14 @@ export default function FeedPostCard({
   const isOwner = post.userId === currentUserId
   const canDelete = isOwner // Add admin check if needed
 
+  const logImageError = (source: string, url: string) => {
+    console.error('[image-load] Feed image failed', {
+      source,
+      url,
+      postId: post.id,
+    })
+  }
+
   const getToken = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token')
@@ -245,6 +253,7 @@ export default function FeedPostCard({
               width={600}
               height={400}
               className="w-full h-auto max-h-96 object-cover"
+              onError={() => logImageError('feed.imageUrl', post.imageUrl)}
             />
           </div>
         )}

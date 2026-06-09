@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { BookMarked, FileText } from 'lucide-react'
+import { getUmweroLessonContent } from '@/lib/umwero-lesson-content'
 
 interface StoryTabProps {
   character: {
@@ -13,89 +14,67 @@ interface StoryTabProps {
 }
 
 export function StoryTab({ character }: StoryTabProps) {
-  const charName = character.vowel || character.consonant || ''
-  const hasDescription = character.description && character.description.trim().length > 0
+  const lessonContent = getUmweroLessonContent(character)
+  const hasDescription = Boolean(character.description?.trim())
 
   return (
     <div className="space-y-6">
-      {/* Character Description - Only if available in database */}
-      {hasDescription && (
-        <Card className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="text-5xl">📝</div>
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <BookMarked className="h-5 w-5 text-indigo-700" />
-                  <h3 className="text-xl font-semibold text-indigo-800">About This Character</h3>
-                </div>
-                <p className="text-indigo-900 leading-relaxed whitespace-pre-wrap">
-                  {character.description}
-                </p>
+      <Card className="border border-[#8B4513]/20 bg-white">
+        <CardContent className="p-5">
+          <div className="flex items-start gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <BookMarked className="h-5 w-5 text-[#8B4513]" />
+                <h3 className="text-xl font-semibold text-black">{lessonContent.storyTitle}</h3>
               </div>
+              <p className="leading-relaxed text-black/70 whitespace-pre-wrap">
+                {lessonContent.story}
+              </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {hasDescription && (
+        <Card className="border border-[#8B4513]/20 bg-white">
+          <CardContent className="p-5">
+            <h3 className="mb-3 text-xl font-semibold text-black">Lesson Note</h3>
+            <p className="leading-relaxed text-black/70 whitespace-pre-wrap">
+              {character.description}
+            </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Umwero Documentation Resources */}
-      <Card className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-200">
-        <CardContent className="p-6">
+      <Card className="border border-[#8B4513]/20 bg-white">
+        <CardContent className="p-5">
           <div className="flex items-start gap-4">
-            <div className="text-5xl">📚</div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="h-5 w-5 text-amber-700" />
-                <h3 className="text-xl font-semibold text-amber-800">Authentic Documentation</h3>
+                <FileText className="h-5 w-5 text-[#8B4513]" />
+                <h3 className="text-xl font-semibold text-black">Keep Learning</h3>
               </div>
-              <p className="text-amber-900 leading-relaxed mb-4">
-                Learn more about Umwero script from the original creator's documentation:
+              <p className="text-black/70 leading-relaxed mb-4">
+                Umwero becomes clearer when you connect practice with culture. After writing this character, explore how Imana, Inka, and Ingoma shape the wider story.
               </p>
-              <div className="space-y-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <a 
-                  href="/doc-umwero-explained/Umwero Visual Cultural-1.pdf" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-4 py-2 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors text-amber-900"
+                  href="/culture-and-history"
+                  className="rounded-lg border border-[#8B4513] px-4 py-2 text-center text-[#8B4513] transition-colors hover:bg-white"
                 >
-                  📄 Umwero Visual Cultural Guide
+                  Culture & History
                 </a>
                 <a 
-                  href="/doc-umwero-explained/UmweroIPA-1.pdf" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-4 py-2 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors text-amber-900"
+                  href="/learn"
+                  className="rounded-lg bg-[#8B4513] px-4 py-2 text-center text-white transition-colors hover:bg-[#A0522D]"
                 >
-                  📄 Umwero IPA (Phonetic Guide)
-                </a>
-                <a 
-                  href="/doc-umwero-explained/Umwero Ibihekane (3).pdf" 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block px-4 py-2 bg-amber-100 hover:bg-amber-200 rounded-lg transition-colors text-amber-900"
-                >
-                  📄 Umwero Ibihekane
+                  More Lessons
                 </a>
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Placeholder if no description */}
-      {!hasDescription && (
-        <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200">
-          <CardContent className="p-8 text-center">
-            <div className="text-5xl mb-4">✍️</div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">
-              Character Story Coming Soon
-            </h3>
-            <p className="text-gray-600">
-              Detailed information about "{charName}" will be added from authentic Umwero documentation.
-            </p>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

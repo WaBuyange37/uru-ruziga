@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, createDiscussionSchema } from '@/lib/validators'
+import { resolveStoredImageUrls } from '@/lib/image-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,8 +69,15 @@ export async function GET(request: NextRequest) {
       prisma.discussion.count({ where })
     ])
 
+    const normalizedDiscussions = await Promise.all(discussions.map(async (discussion) => ({
+      ...discussion,
+      mediaUrls: (await resolveStoredImageUrls(discussion.mediaUrls || [], {
+        source: `discussion:${discussion.id}.mediaUrls`,
+      })).filter((url): url is string => Boolean(url)),
+    })))
+
     return NextResponse.json({
-      discussions,
+      discussions: normalizedDiscussions,
       pagination: {
         total,
         limit,
@@ -163,7 +171,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      discussion,
+      discussion: {
+        ...discussion,
+        mediaUrls: (await resolveStoredImageUrls(discussion.mediaUrls || [], {
+          source: `discussion:${discussion.id}.mediaUrls`,
+        })).filter((url): url is string => Boolean(url)),
+      },
       message: 'Discussion created successfully'
     }, { status: 201 })
 

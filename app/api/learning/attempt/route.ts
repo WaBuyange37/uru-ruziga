@@ -9,7 +9,9 @@ import { resolveUmweroFontInput } from '@/lib/umwero-font-input';
 export const dynamic = 'force-dynamic';
 
 const PYTHON_SERVICE_URL =
-  process.env.PYTHON_OCR_SERVICE_URL || process.env.PYTHON_AI_SERVICE_URL || 'http://localhost:8000';
+  process.env.OCR_API_URL || process.env.PYTHON_OCR_SERVICE_URL || process.env.PYTHON_AI_SERVICE_URL || null;
+const MIN_CONFIDENT_OCR_CONFIDENCE = 0.35;
+const FALLBACK_FEEDBACK = 'Your writing has been saved. Detailed handwriting feedback is still being improved.';
 
 type Point = {
   x: number;
@@ -247,7 +249,26 @@ function normalizeEvaluation(raw: unknown): EvaluationPayload {
 
 function isOcrFailure(evaluation: EvaluationPayload): boolean {
   if (evaluation.score === null) return true;
+  if (evaluation.confidence < MIN_CONFIDENT_OCR_CONFIDENCE) return true;
   return evaluation.feedback.some((message) => message.toLowerCase().startsWith('evaluation failed:'));
+}
+
+function fallbackEvaluation(reason: string): EvaluationPayload {
+  return {
+    score: null,
+    confidence: 0,
+    passed: false,
+    feedback: [FALLBACK_FEEDBACK],
+    strengths: ['Practice recorded'],
+    weaknesses: [],
+    practiceAreas: ['Keep practicing this character. More detailed handwriting feedback will be added as OCR improves.'],
+    metrics: {},
+    raw: {
+      fallback: true,
+      reason,
+      scoreSource: 'PRACTICE_RECORDED'
+    }
+  };
 }
 
 function qualityLabel(score: number | null): string | null {
@@ -375,7 +396,7 @@ async function resolveCharacterReference(character: {
   let generatedReference: PythonReferencePayload | null = null;
   const fontInput = resolveUmweroFontInput(character.latinEquivalent, character.umweroGlyph);
 
-  if (!character.glyphImageUrl) {
+  if (!character.glyphImageUrl && PYTHON_SERVICE_URL) {
     try {
       console.info('[OCR diagnostic] reference generation requested', {
         characterId: character.id,
@@ -420,7 +441,7 @@ async function resolveCharacterReference(character: {
   } else {
     console.info('[OCR diagnostic] reference generation skipped', {
       characterId: character.id,
-      reason: 'Character.glyphImageUrl already exists'
+      reason: character.glyphImageUrl ? 'Character.glyphImageUrl already exists' : 'OCR service URL is not configured'
     });
   }
 
@@ -481,6 +502,10 @@ async function callPythonEvaluation(input: {
   userAttemptId: string;
   userId: string;
 }) {
+  if (!PYTHON_SERVICE_URL) {
+    throw new LearningAttemptPipelineError('OCR', 'OCR service URL is not configured.', 503);
+  }
+
   const response = await fetch(`${PYTHON_SERVICE_URL}/api/evaluate-character`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -686,12 +711,15 @@ export async function POST(request: NextRequest) {
     });
 
     let evaluation: EvaluationPayload;
+    let ocrFeedbackAvailable = false;
+    let ocrFallbackReason: string | null = null;
     try {
       console.info('[OCR diagnostic] OCR service called', {
         endpoint: '/api/learning/attempt',
         ocrEndpoint: '/api/evaluate-character',
         imageUrlProvided: true,
-        referenceImageUrlProvided: true
+        referenceImageUrlProvided: true,
+        serviceConfigured: Boolean(PYTHON_SERVICE_URL)
       });
       evaluation = await callPythonEvaluation({
         character,
@@ -703,30 +731,32 @@ export async function POST(request: NextRequest) {
         userAttemptId: userAttempt.id,
         userId
       });
+      ocrFeedbackAvailable = true;
     } catch (error) {
-      console.error('[OCR diagnostic] OCR service call failed', {
+      ocrFallbackReason = error instanceof Error ? error.message : 'Unknown OCR error';
+      console.warn('[OCR diagnostic] OCR fallback used', {
         endpoint: '/api/learning/attempt',
-        message: error instanceof Error ? error.message : 'Unknown OCR error'
+        message: ocrFallbackReason
       });
-      if (error instanceof LearningAttemptPipelineError) throw error;
-      throw new LearningAttemptPipelineError(
-        'OCR',
-        `OCR failed: ${error instanceof Error ? error.message : 'Could not compare learner image.'}`,
-        502
-      );
+      evaluation = fallbackEvaluation(ocrFallbackReason);
     }
-    console.info('[OCR diagnostic] OCR service succeeded', {
+    console.info('[OCR diagnostic] OCR evaluation resolved', {
       endpoint: '/api/learning/attempt',
-      scoreSource: 'PYTHON_OCR',
+      scoreSource: ocrFeedbackAvailable ? 'PYTHON_OCR' : 'PRACTICE_RECORDED',
       score: evaluation.score,
-      confidence: evaluation.confidence
+      confidence: evaluation.confidence,
+      fallback: !ocrFeedbackAvailable
     });
 
     const roundedScore = evaluation.score === null ? null : Math.round(evaluation.score);
     const attemptQuality = qualityLabel(evaluation.score);
     const attemptFeedbackType = feedbackType(evaluation.score);
     const threshold = stageThreshold(body.learningStage);
-    const stagePassed = (evaluation.score ?? 0) >= threshold;
+    const stageCompleted = ocrFeedbackAvailable ? (evaluation.score ?? 0) >= threshold : true;
+    const stagePassed = ocrFeedbackAvailable && (evaluation.score ?? 0) >= threshold;
+    const scoreSource = ocrFeedbackAvailable ? 'PYTHON_OCR' : 'PRACTICE_RECORDED';
+    const persistedEvaluationType = ocrFeedbackAvailable ? 'PYTHON_OCR' : 'OCR_FALLBACK';
+    const feedbackText = evaluation.feedback.join('\n') || FALLBACK_FEEDBACK;
 
     let updatedUserAttempt;
     let updatedHandwritingAttempt;
@@ -743,15 +773,18 @@ export async function POST(request: NextRequest) {
             practiceAreas: evaluation.practiceAreas,
             threshold,
             passed: stagePassed,
+            stageCompleted,
             handwritingAttemptId: handwritingAttempt.id,
-            scoreSource: 'PYTHON_OCR',
+            scoreSource,
+            fallback: !ocrFeedbackAvailable,
+            fallbackReason: ocrFallbackReason,
             imageBucket: upload.bucket,
             imagePath: upload.path,
             referenceImageUrl
           } as Prisma.InputJsonValue,
-          feedback: evaluation.feedback.join('\n') || null,
+          feedback: feedbackText,
           confidenceScore: evaluation.confidence,
-          evaluationType: 'PYTHON_OCR',
+          evaluationType: persistedEvaluationType,
           isCorrect: stagePassed,
           shapeAccuracy: evaluation.metrics.shapeAccuracy,
           strokeOrder: evaluation.metrics.strokeOrder,
@@ -780,13 +813,15 @@ export async function POST(request: NextRequest) {
             strengths: evaluation.strengths,
             weaknesses: evaluation.weaknesses,
             raw: evaluation.raw,
-            scoreSource: 'PYTHON_OCR'
+            scoreSource,
+            fallback: !ocrFeedbackAvailable,
+            fallbackReason: ocrFallbackReason
           } as Prisma.InputJsonValue,
           feedbackType: attemptFeedbackType,
           practiceAreas: evaluation.practiceAreas,
           featureVector:
             evaluation.featureVector === undefined ? undefined : (evaluation.featureVector as Prisma.InputJsonValue),
-          qualityLabel: attemptQuality,
+          qualityLabel: ocrFeedbackAvailable ? attemptQuality : 'needs_review',
           processingTime: Date.now() - startedAt
         }
       });
@@ -820,20 +855,24 @@ export async function POST(request: NextRequest) {
       });
 
       const completedStages = new Set(existingProgress?.completedStages ?? []);
-      if (stagePassed) completedStages.add(body.learningStage);
+      if (stageCompleted) completedStages.add(body.learningStage);
 
       const completedPhases = new Set(existingProgress?.completedPhases ?? []);
-      if (stagePassed) completedPhases.add(body.journeyPhase);
+      if (stageCompleted) completedPhases.add(body.journeyPhase);
 
-      const nextJourneyPhase = stagePassed
+      const nextJourneyPhase = stageCompleted
         ? nextPhase(body.journeyPhase, Array.from(completedPhases))
         : body.journeyPhase;
 
       const nextAttempts = (existingProgress?.attempts ?? 0) + 1;
       const scoreForProgress = roundedScore ?? existingProgress?.score ?? 0;
       const bestScore = Math.max(existingProgress?.score ?? 0, scoreForProgress);
+      const participationMastery = Math.min(70, Math.round((completedStages.size / 8) * 70));
       const masteryScore = Math.round(
-        Math.max(existingProgress?.masteryScore ?? 0, bestScore * 0.7 + (completedStages.size / 8) * 30)
+        Math.max(
+          existingProgress?.masteryScore ?? 0,
+          ocrFeedbackAvailable ? bestScore * 0.7 + (completedStages.size / 8) * 30 : participationMastery
+        )
       );
       const nextStatus = masteryScore >= 90 ? 'MASTERED' : masteryScore >= 80 ? 'LEARNED' : 'IN_PROGRESS';
       const legacyStatus = masteryScore >= 80 ? 'LEARNED' : 'IN_PROGRESS';
@@ -848,10 +887,12 @@ export async function POST(request: NextRequest) {
           ? { ...(existingProgress.stageAttempts as Record<string, unknown>) }
           : {};
 
-      stageScores[body.learningStage] = Math.max(
-        typeof stageScores[body.learningStage] === 'number' ? (stageScores[body.learningStage] as number) : 0,
-        scoreForProgress
-      );
+      if (ocrFeedbackAvailable) {
+        stageScores[body.learningStage] = Math.max(
+          typeof stageScores[body.learningStage] === 'number' ? (stageScores[body.learningStage] as number) : 0,
+          scoreForProgress
+        );
+      }
       stageAttempts[body.learningStage] =
         (typeof stageAttempts[body.learningStage] === 'number' ? (stageAttempts[body.learningStage] as number) : 0) + 1;
       const stageScoresJson = stageScores as Prisma.InputJsonValue;
@@ -873,7 +914,7 @@ export async function POST(request: NextRequest) {
           attempts: 1,
           lastAttempt: new Date(),
           masteryScore,
-          accuracyRate: stagePassed ? 1 : 0,
+          accuracyRate: ocrFeedbackAvailable && stagePassed ? 1 : 0,
           confidenceScore: evaluation.confidence,
           completionStatus: nextStatus,
           currentStage: body.learningStage,
@@ -890,7 +931,11 @@ export async function POST(request: NextRequest) {
           attempts: { increment: 1 },
           lastAttempt: new Date(),
           masteryScore,
-          accuracyRate: nextAttempts > 0 ? Array.from(completedStages).length / Math.max(nextAttempts, 1) : 0,
+          accuracyRate: ocrFeedbackAvailable
+            ? Array.from(completedStages).length / Math.max(nextAttempts, 1)
+            : existingProgress?.timeSpent
+              ? undefined
+              : 0,
           confidenceScore: evaluation.confidence,
           completionStatus: nextStatus,
           currentStage: body.learningStage,
@@ -909,76 +954,82 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let datasetEntry;
-    try {
-      datasetEntry = await prisma.datasetEntry.upsert({
-        where: { attemptId: handwritingAttempt.id },
-        update: {
-          userId,
-          characterId: reference.id,
-          characterType: reference.characterType,
-          strokesData: body.strokes as unknown as Prisma.InputJsonValue,
-          imageUrl,
-          processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
-          score: evaluation.score ?? 0,
-          qualityLabel: attemptQuality,
-          featureVector:
-            evaluation.featureVector === undefined ? undefined : (evaluation.featureVector as Prisma.InputJsonValue),
-          timeTaken: drawingDuration,
-          userMetadata: {
-            inputMethod: body.metadata?.inputMethod,
-            canvasSize: body.metadata?.canvasSize,
-            deviceInfo: body.metadata?.deviceInfo,
-            adaptive: {
-              userAttemptId: updatedUserAttempt.id,
-              characterId: character.id,
-              learningStage: body.learningStage,
-              journeyPhase: body.journeyPhase,
-              lessonId: lessonStep.lessonId
-            }
-          } as Prisma.InputJsonValue,
-          split: updatedHandwritingAttempt.datasetSplit,
-          version: updatedHandwritingAttempt.datasetVersion ?? '1.0'
-        },
-        create: {
-          attemptId: handwritingAttempt.id,
-          userId,
-          characterId: reference.id,
-          characterType: reference.characterType,
-          strokesData: body.strokes as unknown as Prisma.InputJsonValue,
-          imageUrl,
-          processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
-          score: evaluation.score ?? 0,
-          qualityLabel: attemptQuality,
-          featureVector:
-            evaluation.featureVector === undefined ? undefined : (evaluation.featureVector as Prisma.InputJsonValue),
-          timeTaken: drawingDuration,
-          userMetadata: {
-            inputMethod: body.metadata?.inputMethod,
-            canvasSize: body.metadata?.canvasSize,
-            deviceInfo: body.metadata?.deviceInfo,
-            adaptive: {
-              userAttemptId: updatedUserAttempt.id,
-              characterId: character.id,
-              learningStage: body.learningStage,
-              journeyPhase: body.journeyPhase,
-              lessonId: lessonStep.lessonId
-            }
-          } as Prisma.InputJsonValue,
-          version: '1.0'
-        }
-      });
+    let datasetEntry: Awaited<ReturnType<typeof prisma.datasetEntry.upsert>> | null = null;
+    let datasetWarning: string | null = null;
+    if (ocrFeedbackAvailable && evaluation.score !== null) {
+      try {
+        datasetEntry = await prisma.datasetEntry.upsert({
+          where: { attemptId: handwritingAttempt.id },
+          update: {
+            userId,
+            characterId: reference.id,
+            characterType: reference.characterType,
+            strokesData: body.strokes as unknown as Prisma.InputJsonValue,
+            imageUrl,
+            processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
+            score: evaluation.score,
+            qualityLabel: attemptQuality,
+            featureVector:
+              evaluation.featureVector === undefined ? undefined : (evaluation.featureVector as Prisma.InputJsonValue),
+            timeTaken: drawingDuration,
+            userMetadata: {
+              inputMethod: body.metadata?.inputMethod,
+              canvasSize: body.metadata?.canvasSize,
+              deviceInfo: body.metadata?.deviceInfo,
+              adaptive: {
+                userAttemptId: updatedUserAttempt.id,
+                characterId: character.id,
+                learningStage: body.learningStage,
+                journeyPhase: body.journeyPhase,
+                lessonId: lessonStep.lessonId,
+                scoreSource
+              }
+            } as Prisma.InputJsonValue,
+            split: updatedHandwritingAttempt.datasetSplit,
+            version: updatedHandwritingAttempt.datasetVersion ?? '1.0'
+          },
+          create: {
+            attemptId: handwritingAttempt.id,
+            userId,
+            characterId: reference.id,
+            characterType: reference.characterType,
+            strokesData: body.strokes as unknown as Prisma.InputJsonValue,
+            imageUrl,
+            processedImageUrl: updatedHandwritingAttempt.processedImageUrl,
+            score: evaluation.score,
+            qualityLabel: attemptQuality,
+            featureVector:
+              evaluation.featureVector === undefined ? undefined : (evaluation.featureVector as Prisma.InputJsonValue),
+            timeTaken: drawingDuration,
+            userMetadata: {
+              inputMethod: body.metadata?.inputMethod,
+              canvasSize: body.metadata?.canvasSize,
+              deviceInfo: body.metadata?.deviceInfo,
+              adaptive: {
+                userAttemptId: updatedUserAttempt.id,
+                characterId: character.id,
+                learningStage: body.learningStage,
+                journeyPhase: body.journeyPhase,
+                lessonId: lessonStep.lessonId,
+                scoreSource
+              }
+            } as Prisma.InputJsonValue,
+            version: '1.0'
+          }
+        });
 
-      await prisma.handwritingAttempt.update({
-        where: { id: handwritingAttempt.id },
-        data: { includedInDataset: true }
-      });
-    } catch (error) {
-      throw new LearningAttemptPipelineError(
-        'DATASET_SAVE',
-        `Dataset save failed: ${error instanceof Error ? error.message : 'Could not save OCR training entry.'}`,
-        500
-      );
+        await prisma.handwritingAttempt.update({
+          where: { id: handwritingAttempt.id },
+          data: { includedInDataset: true }
+        });
+      } catch (error) {
+        datasetWarning = error instanceof Error ? error.message : 'Could not save OCR training entry.';
+        console.error('[OCR diagnostic] dataset entry save skipped after failure', {
+          endpoint: '/api/learning/attempt',
+          handwritingAttemptId: handwritingAttempt.id,
+          message: datasetWarning
+        });
+      }
     }
 
     return NextResponse.json({
@@ -986,7 +1037,7 @@ export async function POST(request: NextRequest) {
       attempt: {
         userAttemptId: updatedUserAttempt.id,
         handwritingAttemptId: updatedHandwritingAttempt.id,
-        datasetEntryId: datasetEntry.id,
+        datasetEntryId: datasetEntry?.id ?? null,
         imageUrl,
         referenceImageUrl,
         storage: {
@@ -997,10 +1048,15 @@ export async function POST(request: NextRequest) {
       },
       evaluation: {
         score: evaluation.score,
-        scoreSource: 'PYTHON_OCR',
+        scoreSource,
         persistedEvaluationType: updatedUserAttempt.evaluationType,
         confidence: evaluation.confidence,
-        passed: stagePassed,
+        passed: stageCompleted,
+        ocrPassed: stagePassed,
+        ocrFeedbackAvailable,
+        fallback: !ocrFeedbackAvailable,
+        fallbackReason: ocrFallbackReason,
+        statusLabel: ocrFeedbackAvailable ? 'OCR feedback available' : 'Practice recorded',
         threshold,
         feedback: evaluation.feedback,
         strengths: evaluation.strengths,
@@ -1015,11 +1071,14 @@ export async function POST(request: NextRequest) {
         currentPhase: progress.journeyPhase,
         completedStages: progress.completedStages,
         completedPhases: progress.completedPhases,
-        nextPhaseUnlocked: stagePassed
+        nextPhaseUnlocked: stageCompleted,
+        fallbackProgression: !ocrFeedbackAvailable
       },
       dataset: {
-        included: true,
-        qualityLabel: attemptQuality
+        included: Boolean(datasetEntry),
+        qualityLabel: ocrFeedbackAvailable ? attemptQuality : 'needs_review',
+        pendingReview: !ocrFeedbackAvailable,
+        warning: datasetWarning
       }
     });
   } catch (error) {

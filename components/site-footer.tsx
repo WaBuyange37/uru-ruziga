@@ -3,6 +3,7 @@
 import { Facebook, Twitter, Instagram, Youtube, Mail, MapPin, Phone } from 'lucide-react'
 import Link from 'next/link'
 import { useTranslation } from '../hooks/useTranslation'
+import { kbDefinitions } from '../lib/umwero-knowledge-base'
 
 export function SiteFooter() {
   const { t } = useTranslation()
@@ -22,7 +23,7 @@ export function SiteFooter() {
               <h3 className="font-bold text-base sm:text-lg text-[#8B4513]">Uruziga</h3>
             </div>
             <p className="text-xs sm:text-sm text-black/65 leading-relaxed">
-              Preserving and promoting the Umwero alphabet - a revolutionary African script for Kinyarwanda culture.
+              {kbDefinitions.umwero}
             </p>
             {/* Social Links */}
             <div className="flex gap-2 sm:gap-3 pt-2">
@@ -87,6 +88,14 @@ export function SiteFooter() {
               </li>
               <li>
                 <Link 
+                  href="/about" 
+                  className="text-xs sm:text-sm text-black/65 hover:text-[#8B4513] transition-colors inline-flex items-center group"
+                >
+                  <span className="group-hover:translate-x-1 transition-transform">About</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
                   href="/gallery" 
                   className="text-xs sm:text-sm text-black/65 hover:text-[#8B4513] transition-colors inline-flex items-center group"
                 >
@@ -99,6 +108,14 @@ export function SiteFooter() {
                   className="text-xs sm:text-sm text-black/65 hover:text-[#8B4513] transition-colors inline-flex items-center group"
                 >
                   <span className="group-hover:translate-x-1 transition-transform">{t('cultureAndHistory')}</span>
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/faq" 
+                  className="text-xs sm:text-sm text-black/65 hover:text-[#8B4513] transition-colors inline-flex items-center group"
+                >
+                  <span className="group-hover:translate-x-1 transition-transform">FAQ</span>
                 </Link>
               </li>
             </ul>

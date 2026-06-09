@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyToken } from '@/lib/jwt';
 import { buildJourneyPhaseStates, getOverallJourneyProgress } from '@/lib/learning-journey';
+import { normalizePublicImageUrl } from '@/lib/image-url';
 
 type JwtPayload = {
   userId?: string;
@@ -140,7 +141,10 @@ export async function GET(
         order: character.order,
         symbolism: character.symbolism,
         historicalNote: character.historicalNote,
-        glyphImageUrl: character.glyphImageUrl,
+        glyphImageUrl: normalizePublicImageUrl(
+          character.glyphImageUrl,
+          `learningJourney:${character.id}.glyphImageUrl`
+        ),
         audioUrl: character.audioUrl,
         name: translation?.name ?? primaryLesson?.title ?? character.latinEquivalent,
         pronunciation: translation?.pronunciation ?? null,

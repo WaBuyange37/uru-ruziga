@@ -148,7 +148,7 @@ export function CulturalContextStep({
       </div>
 
       {/* Character Reference */}
-      <Card className="text-center p-4 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
+      <Card className="border-[#8B4513]/20 bg-white p-4 text-center">
         <CardContent className="flex items-center justify-center gap-4">
           <div className="text-4xl font-umwero text-primary">
             {character.umweroGlyph}
@@ -163,23 +163,23 @@ export function CulturalContextStep({
       {/* Cultural Context */}
       <Card className="shadow-lg">
         <CardContent className="p-6 space-y-6">
-          <div className="flex items-center gap-3 text-blue-700">
+          <div className="flex items-center gap-3 text-[#8B4513]">
             <Globe className="h-6 w-6" />
             <h2 className="text-xl font-semibold">Cultural Heritage</h2>
           </div>
           
           <div className="prose max-w-none">
-            <p className="text-gray-700 leading-relaxed text-lg">
+            <p className="text-lg leading-relaxed text-black/70">
               {culturalData.content}
             </p>
           </div>
 
-          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <div className="flex items-center gap-2 text-blue-700 mb-2">
+          <div className="rounded-lg border border-[#8B4513]/20 bg-white p-4">
+            <div className="mb-2 flex items-center gap-2 text-[#8B4513]">
               <History className="h-5 w-5" />
               <span className="font-semibold">Historical Context</span>
             </div>
-            <p className="text-blue-600">
+            <p className="text-black/70">
               {culturalData.historicalNote}
             </p>
           </div>
@@ -189,7 +189,7 @@ export function CulturalContextStep({
       {/* Authentic Examples */}
       <Card className="shadow-lg">
         <CardContent className="p-6 space-y-6">
-          <div className="flex items-center gap-3 text-green-700">
+          <div className="flex items-center gap-3 text-[#8B4513]">
             <Book className="h-6 w-6" />
             <h2 className="text-xl font-semibold">Authentic Examples</h2>
           </div>
@@ -241,30 +241,26 @@ export function CulturalContextStep({
       </Card>
 
       {/* Language Preservation Context */}
-      <Card className="p-6 bg-purple-50 border-purple-200">
+      <Card className="border-[#8B4513]/20 bg-white p-6">
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-2 text-purple-700">
+          <div className="flex items-center gap-2 text-[#8B4513]">
             <Users className="h-5 w-5" />
             <span className="font-semibold">Language Preservation</span>
           </div>
-          <p className="text-purple-600 leading-relaxed">
-            The Umwero script represents an important effort to preserve and celebrate Rwandan linguistic heritage. 
-            Each character carries deep cultural significance and helps maintain the connection between language, 
-            culture, and identity. By learning these characters, you participate in the preservation of 
-            endangered writing systems and the celebration of African linguistic diversity. This work is supported by 
-            the <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="underline hover:text-purple-800">Endangered Alphabets Project</a> and 
-            the <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="underline hover:text-purple-800">ScriptKeepers Initiative</a>.
+          <p className="leading-relaxed text-black/70">
+            Umwero was created for Kinyarwanda, cultural identity, linguistic preservation, and education.
+            Learning each character helps you connect written practice with language, culture, and meaning.
           </p>
         </CardContent>
       </Card>
 
       {/* Tips */}
       {translation?.tips && translation.tips.length > 0 && (
-        <Card className="p-4 bg-green-50 border-green-200">
+        <Card className="border-[#8B4513]/20 bg-white p-4">
           <CardContent className="space-y-2">
-            <div className="font-semibold text-green-800 mb-2">🌍 Cultural Tips:</div>
+            <div className="mb-2 font-semibold text-[#8B4513]">Cultural Tips:</div>
             {translation.tips.map((tip: string, index: number) => (
-              <div key={index} className="text-green-700 text-sm">
+              <div key={index} className="text-sm text-black/70">
                 • {tip}
               </div>
             ))}
@@ -285,7 +281,7 @@ export function CulturalContextStep({
         <Button 
           onClick={handleComplete}
           size="lg"
-          className="px-8 py-3 bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600"
+          className="px-8 py-3"
         >
           Continue to Stroke Order
         </Button>

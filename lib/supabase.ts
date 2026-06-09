@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { resolveStoredImageUrl } from './image-url';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -47,12 +48,7 @@ export async function uploadDrawing(
     throw new Error(`Failed to upload drawing: ${error.message}`);
   }
 
-  // Get public URL
-  const { data: urlData } = supabaseAdmin.storage
-    .from('user-drawings')
-    .getPublicUrl(filePath);
-
-  return urlData.publicUrl;
+  return `user-drawings/${filePath}`;
 }
 
 // Delete drawing from storage (server-side)
@@ -115,12 +111,14 @@ export async function listUserDrawings(
     return [];
   }
 
-  return data.map(file => {
-    const { data: urlData } = supabaseAdmin.storage
-      .from('user-drawings')
-      .getPublicUrl(`${prefix}${file.name}`);
-    return urlData.publicUrl;
-  });
+  const urls = await Promise.all(data.map(file =>
+    resolveStoredImageUrl(`user-drawings/${prefix}${file.name}`, {
+      source: 'listUserDrawings',
+      expiresIn: 3600,
+    })
+  ));
+
+  return urls.filter((url): url is string => Boolean(url));
 }
 
 // Community media utilities (server-side)

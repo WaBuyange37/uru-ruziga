@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
 import { verify } from 'jsonwebtoken'
 import { Prisma } from '@prisma/client'
+import { resolveStoredImageUrl } from '@/lib/image-url'
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,12 +76,15 @@ export async function POST(request: NextRequest) {
       throw new Error(`Failed to upload photo: ${uploadError.message}`)
     }
 
-    // Get public URL
-    const { data: urlData } = supabase.storage
-      .from('user-drawings')
-      .getPublicUrl(filePath)
+    const imageStorageKey = `user-drawings/${filePath}`
+    const imageUrl = await resolveStoredImageUrl(imageStorageKey, {
+      source: '/api/drawings/upload-photo',
+      expiresIn: 3600,
+    })
 
-    const imageUrl = urlData.publicUrl
+    if (!imageUrl) {
+      throw new Error('Failed to create signed photo URL')
+    }
 
     // Save attempt to database
     const attempt = await prisma.userAttempt.create({
@@ -89,12 +93,12 @@ export async function POST(request: NextRequest) {
         stepId: stepId || 'photo-upload',
         characterId: characterId || null,
         attemptType: 'DRAWING',
-        drawingData: imageUrl,
+        drawingData: imageStorageKey,
         answer: relatedAttemptId ? { relatedAttemptId } : Prisma.JsonNull,
         aiScore: null, // Can be evaluated later
         aiMetrics: Prisma.JsonNull,
         evaluationType: 'PHOTO_UPLOAD',
-        uploadedImageUrl: imageUrl,
+        uploadedImageUrl: imageStorageKey,
         feedback: 'Thank you for contributing real handwriting data!',
         isCorrect: true, // Contribution is always valuable
         timeSpent: 0
@@ -138,7 +142,7 @@ export async function POST(request: NextRequest) {
         verified: false,
         metadata: JSON.stringify({
           attemptId: attempt.id,
-          imageUrl,
+          imageUrl: imageStorageKey,
           uploadType: 'photo',
           relatedAttemptId
         })

@@ -91,9 +91,12 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
           score: data.evaluation.score,
           scoreSource: data.evaluation.scoreSource,
           confidence: data.evaluation.confidence,
+          ocrFeedbackAvailable: Boolean(data.evaluation.ocrFeedbackAvailable),
+          fallback: Boolean(data.evaluation.fallback),
+          statusLabel: data.evaluation.statusLabel,
           strengths: data.evaluation.strengths ?? [],
           improvements: data.evaluation.practiceAreas ?? data.evaluation.weaknesses ?? [],
-          feedback: (data.evaluation.feedback ?? []).join(' ') || 'Python OCR evaluation completed.',
+          feedback: (data.evaluation.feedback ?? []).join(' ') || 'Practice saved.',
           passed: Boolean(data.evaluation.passed),
         }
         setEvaluationResult(evaluation)
@@ -119,7 +122,7 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
   }
 
   const handleNext = async () => {
-    if (!evaluationResult?.score || isSubmitting) return
+    if (!currentAttemptId || isSubmitting) return
 
     setIsSubmitting(true)
 
@@ -132,21 +135,23 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
         originalId: character.id,
         actualCharacterId: actualCharacterId,
         score: evaluationResult.score,
+        scoreSource: evaluationResult.scoreSource,
         character: character
       })
 
       const characterType = character.vowel ? 'vowel' : character.consonant ? 'consonant' : 'ligature'
+      const numericScore = typeof evaluationResult.score === 'number' ? evaluationResult.score : 0
       emitProgressUpdate(
         actualCharacterId,
-        evaluationResult.score >= 70 ? 'LEARNED' : 'IN_PROGRESS',
-        evaluationResult.score,
+        evaluationResult.ocrFeedbackAvailable && numericScore >= 70 ? 'LEARNED' : 'IN_PROGRESS',
+        numericScore,
         characterType as 'vowel' | 'consonant' | 'ligature'
       )
 
-      if (evaluationResult.score >= 70) {
+      if (evaluationResult.ocrFeedbackAvailable && numericScore >= 70) {
         celebrateCharacterLearned(
           character.vowel || character.consonant || 'Character',
-          evaluationResult.score
+          numericScore
         )
       }
 
@@ -300,11 +305,32 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
           {/* Evaluation Results */}
           {practiceMode === 'complete' && evaluationResult && (
             <div className="space-y-4">
-              <div className="rounded-lg border border-[#8B4513]/25 bg-white p-4 text-center">
-                <h3 className="mb-2 text-xl font-bold text-[#8B4513]">
-                  Score: {Math.round(evaluationResult.score)}%
-                </h3>
-                <p className="mb-3 text-black/75">
+              <div className="rounded-lg border border-[#8B4513]/25 bg-white p-4">
+                <div className="text-center">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#8B4513]">Practice saved</p>
+                  {evaluationResult.ocrFeedbackAvailable && typeof evaluationResult.score === 'number' ? (
+                    <h3 className="mb-2 mt-2 text-xl font-bold text-[#8B4513]">
+                      OCR Score: {Math.round(evaluationResult.score)}%
+                    </h3>
+                  ) : (
+                    <h3 className="mb-2 mt-2 text-xl font-bold text-[#8B4513]">
+                      Practice Recorded
+                    </h3>
+                  )}
+                </div>
+
+                <div className="my-3 rounded-lg border border-[#8B4513]/15 bg-white p-3 text-left">
+                  <h4 className="mb-1 font-semibold text-black">
+                    {evaluationResult.ocrFeedbackAvailable ? 'OCR feedback available' : 'OCR feedback pending'}
+                  </h4>
+                  <p className="text-sm text-black/70">
+                    {evaluationResult.ocrFeedbackAvailable
+                      ? 'Detailed handwriting feedback was saved with this attempt.'
+                      : 'Your drawing was saved for practice history and future OCR training.'}
+                  </p>
+                </div>
+
+                <p className="mb-3 text-center text-black/75">
                   {evaluationResult.feedback}
                 </p>
 

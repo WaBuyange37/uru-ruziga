@@ -770,8 +770,19 @@ async function main() {
   // USERS - Use upsert to prevent duplicates
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('👥 Users...');
-  const users = [
-       ];
+  const users: Array<{
+    email: string;
+    username: string;
+    fullName: string;
+    password: string;
+    role: string;
+    country: string;
+    countryCode: string;
+    preferredLanguage: string;
+    bio: string;
+    emailVerified: boolean;
+    provider?: string;
+  }> = [];
 
   let usersCreated = 0;
   for (const u of users) {

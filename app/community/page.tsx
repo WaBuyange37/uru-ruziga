@@ -14,6 +14,7 @@ import { useAuth } from "../contexts/AuthContext"
 import { MediaUpload } from "../../components/discussions/MediaUpload"
 import { CommunityPostCard } from "../../components/community/CommunityPostCard"
 import { EmptyState, PageContainer, SectionHeader } from "../../components/ui/page"
+import { kbDefinitions } from "../../lib/umwero-knowledge-base"
 
 export default function CommunityPage() {
   return (
@@ -92,7 +93,7 @@ function DiscussionForum() {
       <SectionHeader
         eyebrow="Community"
         title="Learn with other Umwero students"
-        description="Real learner posts only. Ask questions, share practice notes, and add media when it helps explain the lesson."
+        description={`Real learner posts only. Ask questions and share practice notes about Umwero, the Kinyarwanda writing system. ${kbDefinitions.uruziga}`}
         action={
           <Button onClick={() => setShowForm((value) => !value)}>
             <Plus className="h-4 w-4" />

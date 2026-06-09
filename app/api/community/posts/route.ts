@@ -5,6 +5,7 @@ import { verifyToken } from '../../../../lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '../../../../lib/rate-limit'
 import { validateRequest, createPostSchema } from '../../../../lib/validators'
 import { collectFromPost } from '../../../../lib/training-data-collector'
+import { normalizePublicImageUrl, resolveStoredImageUrls } from '../../../../lib/image-url'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,8 +62,16 @@ export async function GET(request: NextRequest) {
       prisma.communityPost.count({ where }),
     ])
 
+    const normalizedPosts = await Promise.all(posts.map(async (post) => ({
+      ...post,
+      imageUrl: normalizePublicImageUrl(post.imageUrl, `communityPost:${post.id}.imageUrl`),
+      mediaUrls: (await resolveStoredImageUrls(post.mediaUrls || [], {
+        source: `communityPost:${post.id}.mediaUrls`,
+      })).filter((url): url is string => Boolean(url)),
+    })))
+
     return NextResponse.json({
-      posts,
+      posts: normalizedPosts,
       pagination: {
         page,
         limit,
@@ -154,7 +163,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ post }, { status: 201 })
+    return NextResponse.json({
+      post: {
+        ...post,
+        imageUrl: normalizePublicImageUrl(post.imageUrl, `communityPost:${post.id}.imageUrl`),
+        mediaUrls: (await resolveStoredImageUrls(post.mediaUrls || [], {
+          source: `communityPost:${post.id}.mediaUrls`,
+        })).filter((url): url is string => Boolean(url)),
+      },
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating post:', error)
     return NextResponse.json(
