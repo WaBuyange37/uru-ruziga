@@ -1,0 +1,36 @@
+# docker-compose.yml
+# Local development environment for Handwriting Evaluation API
+
+version: '3.8'
+
+services:
+  # Handwriting Evaluation API
+  evaluation-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: umwero-evaluation-api
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount fonts directory (place your umwero.otf here)
+      - ./fonts:/app/fonts:ro
+      # Mount source code for hot reload in development
+      - ./src:/app/src
+      - ./main.py:/app/main.py
+    environment:
+      - UMWERO_FONT_PATH=/app/fonts/umwero.otf
+      - HOST=0.0.0.0
+      - PORT=8000
+      - LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  default:
+    name: umwero-network

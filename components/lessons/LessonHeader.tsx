@@ -22,16 +22,17 @@ export function LessonHeader({ lesson, character, progress }: LessonHeaderProps)
   const router = useRouter()
 
   return (
-    <div className="sticky top-0 z-50 bg-white border-b-2 border-[#8B4513] shadow-md">
-      <div className="container mx-auto px-4 py-4 max-w-7xl">
-        <div className="flex items-center justify-between mb-3">
+    <div className="sticky top-0 z-50 border-b border-[#8B4513]/20 bg-white">
+      <div className="container mx-auto max-w-7xl px-4 py-3">
+        <div className="mb-3 flex items-center justify-between">
           {/* Left: Back button and title */}
           <div className="flex items-center gap-4 flex-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => router.push('/learn')}
-              className="text-[#8B4513] hover:bg-[#F3E5AB]"
+              className="text-[#8B4513] hover:bg-white"
+              aria-label="Back to lessons"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -44,10 +45,10 @@ export function LessonHeader({ lesson, character, progress }: LessonHeaderProps)
                 {character.umwero}
               </div>
               <div>
-                <h1 className="text-xl font-bold text-[#8B4513]">
+                <h1 className="text-xl font-bold text-black">
                   {lesson.title}
                 </h1>
-                <p className="text-sm text-[#D2691E]">
+                <p className="text-sm text-black/65">
                   Character: {character.vowel || character.consonant}
                 </p>
               </div>
@@ -59,7 +60,8 @@ export function LessonHeader({ lesson, character, progress }: LessonHeaderProps)
             variant="ghost"
             size="icon"
             onClick={() => router.push('/learn')}
-            className="text-[#8B4513] hover:bg-[#F3E5AB]"
+            className="text-[#8B4513] hover:bg-white"
+            aria-label="Close lesson"
           >
             <X className="h-5 w-5" />
           </Button>

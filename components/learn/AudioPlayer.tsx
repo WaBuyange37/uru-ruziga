@@ -138,7 +138,7 @@ export function AudioPlayer({
       {isLoading ? (
         <Loader2 className={`${iconSizes[size]} animate-spin`} />
       ) : error ? (
-        <VolumeX className={`${iconSizes[size]} text-red-500`} />
+        <VolumeX className={`${iconSizes[size]} text-black`} />
       ) : (
         <Volume2 className={`${iconSizes[size]} ${isPlaying ? 'animate-pulse' : ''}`} />
       )}

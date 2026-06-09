@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
+import { getAuthTokenFromRequest } from '@/lib/auth-session'
 import { getJwtSecret } from '@/lib/jwt'
 
 // Force dynamic rendering to avoid build-time evaluation
@@ -10,16 +11,13 @@ export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from Authorization header
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = getAuthTokenFromRequest(request)
+    if (!token) {
       return NextResponse.json(
         { error: 'No token provided' },
         { status: 401 }
       )
     }
-
-    const token = authHeader.replace('Bearer ', '')
 
     // Verify token
     let decoded: any
@@ -30,6 +28,17 @@ export async function GET(request: NextRequest) {
         { error: 'Invalid or expired token' },
         { status: 401 }
       )
+    }
+
+    if (decoded.developmentDemo && process.env.NODE_ENV !== 'production') {
+      return NextResponse.json({
+        user: {
+          id: 'demo-development-user',
+          email: 'demo@uruziga.com',
+          fullName: 'Demo Student',
+          role: 'STUDENT',
+        },
+      })
     }
 
     // Get user from database

@@ -28,8 +28,12 @@ export const Cell: React.FC<CellProps> = ({ number, index, moveCell, fontLoaded 
     },
   }))
 
+  const setRef = (node: HTMLDivElement | null) => {
+    drag(drop(node))
+  }
+
   return (
-    <div ref={(node) => drag(drop(node))} style={{ opacity: isDragging ? 0.5 : 1 }}>
+    <div ref={setRef} style={{ opacity: isDragging ? 0.5 : 1 }}>
       <Button variant="outline" className={`w-16 h-16 text-2xl font-bold ${fontLoaded ? "font-umwero" : ""}`}>
         {number}
       </Button>

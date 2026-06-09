@@ -1,6 +1,6 @@
 // app/api/admin/users/[userId]/role/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient, UserRole } from '@prisma/client'
+import { PrismaClient, Role } from '@prisma/client'
 import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 
@@ -30,13 +30,13 @@ export async function PATCH(
 
     const { role } = await request.json()
 
-    if (!['USER', 'TEACHER', 'ADMIN'].includes(role)) {
+    if (!['USER', 'STUDENT', 'TEACHER', 'ADMIN'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
-      data: { role: role as UserRole },
+      data: { role: role as Role },
       select: {
         id: true,
         email: true,

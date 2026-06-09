@@ -8,9 +8,10 @@ import { useTranslation } from "../../hooks/useTranslation"
 interface DonateModalProps {
   isOpen: boolean
   onClose: () => void
+  initialAmount?: number
 }
 
-export function DonateModal({ isOpen, onClose }: DonateModalProps) {
+export function DonateModal({ isOpen, onClose, initialAmount = 0 }: DonateModalProps) {
   const { t } = useTranslation()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
@@ -19,7 +20,7 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     // Here you would typically send this information to your server
-    console.log("Donation info:", { name, email, message })
+    console.log("Donation info:", { name, email, message, amount: initialAmount })
     onClose()
   }
 
@@ -29,6 +30,11 @@ export function DonateModal({ isOpen, onClose }: DonateModalProps) {
         Be a part of shaping history—your support for Umwero ensures a legacy of cultural pride and innovation that will
         inspire generations to come.
       </p>
+      {initialAmount > 0 && (
+        <p className="mb-4 text-sm font-semibold text-[#8B4513]">
+          {initialAmount.toLocaleString()} RWF
+        </p>
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-[#8B4513]">

@@ -5,6 +5,7 @@ console.log('🧪 Testing Progress API from Browser Console...')
 // Test 1: Check if token exists
 const token = localStorage.getItem('token')
 console.log('Token exists:', !!token)
+
 console.log('Token length:', token?.length)
 
 if (!token) {

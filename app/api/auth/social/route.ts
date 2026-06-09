@@ -3,10 +3,40 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
 import { sign } from 'jsonwebtoken'
 import { getJwtSecret } from '../../../../lib/jwt'
+import bcrypt from 'bcryptjs'
+import { randomBytes } from 'crypto'
+import { setAuthCookie } from '../../../../lib/auth-session'
 
 const prisma = new PrismaClient()
 
 export const dynamic = 'force-dynamic'
+
+function getUsernameBase(email: string, name?: string) {
+  const source = name || email.split('@')[0]
+  const slug = source
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+
+  return slug || `user-${randomBytes(3).toString('hex')}`
+}
+
+async function generateUniqueUsername(email: string, name?: string) {
+  const base = getUsernameBase(email, name)
+  let username = base
+  let suffix = 0
+
+  while (await prisma.user.findUnique({ where: { username } })) {
+    suffix += 1
+    username = `${base}-${suffix}`
+  }
+
+  return username
+}
+
+async function createOAuthPasswordHash() {
+  return bcrypt.hash(randomBytes(32).toString('hex'), 12)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,10 +85,13 @@ export async function POST(request: NextRequest) {
       })
     } else {
       // Create new user with social auth
+      const normalizedEmail = email.toLowerCase()
       user = await prisma.user.create({
         data: {
-          email: email.toLowerCase(),
-          fullName: fullName || email.split('@')[0],
+          email: normalizedEmail,
+          username: await generateUniqueUsername(normalizedEmail, fullName),
+          password: await createOAuthPasswordHash(),
+          fullName: fullName || normalizedEmail.split('@')[0],
           provider: provider,
           providerId: providerId,
           avatar: avatar,
@@ -81,7 +114,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       message: 'Authentication successful',
       token,
       user: {
@@ -94,6 +127,8 @@ export async function POST(request: NextRequest) {
         emailVerified: user.emailVerified
       }
     })
+
+    return setAuthCookie(response, token)
 
   } catch (error: any) {
     console.error('Social auth error:', error)

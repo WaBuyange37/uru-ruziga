@@ -10,9 +10,19 @@ const TabsContext = React.createContext<{
 
 const Tabs = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { defaultValue: string }
->(({ className, defaultValue, children, ...props }, ref) => {
-  const [activeTab, setActiveTab] = React.useState(defaultValue)
+  React.HTMLAttributes<HTMLDivElement> & {
+    defaultValue?: string
+    value?: string
+    onValueChange?: (value: string) => void
+  }
+>(({ className, defaultValue, value, onValueChange, children, ...props }, ref) => {
+  const [internalActiveTab, setInternalActiveTab] = React.useState(defaultValue || value || "")
+  const activeTab = value ?? internalActiveTab
+
+  const setActiveTab = React.useCallback((tab: string) => {
+    setInternalActiveTab(tab)
+    onValueChange?.(tab)
+  }, [onValueChange])
 
   return (
     <TabsContext.Provider value={{ activeTab, setActiveTab }}>

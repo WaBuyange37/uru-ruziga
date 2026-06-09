@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-})
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +14,24 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({
+        success: true,
+        evaluation: {
+          score: null,
+          strengths: ['Practice recorded'],
+          improvements: ['Detailed handwriting feedback is still improving.'],
+          feedback: 'Practice saved; detailed handwriting feedback is still improving.',
+          passed: true,
+          fallback: true,
+        },
+      })
+    }
+
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    })
 
     // Construct evaluation prompt
     const prompt = `You are an expert Umwero script teacher evaluating a student's handwriting practice.

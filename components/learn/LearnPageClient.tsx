@@ -17,17 +17,15 @@ import {
   Search,
   X,
   Play,
-  Heart,
-  Globe,
-  Sparkles,
-  Target
+  Sparkles
 } from 'lucide-react'
 import { CompleteVowelLesson, VowelData } from '@/components/lessons/CompleteVowelLesson'
 import { VideoPlayer } from "@/components/VideoPlayer"
 import { EnhancedCharacterGrid } from '@/components/learn/EnhancedCharacterGrid'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useProgressSummary } from '@/hooks/useProgressSummary'
-import { ProgressDebugger } from '@/components/debug/ProgressDebugger'
+import { lessonIdToCharacterId } from '@/lib/character-mapping'
+import { kbHome } from '@/lib/umwero-knowledge-base'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -42,6 +40,7 @@ interface LessonData {
   duration: number | null
   videoUrl: string | null
   thumbnailUrl: string | null
+  characterId: string | null
   isPublished: boolean
   createdAt: Date
 }
@@ -210,7 +209,7 @@ export function LearnPageClient({
         <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-sm">
           <div className="min-h-screen py-4 px-2 sm:px-4">
             <Button
-              className="fixed top-3 right-3 z-[60] h-9 w-9 rounded-full bg-white text-[#8B4513] shadow-lg hover:bg-[#F3E5AB]"
+              className="fixed top-3 right-3 z-[60] h-9 w-9 rounded-full bg-white text-[#8B4513] shadow-lg hover:bg-white"
               variant="ghost"
               size="icon"
               onClick={stopLesson}
@@ -223,6 +222,10 @@ export function LearnPageClient({
               <CompleteVowelLesson
                 vowelData={getCurrentVowelData()!}
                 lessonId={vowelLessons[currentLessonIndex].id}
+                characterId={
+                  vowelLessons[currentLessonIndex].characterId ||
+                  lessonIdToCharacterId(vowelLessons[currentLessonIndex].id)
+                }
                 vowelNumber={currentLessonIndex + 1}
                 totalVowels={vowelLessons.length}
                 allVowels={vowelLessons.map((l: any) => {
@@ -263,76 +266,65 @@ export function LearnPageClient({
         </div>
       )}
 
-      {/* ── Hero Section ── */}
-      <section className="relative py-12 sm:py-16 lg:py-20 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl text-center">
-
-          {/* Cultural Badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
-              <Heart className="h-3.5 w-3.5 text-red-500 shrink-0" />
-              <span>Preserving Rwandan Heritage</span>
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
-              <Globe className="h-3.5 w-3.5 text-blue-500 shrink-0" />
-              <a
-                href="https://endangeredalphabets.net/umwero/"
-                target="_blank" rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                Endangered Alphabets Project
-              </a>
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/80 backdrop-blur text-xs sm:text-sm">
-              <BookOpen className="h-3.5 w-3.5 text-green-500 shrink-0" />
-              <a
-                href="https://scriptkeepers.org/projects"
-                target="_blank" rel="noopener noreferrer"
-                className="hover:underline"
-              >
-                ScriptKeepers Initiative
-              </a>
-            </Badge>
-          </div>
-
-          {/* Heading — fluid scale via clamp-like Tailwind classes */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.15] mb-4 text-[#8B4513]">
-            {mounted ? t("startYourUmweroJourneyToday") : "Start Your Umwero Journey Today"}
-          </h1>
-
-          <p className="text-base sm:text-lg md:text-xl text-[#D2691E] mb-8 max-w-3xl mx-auto leading-relaxed">
-            Learn the authentic Umwero script character by character. Each lesson reveals the deep cultural significance and helps preserve this endangered writing system for future generations.
-          </p>
-
-          {/* CTA Buttons — stack on mobile, row on sm+ */}
-          <div className="flex flex-col xs:flex-row gap-3 justify-center items-center">
+      {/* ── Current Lesson Section ── */}
+      <section className="px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-5 lg:grid-cols-[1fr_360px] lg:items-stretch">
+          <div className="rounded-lg border border-[#8B4513]/20 bg-white p-5 sm:p-7">
+            <Badge variant="outline">Current lesson</Badge>
+            <h1 className="mt-4 text-3xl font-bold leading-tight text-black sm:text-4xl">
+              {vowelLessons[0]?.title || "Start Your Umwero Journey"}
+            </h1>
+            <p className="mt-3 max-w-3xl text-base leading-7 text-black/70">
+              {kbHome.nextAction}
+            </p>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button
               size="lg"
-              className="w-full xs:w-auto gap-2 bg-[#8B4513] hover:bg-[#A0522D] text-white shadow-lg hover:shadow-xl transition-all"
+              className="w-full sm:w-auto gap-2"
               onClick={() => vowelLessons.length > 0 && startLesson(vowelLessons[0].id, 'vowel')}
             >
               <Sparkles className="h-5 w-5 shrink-0" />
-              {t("startLearning")}
+              Continue Learning
             </Button>
             <Button
               size="lg"
               variant="outline"
-              className="w-full xs:w-auto gap-2 border-[#8B4513] text-[#8B4513] hover:bg-[#F3E5AB]"
+              className="w-full sm:w-auto gap-2"
               onClick={() => setShowIntroVideo(true)}
             >
               <Play className="h-5 w-5 shrink-0" />
               {t("watchIntroVideo")}
             </Button>
+            </div>
           </div>
-        </div>
+          <Card>
+            <CardContent className="p-5">
+              <p className="text-sm font-semibold text-[#8B4513]">Current focus</p>
+              <h2 className="mt-2 text-xl font-bold text-black">
+                {vowelLessons[0]?.title || "First available lesson"}
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-black/65">
+                {progressLoading ? "Loading progress..." : `${progressSummary.overall.learned} characters learned out of ${progressSummary.overall.total || totalLessons}.`}
+              </p>
+              <Progress
+                value={progressSummary.overall.percentage || 0}
+                className="mt-4 h-3"
+              />
+            </CardContent>
+          </Card>
+          </div>
       </section>
 
       {/* ── Main Content ── */}
-      <section className="py-8 px-4 sm:px-6 lg:px-8">
+      <section className="px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
 
-          {/* Optional: Search bar */}
-          <div className="relative mb-6 max-w-md mx-auto sm:mx-0">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-black">Available Lessons</h2>
+              <p className="mt-1 text-base text-black/65">Choose one card. The queue uses your saved progress and keeps the next learning action visible.</p>
+            </div>
+          <div className="relative max-w-md sm:min-w-[320px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8B4513]/50 pointer-events-none" />
             <Input
               placeholder="Search lessons…"
@@ -350,6 +342,7 @@ export function LearnPageClient({
               </button>
             )}
           </div>
+          </div>
 
           <Tabs defaultValue="vowels" className="w-full">
             {/* ── Tab List ── */}
@@ -357,8 +350,8 @@ export function LearnPageClient({
               className="
                 grid grid-cols-4 mb-8
                 h-auto p-1.5
-                bg-white/80 backdrop-blur
-                rounded-2xl shadow-sm border border-amber-100
+                bg-white
+                rounded-lg shadow-sm border border-[#8B4513]/20
                 gap-1
               "
             >
@@ -368,10 +361,10 @@ export function LearnPageClient({
                   value={value}
                   className="
                     flex flex-col items-center justify-center gap-1
-                    rounded-xl py-2.5 px-1
+                    rounded-md py-2.5 px-1
                     transition-all duration-200
                     data-[state=active]:bg-[#8B4513] data-[state=active]:text-white data-[state=active]:shadow-md
-                    data-[state=inactive]:text-[#8B4513]/60 data-[state=inactive]:hover:bg-amber-50 data-[state=inactive]:hover:text-[#8B4513]
+                    data-[state=inactive]:text-[#8B4513]/60 data-[state=inactive]:hover:bg-white data-[state=inactive]:hover:text-[#8B4513]
                     min-h-[3.5rem]
                     group
                   "
@@ -411,7 +404,7 @@ export function LearnPageClient({
                 characters={filterLessons(vowelLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="vowel"
                 title={mounted ? t("umweroVowels") : "Umwero Vowels"}
-                description={mounted ? t("learnVowelCharacters") : "Learn the 5 vowel characters and their cultural significance"}
+                description="Begin with the next visible vowel card."
                 onStartLesson={startLesson}
                 language={lang}
               />
@@ -423,7 +416,7 @@ export function LearnPageClient({
                 characters={filterLessons(consonantLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="consonant"
                 title={mounted ? t("umweroConsonants") : "Umwero Consonants"}
-                description={mounted ? t("masterConsonantCharacters") : "Master consonant characters and combinations"}
+                description="Continue with consonant cards when you are ready."
                 onStartLesson={startLesson}
                 language={lang}
               />
@@ -435,7 +428,7 @@ export function LearnPageClient({
                 characters={filterLessons(ligatureLessons).map(l => ({ ...parseCharacterData(l), examples: parseCharacterData(l).examples || [] }))}
                 type="ligature"
                 title="Ibihekane — Compound Characters"
-                description="Master advanced compound characters — the building blocks of complex Umwero writing"
+                description="Practice compound characters after the basics feel familiar."
                 onStartLesson={startLesson}
                 language={lang}
               />
@@ -454,7 +447,7 @@ export function LearnPageClient({
                       <h3 className="font-bold text-[#8B4513] mb-1.5 text-sm sm:text-base leading-snug">
                         {video.title}
                       </h3>
-                      <p className="text-[#D2691E] text-xs sm:text-sm mb-3 leading-relaxed line-clamp-2">
+                      <p className="text-black/65 text-xs sm:text-sm mb-3 leading-relaxed line-clamp-2">
                         {video.description}
                       </p>
                       <div className="flex items-center justify-between">
@@ -474,22 +467,6 @@ export function LearnPageClient({
         </div>
       </section>
 
-      {/* ── Cultural Footer Card ── */}
-      <section className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-4xl">
-          <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200 rounded-2xl overflow-hidden">
-            <CardContent className="p-6 sm:p-10 text-center">
-              <div className="text-4xl sm:text-5xl mb-4" role="img" aria-label="Heritage">🏛️</div>
-              <h3 className="text-xl sm:text-2xl font-semibold text-amber-800 mb-3">
-                Join the Cultural Movement
-              </h3>
-              <p className="text-sm sm:text-base text-amber-700 leading-relaxed max-w-2xl mx-auto">
-                Every character you learn helps preserve the endangered Umwero script and honors Rwandan cultural heritage. Together, we can ensure this beautiful writing system continues to inspire future generations and maintains its place in the rich tapestry of African linguistic diversity.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </section>
     </>
   )
 }

@@ -2,10 +2,10 @@
 // Discussions API with FULL Umwero support (NO conversion to Latin)
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
-import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, createDiscussionSchema } from '@/lib/validators'
+import { resolveStoredImageUrls } from '@/lib/image-url'
+import { getAuthPayload } from '@/lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -68,8 +68,15 @@ export async function GET(request: NextRequest) {
       prisma.discussion.count({ where })
     ])
 
+    const normalizedDiscussions = await Promise.all(discussions.map(async (discussion) => ({
+      ...discussion,
+      mediaUrls: (await resolveStoredImageUrls(discussion.mediaUrls || [], {
+        source: `discussion:${discussion.id}.mediaUrls`,
+      })).filter((url): url is string => Boolean(url)),
+    })))
+
     return NextResponse.json({
-      discussions,
+      discussions: normalizedDiscussions,
       pagination: {
         total,
         limit,
@@ -101,20 +108,10 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse
 
     // Authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    let decoded: any
-    try {
-      decoded = jwt.verify(token, getJwtSecret())
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
         { status: 401 }
       )
     }
@@ -163,7 +160,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      discussion,
+      discussion: {
+        ...discussion,
+        mediaUrls: (await resolveStoredImageUrls(discussion.mediaUrls || [], {
+          source: `discussion:${discussion.id}.mediaUrls`,
+        })).filter((url): url is string => Boolean(url)),
+      },
       message: 'Discussion created successfully'
     }, { status: 201 })
 

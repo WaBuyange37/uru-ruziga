@@ -31,7 +31,8 @@ export function SuccessCelebrationStep({
   translation,
   lessonTranslation,
   onComplete,
-  onNext
+  onNext,
+  progress
 }: ExtendedStepProps) {
   const [showConfetti, setShowConfetti] = useState(true);
   const [nextLesson, setNextLesson] = useState<any>(null);
@@ -81,10 +82,10 @@ export function SuccessCelebrationStep({
   };
 
   const getPerformanceLevel = (score: number) => {
-    if (score >= 90) return { level: 'Master', color: 'text-purple-600', icon: Trophy };
-    if (score >= 75) return { level: 'Expert', color: 'text-blue-600', icon: Star };
-    if (score >= 60) return { level: 'Skilled', color: 'text-green-600', icon: CheckCircle };
-    return { level: 'Learning', color: 'text-orange-600', icon: Target };
+    if (score >= 90) return { level: 'Master', color: 'text-[#8B4513]', icon: Trophy };
+    if (score >= 75) return { level: 'Expert', color: 'text-[#8B4513]', icon: Star };
+    if (score >= 60) return { level: 'Skilled', color: 'text-[#8B4513]', icon: CheckCircle };
+    return { level: 'Learning', color: 'text-[#8B4513]', icon: Target };
   };
 
   const performance = getPerformanceLevel(stats.bestScore);
@@ -117,7 +118,7 @@ export function SuccessCelebrationStep({
                   animationDuration: `${2 + Math.random() * 2}s`,
                 }}
               >
-                <Sparkles className="h-4 w-4 text-yellow-400" />
+                <Sparkles className="h-4 w-4 text-[#8B4513]" />
               </div>
             ))}
           </div>
@@ -125,14 +126,14 @@ export function SuccessCelebrationStep({
       )}
 
       {/* Main Celebration */}
-      <Card className="text-center p-8 shadow-lg bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+      <Card className="border-[#8B4513]/20 bg-white p-8 text-center shadow-lg">
         <CardContent className="space-y-6">
           
           {/* Success Icon */}
           <div className="flex justify-center">
             <div className="relative">
-              <Trophy className="h-16 w-16 text-yellow-500" />
-              <Sparkles className="h-6 w-6 text-yellow-400 absolute -top-2 -right-2 animate-pulse" />
+              <Trophy className="h-16 w-16 text-[#8B4513]" />
+              <Sparkles className="absolute -right-2 -top-2 h-6 w-6 animate-pulse text-[#8B4513]" />
             </div>
           </div>
 
@@ -166,34 +167,34 @@ export function SuccessCelebrationStep({
           {/* Performance Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-white rounded-lg">
-              <Flame className="h-6 w-6 text-orange-500 mx-auto mb-1" />
+              <Flame className="mx-auto mb-1 h-6 w-6 text-[#8B4513]" />
               <div className="text-lg font-bold">{stats.timeSpent > 0 ? formatTime(stats.timeSpent) : '--:--'}</div>
               <div className="text-xs text-gray-600">Time Spent</div>
             </div>
             
             <div className="text-center p-3 bg-white rounded-lg">
-              <CheckCircle className="h-6 w-6 text-green-500 mx-auto mb-1" />
+              <CheckCircle className="mx-auto mb-1 h-6 w-6 text-[#8B4513]" />
               <div className="text-lg font-bold">{stats.stepsCompleted}</div>
               <div className="text-xs text-gray-600">Steps Done</div>
             </div>
             
             <div className="text-center p-3 bg-white rounded-lg">
-              <Target className="h-6 w-6 text-blue-500 mx-auto mb-1" />
+              <Target className="mx-auto mb-1 h-6 w-6 text-[#8B4513]" />
               <div className="text-lg font-bold">{stats.bestScore}%</div>
               <div className="text-xs text-gray-600">Best Score</div>
             </div>
             
             <div className="text-center p-3 bg-white rounded-lg">
-              <BookOpen className="h-6 w-6 text-purple-500 mx-auto mb-1" />
+              <BookOpen className="mx-auto mb-1 h-6 w-6 text-[#8B4513]" />
               <div className="text-lg font-bold">{stats.attempts}</div>
               <div className="text-xs text-gray-600">Attempts</div>
             </div>
           </div>
 
           {/* Achievement Points */}
-          <div className="flex items-center justify-center gap-2 p-3 bg-yellow-100 rounded-lg">
-            <Star className="h-5 w-5 text-yellow-600" />
-            <span className="font-semibold text-yellow-800">+10 Points Earned!</span>
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-[#8B4513]/20 bg-white p-3">
+            <Star className="h-5 w-5 text-[#8B4513]" />
+            <span className="font-semibold text-[#8B4513]">+10 Points Earned!</span>
           </div>
         </CardContent>
       </Card>
@@ -223,27 +224,23 @@ export function SuccessCelebrationStep({
       )}
 
       {/* Cultural Message */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
+      <Card className="border-[#8B4513]/20 bg-white p-6">
         <CardContent className="text-center space-y-3">
-          <div className="text-2xl">🌍</div>
-          <h3 className="font-semibold text-blue-800">Cultural Achievement</h3>
-          <p className="text-blue-700">
-            By learning this character, you're helping preserve the endangered Umwero script 
-            and honoring Rwandan cultural heritage. Every character learned is a step toward 
-            keeping this beautiful writing system alive for future generations. This preservation 
-            effort is supported by the <a href="https://endangeredalphabets.net/umwero/" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">Endangered Alphabets Project</a> and 
-            the <a href="https://scriptkeepers.org/projects" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-800">ScriptKeepers Initiative</a>.
+          <h3 className="font-semibold text-[#8B4513]">Practice Recorded</h3>
+          <p className="text-black/70">
+            Umwero is a writing system for Kinyarwanda created by Kwizera Mugisha. Each completed
+            character helps you connect writing practice with language, cultural identity, and learning.
           </p>
         </CardContent>
       </Card>
 
       {/* Tips */}
       {translation?.tips && translation.tips.length > 0 && (
-        <Card className="p-4 bg-green-50 border-green-200">
+        <Card className="border-[#8B4513]/20 bg-white p-4">
           <CardContent className="space-y-2">
-            <div className="font-semibold text-green-800 mb-2">🎉 Success Tips:</div>
+            <div className="mb-2 font-semibold text-[#8B4513]">Success Tips:</div>
             {translation.tips.map((tip: string, index: number) => (
-              <div key={index} className="text-green-700 text-sm">
+              <div key={index} className="text-sm text-black/70">
                 • {tip}
               </div>
             ))}

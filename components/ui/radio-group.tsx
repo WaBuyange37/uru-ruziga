@@ -12,10 +12,11 @@ export function RadioGroup({ value, onValueChange, children, className }: RadioG
   return (
     <div className={cn("flex space-x-4", className)}>
       {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
+        if (React.isValidElement<RadioGroupItemProps>(child)) {
+          const childValue = String(child.props.value)
           return React.cloneElement(child, {
-            checked: child.props.value === value,
-            onChange: () => onValueChange(child.props.value),
+            checked: childValue === value,
+            onChange: () => onValueChange(childValue),
           })
         }
         return child

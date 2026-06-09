@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken'
 import { getJwtSecret } from '@/lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '@/lib/rate-limit'
 import { validateRequest, registerSchema } from '@/lib/validators'
+import { setAuthCookie } from '@/lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,7 +97,7 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     )
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: 'Account created successfully',
       token,
@@ -110,6 +111,8 @@ export async function POST(request: NextRequest) {
         emailVerified: user.emailVerified
       }
     })
+
+    return setAuthCookie(response, token)
 
   } catch (error: any) {
     console.error('Registration error:', error)

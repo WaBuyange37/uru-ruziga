@@ -1,7 +1,7 @@
 // app/api/progress/summary/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
+import { getAuthPayload } from '@/lib/auth-session'
 
 interface ProgressSummary {
   vowels: { learned: number; total: number }
@@ -13,12 +13,10 @@ interface ProgressSummary {
 export async function GET(request: NextRequest): Promise<NextResponse<ProgressSummary | { error: string }>> {
   try {
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
     const userId = decoded.userId
 
     console.log('Fetching progress summary for user:', userId)

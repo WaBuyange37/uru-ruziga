@@ -21,6 +21,8 @@ export interface StaticLessonData {
   audioUrl: string
 }
 
+const MISSING_CHARACTER_IMAGE_FALLBACK = '/UmweroLetaByLeta/umwero8Messures1232.jpg'
+
 // 🔒 VOWEL LESSONS - Based on UMWERO_MAP
 export const STATIC_VOWEL_LESSONS: StaticLessonData[] = [
   {
@@ -54,7 +56,7 @@ export const STATIC_VOWEL_LESSONS: StaticLessonData[] = [
     meaning: 'Connection, bridge',
     culturalNote: 'E connects ideas and concepts, representing unity in diversity.',
     examples: ['Ese (father)', 'Ejo (yesterday)', 'Eka (home)'],
-    imageUrl: '/UmweroLetaByLeta/e/E-ways.png',
+    imageUrl: '/UmweroLetaByLeta/e/E-ways.jpg',
     audioUrl: '/UmweroLetaByLeta/Voice/Vowel/E.mp3'
   },
   {
@@ -71,7 +73,7 @@ export const STATIC_VOWEL_LESSONS: StaticLessonData[] = [
     meaning: 'Light, illumination',
     culturalNote: 'I represents enlightenment and the pursuit of knowledge.',
     examples: ['Iki (what)', 'Ino (this)', 'Iza (come)'],
-    imageUrl: '/UmweroLetaByLeta/i/I-ways.png',
+    imageUrl: '/UmweroLetaByLeta/i/I-ways.jpg',
     audioUrl: '/UmweroLetaByLeta/Voice/Vowel/I.mp3'
   },
   {
@@ -126,7 +128,7 @@ export const STATIC_CONSONANT_LESSONS: StaticLessonData[] = [
     meaning: 'Being, existence',
     culturalNote: 'B represents the beginning of being and existence in Rwandan philosophy.',
     examples: ['Baba (father)', 'Bana (children)', 'Bose (all)'],
-    imageUrl: '/UmweroLetaByLeta/b/B-ways.png',
+    imageUrl: '/UmweroLetaByLeta/b/B-ways.jpg',
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/B.mp3'
   },
   {
@@ -143,7 +145,7 @@ export const STATIC_CONSONANT_LESSONS: StaticLessonData[] = [
     meaning: 'Cutting, precision',
     culturalNote: 'C represents precision and the ability to make clear distinctions.',
     examples: ['Cane (four)', 'Cumi (ten)', 'Cyane (very)'],
-    imageUrl: '/UmweroLetaByLeta/c/C-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/C.mp3'
   },
   {
@@ -160,7 +162,7 @@ export const STATIC_CONSONANT_LESSONS: StaticLessonData[] = [
     meaning: 'Giving, generosity',
     culturalNote: 'D embodies the spirit of giving and generosity central to Rwandan values.',
     examples: ['Dada (sister)', 'Dore (where)', 'Duca (return)'],
-    imageUrl: '/UmweroLetaByLeta/d/D-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/D.mp3'
   },
   {
@@ -177,7 +179,7 @@ export const STATIC_CONSONANT_LESSONS: StaticLessonData[] = [
     meaning: 'Fire, energy',
     culturalNote: 'F represents the transformative power of fire and energy.',
     examples: ['Fata (take)', 'Fite (fight)', 'Funga (close)'],
-    imageUrl: '/UmweroLetaByLeta/f/F-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/F.mp3'
   },
   {
@@ -194,7 +196,7 @@ export const STATIC_CONSONANT_LESSONS: StaticLessonData[] = [
     meaning: 'Growth, expansion',
     culturalNote: 'G symbolizes growth and the expansion of knowledge and wisdom.',
     examples: ['Gana (find)', 'Gira (have)', 'Guca (buy)'],
-    imageUrl: '/UmweroLetaByLeta/g/G-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/G.mp3'
   }
 ]
@@ -215,7 +217,7 @@ export const STATIC_LIGATURE_LESSONS: StaticLessonData[] = [
     meaning: 'Rwanda, our homeland',
     culturalNote: 'RW is the most important ligature, representing Rwanda itself and our national identity.',
     examples: ['Rwanda (our country)', 'Rwego (level)', 'Rwose (all of us)'],
-    imageUrl: '/UmweroLetaByLeta/rw/RW-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/RW.mp3'
   },
   {
@@ -232,7 +234,7 @@ export const STATIC_LIGATURE_LESSONS: StaticLessonData[] = [
     meaning: 'Strength, power',
     culturalNote: 'MB represents strength and the power that comes from unity.',
     examples: ['Mbega (dog)', 'Mbere (first)', 'Mbona (why)'],
-    imageUrl: '/UmweroLetaByLeta/mb/MB-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/MB.mp3'
   },
   {
@@ -249,7 +251,7 @@ export const STATIC_LIGATURE_LESSONS: StaticLessonData[] = [
     meaning: 'Sharing, community',
     culturalNote: 'SH embodies the spirit of sharing and community cooperation.',
     examples: ['Shaka (maybe)', 'Shema (listen)', 'Shyira (put)'],
-    imageUrl: '/UmweroLetaByLeta/sh/SH-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/SH.mp3'
   },
   {
@@ -266,7 +268,7 @@ export const STATIC_LIGATURE_LESSONS: StaticLessonData[] = [
     meaning: 'Going, movement',
     culturalNote: 'JY represents movement and the journey of life and learning.',
     examples: ['Jya (go)', 'Jyewe (we)', 'Jyenda (walking)'],
-    imageUrl: '/UmweroLetaByLeta/jy/JY-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/JY.mp3'
   },
   {
@@ -283,7 +285,7 @@ export const STATIC_LIGATURE_LESSONS: StaticLessonData[] = [
     meaning: 'Like, similarity',
     culturalNote: 'NK represents similarity and the connections between all things.',
     examples: ['Nka (like)', 'Nkana (small)', 'Nkuru (big)'],
-    imageUrl: '/UmweroLetaByLeta/nk/NK-ways.png',
+    imageUrl: MISSING_CHARACTER_IMAGE_FALLBACK,
     audioUrl: '/UmweroLetaByLeta/Voice/consonants/NK.mp3'
   }
 ]

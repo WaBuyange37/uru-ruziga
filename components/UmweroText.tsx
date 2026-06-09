@@ -2,7 +2,7 @@
 'use client'
 
 import { useLanguage } from '../app/contexts/LanguageContext'
-import { ReactNode } from 'react'
+import { ElementType, ReactNode } from 'react'
 
 interface UmweroTextProps {
   children: ReactNode
@@ -60,7 +60,7 @@ export function UmweroHeading({ children, className = '', level = 1, style }: Um
     ...style
   } : style
   
-  const Tag = `h${level}` as keyof JSX.IntrinsicElements
+  const Tag: ElementType = `h${level}`
   
   return (
     <Tag 

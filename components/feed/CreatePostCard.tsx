@@ -66,17 +66,27 @@ export default function CreatePostCard({ onPostCreated }: CreatePostCardProps) {
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('files', file)
+      const token = getToken()
 
-      // Upload to your image storage (Cloudinary, S3, etc.)
-      // For now, we'll use a base64 data URL as fallback
-      return new Promise((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => {
-          resolve(reader.result as string)
-        }
-        reader.readAsDataURL(file)
+      if (!token) {
+        throw new Error('Please login to upload media')
+      }
+
+      const response = await fetch('/api/discussions/upload-media', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
       })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload image')
+      }
+
+      return data.urls?.[0] ?? null
     } catch (error) {
       console.error('Image upload error:', error)
       return null

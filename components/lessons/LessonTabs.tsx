@@ -17,7 +17,7 @@ const tabs = [
 
 export function LessonTabs({ activeTab, onTabChange }: LessonTabsProps) {
   return (
-    <div className="sticky top-[120px] z-40 bg-white border-b border-[#F3E5AB] shadow-sm">
+    <div className="sticky top-[104px] z-40 border-b border-[#8B4513]/15 bg-white">
       <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex gap-1 overflow-x-auto">
           {tabs.map((tab) => {
@@ -32,8 +32,8 @@ export function LessonTabs({ activeTab, onTabChange }: LessonTabsProps) {
                   flex items-center gap-2 px-6 py-3 font-medium text-sm
                   border-b-2 transition-all whitespace-nowrap
                   ${isActive
-                    ? 'border-[#8B4513] text-[#8B4513] bg-[#FFF8DC]'
-                    : 'border-transparent text-[#D2691E] hover:bg-[#F3E5AB] hover:text-[#8B4513]'
+                    ? 'border-[#8B4513] text-[#8B4513] bg-white'
+                    : 'border-transparent text-black/65 hover:bg-white hover:text-[#8B4513]'
                   }
                 `}
               >

@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadDrawing, dataURLtoBlob } from '@/lib/supabase'
 import { prisma } from '@/lib/prisma'
-import { verify } from 'jsonwebtoken'
+import { Prisma } from '@prisma/client'
+import { resolveStoredImageUrl } from '@/lib/image-url'
+import { getAuthenticatedUserId } from '@/lib/auth-session'
 
 export async function POST(request: NextRequest) {
   try {
+    console.info('[OCR diagnostic] endpoint hit', {
+      endpoint: '/api/drawings/upload',
+      bucketUploadExpected: 'user-drawings',
+      ocrServiceCalled: false,
+      referenceGenerationTriggered: false,
+    })
+
     // Verify authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const userId = await getAuthenticatedUserId(request)
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    let userId: string
-    try {
-      const decoded = verify(token, process.env.JWT_SECRET!) as { userId: string }
-      userId = decoded.userId
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
         { status: 401 }
       )
     }
@@ -49,11 +47,30 @@ export async function POST(request: NextRequest) {
     const imageBlob = dataURLtoBlob(drawingData)
 
     // Upload to Supabase Storage
-    const imageUrl = await uploadDrawing(
+    console.info('[OCR diagnostic] bucket upload attempted', {
+      endpoint: '/api/drawings/upload',
+      bucket: 'user-drawings',
+      pathPattern: '<userId>/<characterId>/<timestamp>.png',
+      upsert: false,
+    })
+    const imageStorageKey = await uploadDrawing(
       userId,
       characterId || lessonId || 'practice',
       imageBlob
     )
+    const imageUrl = await resolveStoredImageUrl(imageStorageKey, {
+      source: '/api/drawings/upload',
+      expiresIn: 3600,
+    })
+
+    if (!imageUrl) {
+      throw new Error('Failed to create signed drawing URL')
+    }
+    console.info('[OCR diagnostic] bucket upload succeeded', {
+      endpoint: '/api/drawings/upload',
+      bucket: 'user-drawings',
+      imageUrlCreated: Boolean(imageUrl),
+    })
 
     // Save attempt to database with image URL
     const attempt = await prisma.userAttempt.create({
@@ -62,10 +79,10 @@ export async function POST(request: NextRequest) {
         stepId: stepId || 'practice-step',
         characterId: characterId || null,
         attemptType: 'DRAWING',
-        drawingData: imageUrl, // Store URL instead of base64
-        answer: null,
+        drawingData: imageStorageKey,
+        answer: Prisma.JsonNull,
         aiScore: aiScore || null,
-        aiMetrics: aiMetrics || null,
+        aiMetrics: aiMetrics || Prisma.JsonNull,
         feedback: feedback || null,
         isCorrect: isCorrect || false,
         timeSpent: timeSpent || 0

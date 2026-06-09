@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
+import { getJwtSecret } from '@/lib/jwt'
+import { getAuthPayload } from '@/lib/auth-session'
 
 const PASS_MARK = 70 // Minimum score to mark as LEARNED
 
@@ -11,20 +13,39 @@ interface UpdateProgressRequest {
   timeSpent?: number
 }
 
+const VALID_CHARACTER_TYPES = new Set(['VOWEL', 'CONSONANT', 'LIGATURE'])
+
 // GET - Fetch user's character progress
 export async function GET(request: NextRequest) {
+  const endpoint = request.nextUrl.pathname + request.nextUrl.search
+
   try {
     const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type') // vowel, consonant, ligature
+    const requestedType = searchParams.get('type')?.toUpperCase()
+    const type = requestedType && VALID_CHARACTER_TYPES.has(requestedType)
+      ? requestedType as 'VOWEL' | 'CONSONANT' | 'LIGATURE'
+      : null
     
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
     const userId = decoded.userId
+
+    if (decoded.developmentDemo && process.env.NODE_ENV !== 'production') {
+      return NextResponse.json({ progress: [] })
+    }
+
+    if (requestedType && !type) {
+      console.warn('Invalid character progress type requested', {
+        endpoint,
+        requestedType,
+        validTypes: Array.from(VALID_CHARACTER_TYPES)
+      })
+
+      return NextResponse.json({ progress: [] })
+    }
 
     // Get character progress for user
     const progress = await prisma.userCharacterProgress.findMany({
@@ -32,7 +53,7 @@ export async function GET(request: NextRequest) {
         userId,
         ...(type && {
           character: {
-            type: type.toUpperCase() as 'VOWEL' | 'CONSONANT' | 'LIGATURE'
+            type
           }
         })
       },
@@ -55,9 +76,23 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ progress })
   } catch (error) {
-    console.error('Error fetching character progress:', error)
+    const isJwtError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError
+
+    console.error('Error fetching character progress', {
+      endpoint,
+      status: isJwtError ? 401 : 500,
+      error: error instanceof Error ? error.message : String(error)
+    })
+
+    if (isJwtError) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token', progress: [] },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Failed to fetch progress' },
+      { error: 'Failed to fetch progress', progress: [] },
       { status: 500 }
     )
   }
@@ -65,17 +100,17 @@ export async function GET(request: NextRequest) {
 
 // POST - Update character progress after canvas evaluation
 export async function POST(request: NextRequest) {
+  const endpoint = request.nextUrl.pathname
+
   try {
     const body: UpdateProgressRequest = await request.json()
     const { characterId, score, timeSpent = 0 } = body
 
     // Get user from JWT token
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
     const userId = decoded.userId
 
     // Validate input
@@ -84,6 +119,14 @@ export async function POST(request: NextRequest) {
         { error: 'Character ID and score are required' },
         { status: 400 }
       )
+    }
+
+    if (decoded.developmentDemo && process.env.NODE_ENV !== 'production') {
+      return NextResponse.json({
+        success: false,
+        useClientFallback: true,
+        message: 'Development demo progress is stored locally while the database is unavailable.'
+      })
     }
 
     // Determine status based on score
@@ -144,7 +187,21 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Error updating character progress:', error)
+    const isJwtError = error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError
+
+    console.error('Error updating character progress', {
+      endpoint,
+      status: isJwtError ? 401 : 500,
+      error: error instanceof Error ? error.message : String(error)
+    })
+
+    if (isJwtError) {
+      return NextResponse.json(
+        { error: 'Invalid or expired token' },
+        { status: 401 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Failed to update progress' },
       { status: 500 }
@@ -164,7 +221,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string, role: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { userId: string, role: string }
     
     // Only allow admin users to bulk update
     if (decoded.role !== 'ADMIN') {

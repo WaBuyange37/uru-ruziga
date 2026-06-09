@@ -30,32 +30,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       const token = localStorage.getItem('token')
-      
-      if (token) {
-        try {
-          // Verify token is still valid
-          const response = await fetch('/api/auth/verify', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
 
-          if (response.ok) {
-            const { user } = await response.json()
-            setUser(user)
-          } else {
-            // Token invalid, clear it
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
-          }
-        } catch (error) {
-          console.error('Auth check error:', error)
+      try {
+        // Verify either the local bearer token or the server httpOnly cookie.
+        const response = await fetch('/api/auth/verify', {
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          credentials: 'same-origin',
+        })
+
+        if (response.ok) {
+          const { user } = await response.json()
+          setUser(user)
+        } else {
           localStorage.removeItem('token')
           localStorage.removeItem('user')
         }
+      } catch (error) {
+        console.error('Auth check error:', error)
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
       }
-      
+
       setLoading(false)
     }
 
@@ -63,34 +58,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (identifier: string, password: string) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ identifier, password }),
-      })
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ identifier, password }),
+    })
 
-      const data = await response.json()
+    const data = await response.json().catch(() => ({}))
 
-      if (!response.ok) {
-        console.error('Login error:', data.error)
-        throw new Error(data.error || 'Login failed')
-      }
-
-      // Store token and user
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('user', JSON.stringify(data.user))
-      
-      // Set cookie for server-side middleware
-      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
-      
-      setUser(data.user)
-    } catch (error: any) {
-      console.error('Login error:', error)
-      throw error
+    if (!response.ok) {
+      throw new Error(data.error || 'Login failed. Please try again.')
     }
+
+    if (!data.token || !data.user) {
+      throw new Error('Login response was incomplete. Please try again.')
+    }
+
+    // Store token and user
+    localStorage.setItem('token', data.token)
+    localStorage.setItem('user', JSON.stringify(data.user))
+    
+    // Set cookie for server-side middleware
+    setUser(data.user)
   }
 
   const register = async (fullName: string, username: string, email: string, password: string) => {
@@ -112,8 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Auto-login after registration
       localStorage.setItem('token', data.token)
       localStorage.setItem('user', JSON.stringify(data.user))
-      document.cookie = `token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`
-      
       setUser(data.user)
     } catch (error: any) {
       console.error('Registration error:', error)
@@ -122,13 +111,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+    }).catch((error) => {
+      console.error('Logout request failed:', error)
+    })
+
     // Clear all auth data
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     localStorage.removeItem('completedVowels')
     localStorage.removeItem('vowelsProgress')
     
-    // Clear cookie
+    // Clear legacy non-httpOnly cookie if it exists.
     document.cookie = 'token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
     
     setUser(null)

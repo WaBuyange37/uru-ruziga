@@ -9,7 +9,7 @@ export interface EmailOptions {
 
 /**
  * Send email using a service (configure based on your preference)
- * Options: SendGrid, Resend, Nodemailer, AWS SES, etc.
+ * Options: SendGrid, Resend, Nodemailer, etc.
  */
 export async function sendEmail(options: EmailOptions): Promise<boolean> {
   try {

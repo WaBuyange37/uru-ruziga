@@ -7,7 +7,35 @@ import { Textarea } from "../ui/textarea"
 import { Heart, MessageCircle, Trash2, Loader2, Send } from "lucide-react"
 import { showToast } from "../ui/toast"
 import Image from "next/image"
-import { formatDistanceToNow } from "date-fns"
+
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" })
+
+function formatDistanceToNow(date: Date, options: { addSuffix?: boolean } = {}) {
+  const diffMs = date.getTime() - Date.now()
+  const divisions = [
+    { amount: 60, unit: "second" },
+    { amount: 60, unit: "minute" },
+    { amount: 24, unit: "hour" },
+    { amount: 7, unit: "day" },
+    { amount: 4.34524, unit: "week" },
+    { amount: 12, unit: "month" },
+    { amount: Number.POSITIVE_INFINITY, unit: "year" },
+  ] as const
+
+  let duration = diffMs / 1000
+
+  for (const division of divisions) {
+    if (Math.abs(duration) < division.amount) {
+      const rounded = Math.round(duration)
+      const formatted = relativeTimeFormatter.format(rounded, division.unit)
+      return options.addSuffix ? formatted : formatted.replace(/^in | ago$/g, "")
+    }
+
+    duration /= division.amount
+  }
+
+  return options.addSuffix ? "just now" : "now"
+}
 
 interface FeedPostCardProps {
   post: any
@@ -33,6 +61,14 @@ export default function FeedPostCard({
   const isLiked = post.likes.some((like: any) => like.userId === currentUserId)
   const isOwner = post.userId === currentUserId
   const canDelete = isOwner // Add admin check if needed
+
+  const logImageError = (source: string, url: string) => {
+    console.error('[image-load] Feed image failed', {
+      source,
+      url,
+      postId: post.id,
+    })
+  }
 
   const getToken = () => {
     if (typeof window !== 'undefined') {
@@ -217,6 +253,7 @@ export default function FeedPostCard({
               width={600}
               height={400}
               className="w-full h-auto max-h-96 object-cover"
+              onError={() => logImageError('feed.imageUrl', post.imageUrl)}
             />
           </div>
         )}

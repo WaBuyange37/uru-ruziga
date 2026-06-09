@@ -39,17 +39,34 @@ export interface LearnState {
 
 const QUEUE_SIZE = 6
 
+function getStoredProgress(type: string): Record<string, CharacterProgress> {
+  if (typeof window === 'undefined') return {}
+
+  const savedProgress = localStorage.getItem(`learnProgress_${type}`)
+  if (!savedProgress) return {}
+
+  try {
+    return JSON.parse(savedProgress)
+  } catch (error) {
+    console.warn('Unable to parse saved character progress', {
+      type,
+      error: error instanceof Error ? error.message : String(error)
+    })
+    return {}
+  }
+}
+
 // API helper functions
 async function fetchCharacterProgress(type: string): Promise<Record<string, CharacterProgress>> {
+  const endpoint = `/api/character-progress?type=${encodeURIComponent(type)}`
+
   try {
     const token = localStorage.getItem('token')
     if (!token) {
-      // Fallback to localStorage if no auth token
-      const savedProgress = localStorage.getItem(`learnProgress_${type}`)
-      return savedProgress ? JSON.parse(savedProgress) : {}
+      return getStoredProgress(type)
     }
 
-    const response = await fetch(`/api/character-progress?type=${type}`, {
+    const response = await fetch(endpoint, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -57,14 +74,24 @@ async function fetchCharacterProgress(type: string): Promise<Record<string, Char
     })
 
     if (!response.ok) {
-      throw new Error('Failed to fetch progress')
+      const errorText = await response.text().catch(() => '')
+      console.error('Failed to fetch character progress', {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+        body: errorText,
+      })
+
+      return getStoredProgress(type)
     }
 
     const data = await response.json()
     
     // Convert API response to our format
     const progress: Record<string, CharacterProgress> = {}
-    data.progress.forEach((p: any) => {
+    const records = Array.isArray(data.progress) ? data.progress : []
+
+    records.forEach((p: any) => {
       progress[p.characterId] = {
         characterId: p.characterId,
         status: p.status,
@@ -77,21 +104,25 @@ async function fetchCharacterProgress(type: string): Promise<Record<string, Char
 
     return progress
   } catch (error) {
-    console.error('Error fetching character progress:', error)
-    // Fallback to localStorage
-    const savedProgress = localStorage.getItem(`learnProgress_${type}`)
-    return savedProgress ? JSON.parse(savedProgress) : {}
+    console.error('Error fetching character progress', {
+      endpoint,
+      error: error instanceof Error ? error.message : String(error)
+    })
+
+    return getStoredProgress(type)
   }
 }
 
 async function updateCharacterProgressAPI(characterId: string, score: number, timeSpent: number = 0): Promise<boolean> {
+  const endpoint = '/api/character-progress'
+
   try {
     const token = localStorage.getItem('token')
     if (!token) {
       return false // Will fallback to localStorage
     }
 
-    const response = await fetch('/api/character-progress', {
+    const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -105,13 +136,24 @@ async function updateCharacterProgressAPI(characterId: string, score: number, ti
     })
 
     if (!response.ok) {
-      throw new Error('Failed to update progress')
+      const errorText = await response.text().catch(() => '')
+      console.error('Failed to update character progress', {
+        status: response.status,
+        statusText: response.statusText,
+        endpoint,
+        body: errorText,
+      })
+
+      return false
     }
 
     const data = await response.json()
     return data.success
   } catch (error) {
-    console.error('Error updating character progress:', error)
+    console.error('Error updating character progress', {
+      endpoint,
+      error: error instanceof Error ? error.message : String(error)
+    })
     return false
   }
 }

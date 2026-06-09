@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { RotateCcw, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react'
+import { RotateCcw, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 import { useCanvasDrawing } from '@/hooks/useCanvasDrawing'
 import { PhotoUploadModal } from './PhotoUploadModal'
-import { handleCharacterProgression, celebrateCharacterLearned, transitionToNextLesson } from '@/lib/character-progression'
+import { celebrateCharacterLearned } from '@/lib/character-progression'
 import { emitProgressUpdate } from '@/lib/progress-events'
 import { lessonIdToCharacterId } from '@/lib/character-mapping'
-import { submitCharacterProgress } from '@/lib/auth-utils'
 import Image from 'next/image'
 import type { PracticeMode } from '@/hooks/useLessonState'
 
@@ -24,24 +23,24 @@ interface PracticePanelProps {
   }
   practiceMode: PracticeMode
   onModeChange: (mode: PracticeMode) => void
-  onCharacterLearned?: (characterId: string, score: number) => void
   onNextCharacter?: (nextCharacterId: string) => void
 }
 
-export function PracticePanel({ lesson, character, practiceMode, onModeChange, onCharacterLearned, onNextCharacter }: PracticePanelProps) {
+export function PracticePanel({ lesson, character, practiceMode, onModeChange }: PracticePanelProps) {
   const [showReference, setShowReference] = useState(true)
   const [evaluationResult, setEvaluationResult] = useState<any>(null)
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
   const [currentAttemptId, setCurrentAttemptId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+  const [submissionError, setSubmissionError] = useState<string | null>(null)
+
   const {
     canvasRef,
     isDrawing,
     strokes,
     clearCanvas,
     undoStroke,
-    getCanvasDataURL
+    exportDrawingData
   } = useCanvasDrawing({
     strokeColor: '#8B4513',
     strokeWidth: 4,
@@ -49,208 +48,123 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
   })
 
   const handleEvaluate = async () => {
-    const drawingData = getCanvasDataURL()
+    const drawingData = exportDrawingData()
     if (!drawingData) return
 
     onModeChange('evaluating')
+    setSubmissionError(null)
 
     try {
-      // Get reference image URL if available
-      const referenceImage = character.strokeImageUrl 
-        ? `${window.location.origin}${character.strokeImageUrl}`
-        : null
-
-      // Call Vision API for evaluation
-      const response = await fetch('/api/lessons/evaluate-drawing', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          userDrawing: drawingData,
-          referenceImage: referenceImage,
-          characterName: character.vowel || character.consonant || 'character',
-          strokeGuide: [] // Will be populated from database
-        })
-      })
-
-      if (!response.ok) {
-        throw new Error('Evaluation failed')
+      const token = localStorage.getItem('token')
+      if (!token) {
+        throw new Error('Please sign in before submitting your writing attempt.')
       }
 
+      const resolvedCharacterId = lessonIdToCharacterId(character.id || lesson.id)
+      const response = await fetch('/api/learning/attempt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          characterId: resolvedCharacterId,
+          lessonId: lesson.id,
+          imageData: drawingData.imageDataURL,
+          strokes: drawingData.strokes,
+          learningStage: 'TRACING',
+          journeyPhase: 'TRACE',
+          metadata: {
+            ...drawingData.metadata,
+            normalized: drawingData.normalized,
+          },
+        }),
+      })
+
       const data = await response.json()
-      
-      if (data.success && data.evaluation) {
-        const evaluation = data.evaluation
+      if (!response.ok) {
+        throw new Error(data.error || 'Python OCR evaluation failed.')
+      }
+
+      if (data.success && data.evaluation?.score !== undefined && data.attempt?.saved) {
+        const evaluation = {
+          score: data.evaluation.score,
+          scoreSource: data.evaluation.scoreSource,
+          confidence: data.evaluation.confidence,
+          ocrFeedbackAvailable: Boolean(data.evaluation.ocrFeedbackAvailable),
+          fallback: Boolean(data.evaluation.fallback),
+          statusLabel: data.evaluation.statusLabel,
+          strengths: data.evaluation.strengths ?? [],
+          improvements: data.evaluation.practiceAreas ?? data.evaluation.weaknesses ?? [],
+          feedback: (data.evaluation.feedback ?? []).join(' ') || 'Practice saved.',
+          passed: Boolean(data.evaluation.passed),
+        }
         setEvaluationResult(evaluation)
-
-        // Upload drawing to Supabase and save attempt
-        const token = localStorage.getItem('token')
-        if (token) {
-          try {
-            const uploadResponse = await fetch('/api/drawings/upload', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({
-                drawingData,
-                lessonId: lesson.id,
-                characterId: character.id,
-                stepId: 'practice-canvas',
-                aiScore: evaluation.score,
-                aiMetrics: {
-                  strengths: evaluation.strengths,
-                  improvements: evaluation.improvements
-                },
-                feedback: evaluation.feedback,
-                isCorrect: evaluation.passed,
-                timeSpent: 0 // Track this if needed
-              })
-            })
-            
-            if (uploadResponse.ok) {
-              const uploadData = await uploadResponse.json()
-              setCurrentAttemptId(uploadData.attemptId)
-            }
-          } catch (uploadError) {
-            console.error('Failed to save drawing:', uploadError)
-            // Don't block user flow if upload fails
-          }
-        }
-
-        // Update character progress if score meets threshold
-        if (evaluation.score >= 70 && onCharacterLearned) {
-          onCharacterLearned(character.id, evaluation.score)
-        }
+        setCurrentAttemptId(data.attempt.userAttemptId ?? null)
 
         onModeChange('complete')
       } else {
-        throw new Error('Invalid evaluation response')
+        throw new Error('Python OCR did not return a saved evaluation.')
       }
     } catch (error) {
-      console.error('Evaluation error:', error)
-      // Fallback to basic evaluation
-      const mockScore = Math.floor(Math.random() * 30) + 70
-      setEvaluationResult({
-        score: mockScore,
-        strengths: ['You completed the drawing'],
-        improvements: ['Try to follow the stroke order more closely'],
-        feedback: 'Good effort! Keep practicing to improve your accuracy.',
-        passed: mockScore >= 70
-      })
-      onModeChange('complete')
+      console.error('Python OCR submission error:', error)
+      setEvaluationResult(null)
+      setSubmissionError(error instanceof Error ? error.message : 'Python OCR evaluation failed.')
+      onModeChange('drawing')
     }
   }
 
   const handleRetry = () => {
     clearCanvas()
     setEvaluationResult(null)
+    setSubmissionError(null)
     onModeChange('drawing')
   }
 
   const handleNext = async () => {
-    if (!evaluationResult?.score || isSubmitting) return
+    if (!currentAttemptId || isSubmitting) return
 
     setIsSubmitting(true)
 
     try {
-      // Map lesson ID to actual character ID
+      // The learning-attempt endpoint already saved the attempt, OCR result,
+      // and character progress before this button became available.
       const actualCharacterId = lessonIdToCharacterId(character.id)
-      
+
       console.log('🚀 Starting progress submission:', {
         originalId: character.id,
         actualCharacterId: actualCharacterId,
         score: evaluationResult.score,
+        scoreSource: evaluationResult.scoreSource,
         character: character
       })
 
-      // Check authentication first
-      const token = localStorage.getItem('token')
-      if (!token) {
-        console.error('❌ No authentication token found')
-        alert('Please log in again to save your progress. Your session may have expired.')
-        window.location.href = '/login'
-        return
-      }
-
-      // Use the robust progress submission utility
-      const result = await submitCharacterProgress(
+      const characterType = character.vowel ? 'vowel' : character.consonant ? 'consonant' : 'ligature'
+      const numericScore = typeof evaluationResult.score === 'number' ? evaluationResult.score : 0
+      emitProgressUpdate(
         actualCharacterId,
-        evaluationResult.score,
-        0
+        evaluationResult.ocrFeedbackAvailable && numericScore >= 70 ? 'LEARNED' : 'IN_PROGRESS',
+        numericScore,
+        characterType as 'vowel' | 'consonant' | 'ligature'
       )
 
-      if (result.success && result.data) {
-        console.log('✅ Progress saved successfully:', result.data)
-        
-        // Emit progress update event to notify other components
-        const characterType = character.vowel ? 'vowel' : character.consonant ? 'consonant' : 'ligature'
-        emitProgressUpdate(
-          actualCharacterId,
-          result.data.status,
-          evaluationResult.score,
-          characterType as 'vowel' | 'consonant' | 'ligature'
+      if (evaluationResult.ocrFeedbackAvailable && numericScore >= 70) {
+        celebrateCharacterLearned(
+          character.vowel || character.consonant || 'Character',
+          numericScore
         )
-        
-        // Update character status if callback provided and score meets threshold
-        if (onCharacterLearned && evaluationResult.score >= 70) {
-          onCharacterLearned(actualCharacterId, evaluationResult.score)
-        }
-
-        // Show celebration if character was learned
-        if (evaluationResult.score >= 70) {
-          celebrateCharacterLearned(
-            character.vowel || character.consonant || 'Character',
-            evaluationResult.score
-          )
-        }
-
-        // Handle next character progression - NO NAVIGATION
-        if (result.data.nextCharacter && onNextCharacter) {
-          // Seamless transition to next character within same workspace
-          setTimeout(() => {
-            onNextCharacter(result.data.nextCharacter.id)
-          }, 1500) // Allow time for celebration
-        } else {
-          // No more characters - show completion message but stay in workspace
-          setTimeout(() => {
-            console.log('🎉 All characters completed in this category!')
-          }, 2000)
-        }
-      } else {
-        // Progress submission failed
-        console.error('❌ Progress submission failed:', result.error)
-        
-        // Check if it's an authentication error
-        if (result.error?.includes('Authentication') || result.error?.includes('token') || result.error?.includes('Unauthorized')) {
-          alert('Your session has expired. Please log in again to save your progress.')
-          localStorage.removeItem('token') // Clear invalid token
-          window.location.href = '/login'
-          return
-        }
-        
-        // Show user-friendly error message for other errors
-        alert(`Failed to save progress: ${result.error}. Please try again or contact support if the issue persists.`)
-        
-        // Still allow character progression for better UX (but warn user)
-        if (onCharacterLearned && evaluationResult.score >= 70) {
-          console.warn('⚠️ Allowing character progression despite save failure for better UX')
-          onCharacterLearned(character.id, evaluationResult.score)
-        }
       }
 
     } catch (error) {
       console.error('❌ Unexpected error in character progression:', error)
-      
+
       // Check if it's a network error
       if (error instanceof TypeError && error.message.includes('fetch')) {
         alert('Network error: Please check your internet connection and try again.')
       } else {
         alert('An unexpected error occurred. Please try again or refresh the page.')
       }
-      
+
     } finally {
       setIsSubmitting(false)
     }
@@ -286,17 +200,20 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
 
   return (
     <div className="space-y-4">
-      <Card className="border-2 border-[#8B4513] shadow-lg">
-        <CardContent className="p-6">
+      <Card className="border border-[#8B4513]/30 bg-white shadow-sm">
+        <CardContent className="p-4 sm:p-6">
           {/* Practice Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-semibold text-[#8B4513]">Practice Canvas</h3>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-black">Write this character</h3>
+              <p className="mt-1 text-sm text-black/65">Draw on the canvas, then submit for feedback.</p>
+            </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowReference(!showReference)}
-                className="gap-2"
+                className="gap-2 text-[#8B4513] hover:bg-white"
               >
                 {showReference ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 {showReference ? 'Hide' : 'Show'} Guide
@@ -305,11 +222,11 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
           </div>
 
           {/* Canvas Container */}
-          <div className="relative bg-white rounded-lg border-2 border-[#8B4513] overflow-hidden touch-none mb-4">
+          <div className="relative mb-4 overflow-hidden rounded-lg border border-[#8B4513]/35 bg-white touch-none">
             {/* Reference Character (Ghost Guide) */}
             {showReference && (
-              <div 
-                className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10 z-10"
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none opacity-10"
                 style={{ fontFamily: "'UMWEROalpha', serif" }}
               >
                 <div className="text-[280px] leading-none">
@@ -324,7 +241,7 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
               width={500}
               height={500}
               className="w-full cursor-crosshair touch-none select-none"
-              style={{ 
+              style={{
                 maxHeight: '400px',
                 touchAction: 'none',
                 userSelect: 'none',
@@ -339,7 +256,7 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
           </div>
 
           {/* Canvas Controls */}
-          <div className="flex gap-2 mb-4">
+          <div className="mb-4 grid grid-cols-2 gap-2">
             <Button
               onClick={undoStroke}
               variant="outline"
@@ -363,47 +280,65 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
             <Button
               onClick={handleEvaluate}
               disabled={strokes.length === 0}
-              className="w-full bg-green-600 hover:bg-green-700 gap-2"
+              className="w-full gap-2 bg-[#8B4513] hover:bg-[#A0522D]"
               size="lg"
             >
               <CheckCircle2 className="h-5 w-5" />
-              Evaluate My Drawing
+              Submit writing
             </Button>
           )}
 
           {/* Evaluating State */}
           {practiceMode === 'evaluating' && (
-            <div className="text-center py-8">
+            <div className="py-8 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#8B4513] mx-auto mb-4"></div>
-              <p className="text-[#8B4513]">AI is evaluating your drawing...</p>
+              <p className="text-[#8B4513]">Checking your writing...</p>
+            </div>
+          )}
+
+          {submissionError && (
+            <div className="rounded-lg border border-black bg-white p-4 text-sm text-black">
+              {submissionError}
             </div>
           )}
 
           {/* Evaluation Results */}
           {practiceMode === 'complete' && evaluationResult && (
             <div className="space-y-4">
-              <div className={`text-center p-4 rounded-lg ${
-                evaluationResult.passed 
-                  ? 'bg-green-50 border-2 border-green-200' 
-                  : 'bg-yellow-50 border-2 border-yellow-200'
-              }`}>
-                <div className="text-4xl mb-2">
-                  {evaluationResult.passed ? '🎉' : '💪'}
+              <div className="rounded-lg border border-[#8B4513]/25 bg-white p-4">
+                <div className="text-center">
+                  <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#8B4513]">Practice saved</p>
+                  {evaluationResult.ocrFeedbackAvailable && typeof evaluationResult.score === 'number' ? (
+                    <h3 className="mb-2 mt-2 text-xl font-bold text-[#8B4513]">
+                      OCR Score: {Math.round(evaluationResult.score)}%
+                    </h3>
+                  ) : (
+                    <h3 className="mb-2 mt-2 text-xl font-bold text-[#8B4513]">
+                      Practice Recorded
+                    </h3>
+                  )}
                 </div>
-                <h3 className={`text-xl font-bold mb-2 ${
-                  evaluationResult.passed ? 'text-green-800' : 'text-yellow-800'
-                }`}>
-                  Score: {evaluationResult.score}%
-                </h3>
-                <p className={`mb-3 ${evaluationResult.passed ? 'text-green-700' : 'text-yellow-700'}`}>
+
+                <div className="my-3 rounded-lg border border-[#8B4513]/15 bg-white p-3 text-left">
+                  <h4 className="mb-1 font-semibold text-black">
+                    {evaluationResult.ocrFeedbackAvailable ? 'OCR feedback available' : 'OCR feedback pending'}
+                  </h4>
+                  <p className="text-sm text-black/70">
+                    {evaluationResult.ocrFeedbackAvailable
+                      ? 'Detailed handwriting feedback was saved with this attempt.'
+                      : 'Your drawing was saved for practice history and future OCR training.'}
+                  </p>
+                </div>
+
+                <p className="mb-3 text-center text-black/75">
                   {evaluationResult.feedback}
                 </p>
 
                 {/* Strengths */}
                 {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (
-                  <div className="text-left mt-3 p-3 bg-white rounded-lg">
-                    <h4 className="font-semibold text-green-800 mb-2">✅ What you did well:</h4>
-                    <ul className="space-y-1 text-sm text-green-700">
+                  <div className="mt-3 rounded-lg border border-[#8B4513]/15 bg-white p-3 text-left">
+                    <h4 className="mb-2 font-semibold text-black">What you did well</h4>
+                    <ul className="space-y-1 text-sm text-black/70">
                       {evaluationResult.strengths.map((strength: string, idx: number) => (
                         <li key={idx}>• {strength}</li>
                       ))}
@@ -413,9 +348,9 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
 
                 {/* Improvements */}
                 {evaluationResult.improvements && evaluationResult.improvements.length > 0 && (
-                  <div className="text-left mt-3 p-3 bg-white rounded-lg">
-                    <h4 className="font-semibold text-blue-800 mb-2">💡 Areas to improve:</h4>
-                    <ul className="space-y-1 text-sm text-blue-700">
+                  <div className="mt-3 rounded-lg border border-[#8B4513]/15 bg-white p-3 text-left">
+                    <h4 className="mb-2 font-semibold text-black">Areas to improve</h4>
+                    <ul className="space-y-1 text-sm text-black/70">
                       {evaluationResult.improvements.map((improvement: string, idx: number) => (
                         <li key={idx}>• {improvement}</li>
                       ))}
@@ -441,7 +376,7 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Saving...
+                      Continuing...
                     </>
                   ) : (
                     <>
@@ -453,21 +388,19 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
               </div>
 
               {/* Photo Upload Prompt */}
-              <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg">
+              <div className="mt-4 rounded-lg border border-[#8B4513]/20 bg-white p-4">
                 <div className="flex items-start gap-3">
-                  <div className="text-3xl">📸</div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-purple-900 mb-1">
-                      Help Build Better AI
+                    <h4 className="mb-1 font-semibold text-black">
+                      Help improve handwriting recognition
                     </h4>
-                    <p className="text-sm text-purple-800 mb-3">
+                    <p className="mb-3 text-sm text-black/65">
                       Upload a photo of your pen-written version to contribute to our training dataset!
                     </p>
                     <Button
                       onClick={() => setShowPhotoUpload(true)}
                       variant="outline"
                       size="sm"
-                      className="border-purple-300 text-purple-700 hover:bg-purple-100"
                     >
                       Upload Real Handwriting
                     </Button>
@@ -481,9 +414,9 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange, o
 
       {/* Stroke Direction Reference Below Canvas */}
       {character.strokeImageUrl && (
-        <Card className="bg-[#FFF8DC] border-2 border-[#D2691E]">
+        <Card className="border border-[#8B4513]/20 bg-white">
           <CardContent className="p-4">
-            <p className="text-sm font-semibold text-[#8B4513] mb-3">Stroke Direction Reference:</p>
+            <p className="mb-3 text-sm font-semibold text-black">Stroke direction reference</p>
             <div className="relative w-full aspect-square bg-white rounded overflow-hidden">
               <Image
                 src={character.strokeImageUrl}

@@ -1,7 +1,7 @@
 // app/api/community/posts/[postId]/comments/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../../../lib/prisma'
-import { verifyToken } from '../../../../../../lib/jwt'
+import { getAuthPayload } from '../../../../../../lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,14 +12,9 @@ export async function POST(
 ) {
   try {
     const { postId } = await params
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const decoded = await verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     const body = await request.json()

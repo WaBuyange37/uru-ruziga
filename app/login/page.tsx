@@ -46,18 +46,18 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E] p-3 sm:p-4">
+    <div className="min-h-screen flex items-center justify-center bg-white p-3 sm:p-4">
       <Card className="w-full max-w-md border-2 border-[#8B4513] shadow-xl bg-white">
         <CardHeader className="text-center space-y-3 sm:space-y-4 pb-6">
           <div className="flex justify-center">
             <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-[#8B4513] flex items-center justify-center">
-              <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-[#F3E5AB]" />
+              <CircleIcon className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
             </div>
           </div>
           <CardTitle className="text-2xl sm:text-3xl font-bold text-[#8B4513]">
             Welcome Back
           </CardTitle>
-          <CardDescription className="text-[#D2691E] text-sm sm:text-base">
+          <CardDescription className="text-[#8B4513] text-sm sm:text-base">
             Sign in to continue learning Umwero
           </CardDescription>
         </CardHeader>
@@ -75,7 +75,7 @@ function LoginForm() {
                 placeholder="Enter your username, email, or mobile"
                 required
                 autoComplete="username"
-                className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
+                className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11"
               />
             </div>
 
@@ -92,7 +92,7 @@ function LoginForm() {
                   placeholder="Enter your password"
                   required
                   autoComplete="current-password"
-                  className="border-2 border-[#D2691E] focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
+                  className="border-2 border-[#8B4513]/35 focus:border-[#8B4513] focus:ring-2 focus:ring-[#8B4513]/20 transition-all h-11 pr-10"
                 />
                 <button
                   type="button"
@@ -133,11 +133,11 @@ function LoginForm() {
           <div className="mt-6 sm:mt-8 text-center space-y-3">
             <p className="text-sm text-[#8B4513]">
               Don't have an account?{' '}
-              <Link href="/signup" className="font-semibold text-[#D2691E] hover:text-[#8B4513] hover:underline transition-colors">
+              <Link href="/signup" className="font-semibold text-[#8B4513] hover:text-black hover:underline transition-colors">
                 Sign Up
               </Link>
             </p>
-            <Link href="/" className="text-sm text-[#8B4513] hover:text-[#D2691E] hover:underline block transition-colors">
+            <Link href="/" className="text-sm text-[#8B4513] hover:text-black hover:underline block transition-colors">
               ← Back to Home
             </Link>
           </div>
@@ -150,7 +150,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#F3E5AB] via-[#F5E9C3] to-[#D2691E]">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="h-12 w-12 border-4 border-[#8B4513] border-t-transparent rounded-full animate-spin" />
       </div>
     }>

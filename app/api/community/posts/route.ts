@@ -1,10 +1,11 @@
 // app/api/community/posts/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '../../../../lib/prisma'
-import { verifyToken } from '../../../../lib/jwt'
 import { withRateLimit, RATE_LIMITS } from '../../../../lib/rate-limit'
 import { validateRequest, createPostSchema } from '../../../../lib/validators'
 import { collectFromPost } from '../../../../lib/training-data-collector'
+import { normalizePublicImageUrl, resolveStoredImageUrls } from '../../../../lib/image-url'
+import { getAuthPayload } from '../../../../lib/auth-session'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,8 +62,16 @@ export async function GET(request: NextRequest) {
       prisma.communityPost.count({ where }),
     ])
 
+    const normalizedPosts = await Promise.all(posts.map(async (post) => ({
+      ...post,
+      imageUrl: normalizePublicImageUrl(post.imageUrl, `communityPost:${post.id}.imageUrl`),
+      mediaUrls: (await resolveStoredImageUrls(post.mediaUrls || [], {
+        source: `communityPost:${post.id}.mediaUrls`,
+      })).filter((url): url is string => Boolean(url)),
+    })))
+
     return NextResponse.json({
-      posts,
+      posts: normalizedPosts,
       pagination: {
         page,
         limit,
@@ -86,14 +95,9 @@ export async function POST(request: NextRequest) {
     const rateLimitResponse = await withRateLimit(request, RATE_LIMITS.POST_CREATE)
     if (rateLimitResponse) return rateLimitResponse
 
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const decoded = await getAuthPayload(request)
+    if (!decoded?.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const decoded = await verifyToken(token)
-    if (!decoded) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
     // Validate input
@@ -154,7 +158,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ post }, { status: 201 })
+    return NextResponse.json({
+      post: {
+        ...post,
+        imageUrl: normalizePublicImageUrl(post.imageUrl, `communityPost:${post.id}.imageUrl`),
+        mediaUrls: (await resolveStoredImageUrls(post.mediaUrls || [], {
+          source: `communityPost:${post.id}.mediaUrls`,
+        })).filter((url): url is string => Boolean(url)),
+      },
+    }, { status: 201 })
   } catch (error) {
     console.error('Error creating post:', error)
     return NextResponse.json(

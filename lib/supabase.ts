@@ -1,8 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import { resolveStoredImageUrl } from './image-url';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const rawSupabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceKey =
+  rawSupabaseServiceKey && rawSupabaseServiceKey !== 'your-supabase-service-role-key'
+    ? rawSupabaseServiceKey
+    : undefined;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Missing Supabase environment variables. Storage features may not work.');
@@ -34,16 +39,16 @@ export async function uploadDrawing(
     });
 
   if (error) {
-    console.error('Upload error:', error);
+    console.error('Supabase drawing upload failed:', {
+      bucket: 'user-drawings',
+      path: filePath,
+      message: error.message,
+      error
+    });
     throw new Error(`Failed to upload drawing: ${error.message}`);
   }
 
-  // Get public URL
-  const { data: urlData } = supabaseAdmin.storage
-    .from('user-drawings')
-    .getPublicUrl(filePath);
-
-  return urlData.publicUrl;
+  return `user-drawings/${filePath}`;
 }
 
 // Delete drawing from storage (server-side)
@@ -60,7 +65,12 @@ export async function deleteDrawing(imageUrl: string): Promise<void> {
     .remove([filePath]);
 
   if (error) {
-    console.error('Delete error:', error);
+    console.error('Supabase drawing delete failed:', {
+      bucket: 'user-drawings',
+      path: filePath,
+      message: error.message,
+      error
+    });
     throw new Error(`Failed to delete drawing: ${error.message}`);
   }
 }
@@ -92,16 +102,23 @@ export async function listUserDrawings(
     .list(prefix);
 
   if (error) {
-    console.error('List error:', error);
+    console.error('Supabase drawing list failed:', {
+      bucket: 'user-drawings',
+      prefix,
+      message: error.message,
+      error
+    });
     return [];
   }
 
-  return data.map(file => {
-    const { data: urlData } = supabaseAdmin.storage
-      .from('user-drawings')
-      .getPublicUrl(`${prefix}${file.name}`);
-    return urlData.publicUrl;
-  });
+  const urls = await Promise.all(data.map(file =>
+    resolveStoredImageUrl(`user-drawings/${prefix}${file.name}`, {
+      source: 'listUserDrawings',
+      expiresIn: 3600,
+    })
+  ));
+
+  return urls.filter((url): url is string => Boolean(url));
 }
 
 // Community media utilities (server-side)
@@ -127,7 +144,12 @@ export async function uploadCommunityMedia(
     });
 
   if (error) {
-    console.error('Upload error:', error);
+    console.error('Supabase community media upload failed:', {
+      bucket: 'community-posts',
+      path: filePath,
+      message: error.message,
+      error
+    });
     throw new Error(`Failed to upload media: ${error.message}`);
   }
 
@@ -153,7 +175,12 @@ export async function deleteCommunityMedia(imageUrl: string): Promise<void> {
     .remove([filePath]);
 
   if (error) {
-    console.error('Delete error:', error);
+    console.error('Supabase community media delete failed:', {
+      bucket: 'community-posts',
+      path: filePath,
+      message: error.message,
+      error
+    });
     throw new Error(`Failed to delete media: ${error.message}`);
   }
 }

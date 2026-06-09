@@ -4,10 +4,106 @@
 // NO fake glyphs, NO hallucinated characters, NO phonological groupings
 // =============================================================================
 
+import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+type SeedMode = 'local-clean' | 'remote-safe-upsert';
+
+type SeedSafetyContext = {
+  databaseUrl: string;
+  databaseHost: string;
+  nodeEnv: string;
+  seedCleanRequested: boolean;
+  isLocalDatabase: boolean;
+  isSupabaseDatabase: boolean;
+  cleanAllowed: boolean;
+  seedMode: SeedMode;
+  preflightOnly: boolean;
+};
+
+function getDatabaseHost(databaseUrl: string): string {
+  if (!databaseUrl) return 'unknown';
+
+  try {
+    return new URL(databaseUrl).hostname || 'unknown';
+  } catch {
+    const hostMatch = databaseUrl.match(/@([^/:?]+)(?::\d+)?(?:\/|\?|$)/);
+    return hostMatch?.[1] || 'unknown';
+  }
+}
+
+function isLocalDatabaseHost(host: string): boolean {
+  const normalizedHost = host.toLowerCase();
+
+  return [
+    'localhost',
+    '127.0.0.1',
+    '::1',
+    '0.0.0.0',
+    'postgres',
+    'postgresql',
+    'db',
+    'database',
+    'host.docker.internal'
+  ].includes(normalizedHost);
+}
+
+function isSupabaseDatabaseHost(host: string, databaseUrl: string): boolean {
+  const normalizedHost = host.toLowerCase();
+  const normalizedUrl = databaseUrl.toLowerCase();
+
+  return (
+    normalizedHost.includes('supabase.co') ||
+    normalizedHost.includes('supabase.com') ||
+    normalizedHost.includes('supabase') ||
+    normalizedUrl.includes('supabase.co') ||
+    normalizedUrl.includes('supabase.com')
+  );
+}
+
+function getSeedSafetyContext(): SeedSafetyContext {
+  const databaseUrl = process.env.DATABASE_URL || '';
+  const databaseHost = getDatabaseHost(databaseUrl);
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const seedCleanRequested = process.env.SEED_CLEAN === 'true';
+  const isLocalDatabase = isLocalDatabaseHost(databaseHost);
+  const isSupabaseDatabase = isSupabaseDatabaseHost(databaseHost, databaseUrl);
+  const cleanAllowed = seedCleanRequested && nodeEnv === 'development' && isLocalDatabase && !isSupabaseDatabase;
+  const preflightOnly = process.argv.includes('--preflight') || process.argv.includes('--dry-run');
+
+  return {
+    databaseUrl,
+    databaseHost,
+    nodeEnv,
+    seedCleanRequested,
+    isLocalDatabase,
+    isSupabaseDatabase,
+    cleanAllowed,
+    seedMode: cleanAllowed ? 'local-clean' : 'remote-safe-upsert',
+    preflightOnly
+  };
+}
+
+function printSeedSafetyContext(context: SeedSafetyContext) {
+  console.log('Environment:', context.nodeEnv);
+  console.log('Database host:', context.databaseHost);
+  console.log('Supabase/remote detected:', context.isSupabaseDatabase || !context.isLocalDatabase);
+  console.log('SEED_CLEAN requested:', context.seedCleanRequested);
+  console.log('Clean allowed:', context.cleanAllowed);
+  console.log('Seed mode:', context.seedMode);
+
+  if (context.seedCleanRequested && !context.cleanAllowed) {
+    console.warn('⚠️  SEED_CLEAN was requested but blocked by the remote database guard.');
+    console.warn('   Destructive cleaning is allowed only for NODE_ENV=development and a local non-Supabase database host.');
+  }
+
+  if (context.seedMode === 'remote-safe-upsert') {
+    console.warn('🛡️  Remote-safe mode: no TRUNCATE, deleteMany, or identity reset will run.');
+  }
+}
 
 // Helper function to get correct Umwero display character from UMWERO_MAP
 function getUmweroDisplayChar(latinChar: string): string {
@@ -18,7 +114,7 @@ function getUmweroDisplayChar(latinChar: string): string {
     'I': '}', 'i': '}',
     'O': '{', 'o': '{',
     'U': ':', 'u': ':',
-    
+
     // Single consonants
     'B': 'B', 'b': 'B',
     'C': 'C', 'c': 'C',
@@ -39,7 +135,7 @@ function getUmweroDisplayChar(latinChar: string): string {
     'W': 'W', 'w': 'W',
     'Y': 'Y', 'y': 'Y',
     'Z': 'Z', 'z': 'Z',
-    
+
     // 2-letter compounds
     'MB': 'A', 'mb': 'A',
     'MF': 'FF', 'mf': 'FF',
@@ -58,11 +154,11 @@ function getUmweroDisplayChar(latinChar: string): string {
     'TS': 'X', 'ts': 'X',
     'JY': 'L', 'jy': 'L',
     'SHY': 'Q', 'shy': 'Q',
-    
+
     // 4-letter compounds
     'NSHY': 'QQ', 'nshy': 'QQ'
   };
-  
+
   return UMWERO_MAP[latinChar] || latinChar;
 }
 
@@ -73,14 +169,14 @@ function getExampleWords(latinChar: string, type: 'vowel' | 'consonant' | 'ligat
     'A': ['abana', 'amazi', 'akazi'],
     'E': ['ese', 'ejo', 'erekana'],
     'I': ['iki', 'ino', 'inka'],
-    'O': ['oya', 'oko', 'ose'],
+    'O': ['oya', 'oko', 'oreka'],
     'U': ['ubu', 'uko', 'uyu'],
-    
+
     // Single consonants
     'B': ['baba', 'bana', 'bose'],
-    'C': ['cane', 'cumi', 'cyane'],
-    'D': ['dada', 'dore', 'duca'],
-    'F': ['fata', 'fite', 'funga'],
+    'C': ['cane', 'cumi', 'cunga'],
+    'D': ['data', 'dore', 'duca'],
+    'F': ['fata', 'fora', 'funga'],
     'G': ['gana', 'gira', 'guca'],
     'H': ['hano', 'hehe', 'hose'],
     'J': ['jya', 'jye', 'jyewe'],
@@ -96,7 +192,7 @@ function getExampleWords(latinChar: string, type: 'vowel' | 'consonant' | 'ligat
     'W': ['wana', 'weka', 'wero'],
     'Y': ['yana', 'yeka', 'yero'],
     'Z': ['zana', 'zeka', 'zero'],
-    
+
     // Compound consonants
     'MB': ['mbega', 'mbere', 'mbona'],
     'MF': ['mfura', 'mfite', 'mfana'],
@@ -117,37 +213,72 @@ function getExampleWords(latinChar: string, type: 'vowel' | 'consonant' | 'ligat
     'SHY': ['shyana', 'shyeka', 'shyero'],
     'NSHY': ['nshyana', 'nshyeka', 'nshyero']
   };
-  
+
   return examples[latinChar.toUpperCase()] || ['example1', 'example2'];
 }
 
+function getCharacterSlug(characterId: string): string {
+  return characterId
+    .replace(/^char-/, '')
+    .replace(/^lig-/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function getCharacterCodeSuffix(characterId: string): string {
+  return getCharacterSlug(characterId).toUpperCase();
+}
+
 async function main() {
+  const safety = getSeedSafetyContext();
+
   console.log('🌱 UMWERO — Orthographically Correct Seed\n');
+  printSeedSafetyContext(safety);
+  console.log('');
 
-  // ═══════════════════════════════════════════════════════════════════════════
-  // CLEAN DATABASE
-  // ═══════════════════════════════════════════════════════════════════════════
-  console.log('🧹 Cleaning...');
-  const tableNames = [
-    'user_achievements', 'user_attempts', 'lesson_progress', 'step_translations', 
-    'lesson_steps', 'lesson_translations', 'context_examples', 'cultural_context_translations', 
-    'cultural_contexts', 'character_translations', 'stroke_data', 'comments', 
-    'discussion_likes', 'discussions', 'achievements', 'lessons', 'characters', 
-    'languages', 'users'
-  ];
-
-  try {
-    for (const t of tableNames) {
-      try {
-        await prisma.$executeRawUnsafe(`TRUNCATE TABLE "public"."${t}" CASCADE;`);
-      } catch (e) {
-        // Table might not exist
-      }
-    }
-  } catch (e) {
-    console.error('Clean failed:', e);
+  if (safety.preflightOnly) {
+    console.log('✅ Seed preflight complete. No database writes were executed.');
+    return;
   }
-  console.log('✅ Clean\n');
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLEAN DATABASE (ONLY WHEN EXPLICITLY REQUESTED AGAINST LOCAL DEVELOPMENT DB)
+  // ═══════════════════════════════════════════════════════════════════════════
+  if (safety.cleanAllowed) {
+    console.log('🧹 Cleaning database...');
+    const tableNames = [
+      'user_achievements', 'user_attempts', 'lesson_progress', 'step_translations',
+      'lesson_steps', 'lesson_translations', 'context_examples', 'cultural_context_translations',
+      'cultural_contexts', 'character_translations', 'stroke_data', 'comments',
+      'discussion_likes', 'discussions', 'achievements', 'learning_stages', 'lessons', 'characters',
+      'languages', 'users', 'user_drawings', 'community_posts', 'post_likes', 'post_comments',
+      'chat_messages', 'training_data', 'quizzes', 'quiz_attempts', 'activity_logs',
+      'carts', 'cart_items', 'orders', 'donations', 'certificates', 'handwriting_attempts',
+      'character_references', 'community_entries', 'dataset_entries', 'performance_metrics',
+      'evaluation_sessions'
+    ];
+
+    try {
+      for (const t of tableNames) {
+        try {
+          await prisma.$executeRawUnsafe(`TRUNCATE TABLE "public"."${t}" RESTART IDENTITY CASCADE;`);
+          console.log(`  ✓ Truncated ${t}`);
+        } catch (e: any) {
+          if (!e.message?.includes('does not exist')) {
+            console.warn(`  ⚠ Could not truncate ${t}:`, e.message);
+          }
+        }
+      }
+
+      console.log('✅ Database cleaned\n');
+    } catch (e) {
+      console.error('❌ Clean failed:', e);
+      throw e;
+    }
+  } else {
+    console.log('ℹ️  Skipping clean. Running idempotent upserts only.\n');
+  }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // LANGUAGES
@@ -210,13 +341,13 @@ async function main() {
     { id: 'char-mf', umweroGlyph: 'FF', latinEquivalent: 'MF', type: 'CONSONANT', difficulty: 3, strokeCount: 3, order: 31, symbolism: 'Imfura noble', historicalNote: 'Support + provision' },
     { id: 'char-mv', umweroGlyph: 'O', latinEquivalent: 'MV', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 32, symbolism: 'Prenasalized V', historicalNote: 'Single phoneme /mv/' },
     { id: 'char-nc', umweroGlyph: 'CC', latinEquivalent: 'NC', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 33, symbolism: 'Prenasalized C', historicalNote: 'Single phoneme /nc/' },
-    
-    
+
+
     { id: 'char-nj', umweroGlyph: 'U', latinEquivalent: 'NJ', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 36, symbolism: 'Prenasalized J', historicalNote: 'Single phoneme /nj/' },
     { id: 'char-nk', umweroGlyph: 'E', latinEquivalent: 'NK', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 37, symbolism: 'Prenasalized K', historicalNote: 'Single phoneme /nk/' },
     { id: 'char-ns', umweroGlyph: 'SS', latinEquivalent: 'NS', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 38, symbolism: 'Prenasalized S', historicalNote: 'Single phoneme /ns/' },
     { id: 'char-nt', umweroGlyph: 'NN', latinEquivalent: 'NT', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 39, symbolism: 'Prenasalized T', historicalNote: 'Single phoneme /nt/' },
-   
+
     { id: 'char-ny', umweroGlyph: 'YY', latinEquivalent: 'NY', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 41, symbolism: 'UMWERO NY', historicalNote: 'Single consonant, not N+Y' },
     { id: 'char-pf', umweroGlyph: 'I', latinEquivalent: 'PF', type: 'CONSONANT', difficulty: 3, strokeCount: 2, order: 42, symbolism: 'Death — broken circle', historicalNote: 'gupfa = to die' },
     { id: 'char-sh', umweroGlyph: 'HH', latinEquivalent: 'SH', type: 'CONSONANT', difficulty: 2, strokeCount: 3, order: 43, symbolism: 'Single sound, not S+H', historicalNote: 'Retracted sibilant' },
@@ -235,7 +366,7 @@ async function main() {
   // TRUE LIGATURES - Only structural compound fusions from UMWERO_MAP
   const trueLigatures = [
     // Based on UMWERO_MAP - these are true structural fusions, not single phonemes
-    
+
     // 2-letter structural compounds
     { id:'char-nz', umweroGlyph: 'NZ', latinEquivalent: 'NZ', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 40, symbolism: 'Prenasalized NZ', historicalNote: 'Single phoneme /nz/' },
     { id: 'char-ng', umweroGlyph: 'NG', latinEquivalent: 'NG', type: 'LIGATURE', difficulty: 2, strokeCount: 3, order: 35, symbolism: 'Prenasalized NG', historicalNote: 'iGIHEKANE /ng/' },
@@ -270,31 +401,31 @@ async function main() {
     { id: 'lig-nkw', umweroGlyph: 'EW', latinEquivalent: 'NKW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 81, symbolism: 'N + K + W fusion', historicalNote: 'Nkwa - prenasalized K with W' },
     { id: 'lig-mfw', umweroGlyph: 'FFK', latinEquivalent: 'MFW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 82, symbolism: 'MF + W fusion', historicalNote: 'Mfka - MF with W modifier' },
     { id: 'lig-mfy', umweroGlyph: 'FFKK', latinEquivalent: 'MFY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 83, symbolism: 'MF + Y fusion', historicalNote: 'Mfkya - MF with Y modifier' },
-    
+
     { id: 'lig-pfw', umweroGlyph: 'IK', latinEquivalent: 'PFW', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 85, symbolism: 'PF + W fusion', historicalNote: 'Pfka - PF with W modifier' },
     { id: 'lig-pfy', umweroGlyph: 'IKK', latinEquivalent: 'PFY', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 86, symbolism: 'PF + Y fusion', historicalNote: 'Pfkya - PF with Y modifier' },
     { id: 'lig-shw', umweroGlyph: 'HHKW', latinEquivalent: 'SHW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 87, symbolism: 'SH + W fusion', historicalNote: 'Shkwa - SH with W modifier' },
     { id: 'lig-ndw', umweroGlyph: 'NDGW', latinEquivalent: 'NDW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 88, symbolism: 'ND + W fusion', historicalNote: 'Ndgwa - ND with W modifier' },
     { id: 'lig-ndy', umweroGlyph: 'NDL', latinEquivalent: 'NDY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 89, symbolism: 'ND + Y fusion', historicalNote: 'Ndgya - ND with Y modifier' },
     { id: 'lig-ngw', umweroGlyph: 'NGW', latinEquivalent: 'NGW', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 90, symbolism: 'NG + W fusion', historicalNote: 'Ngwa - NG with W modifier' },
-    
+
     { id: 'lig-nty', umweroGlyph: 'NNYY', latinEquivalent: 'NTY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 92, symbolism: 'NN + Y fusion', historicalNote: 'Nnya - NN with Y modifier' },
     { id: 'lig-nyy', umweroGlyph: 'NYY', latinEquivalent: 'NYY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 93, symbolism: 'NY + Y fusion', historicalNote: 'Nyya - NY with Y modifier' },
     { id: 'lig-nzw', umweroGlyph: 'NZGW', latinEquivalent: 'NZW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 94, symbolism: 'NZ + W fusion', historicalNote: 'Nzgwa - NZ with W modifier' },
     { id: 'lig-mvw', umweroGlyph: 'OG', latinEquivalent: 'MVW', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 95, symbolism: 'MV + W fusion', historicalNote: 'Mvga - MV with W modifier' },
     { id: 'lig-mvy', umweroGlyph: 'OL', latinEquivalent: 'MVY', type: 'LIGATURE', difficulty: 3, strokeCount: 4, order: 96, symbolism: 'MV + Y fusion', historicalNote: 'Mvgya - MV with Y modifier' },
     { id: 'lig-mpy', umweroGlyph: 'PPKK', latinEquivalent: 'MPY', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 97, symbolism: 'MP + Y fusion', historicalNote: 'Mpkya - MP with Y modifier' },
-    
+
     { id: 'lig-mbw', umweroGlyph: 'AG', latinEquivalent: 'MBW', type: 'LIGATURE', difficulty: 3, strokeCount: 5, order: 98, symbolism: 'MB + W fusion', historicalNote: 'Mbga - MB with W modifier' },
     { id: 'lig-tsw', umweroGlyph: 'XKW', latinEquivalent: 'TSW', type: 'LIGATURE', difficulty: 3, strokeCount: 3, order: 99, symbolism: 'TS + W fusion', historicalNote: 'Tskwa - TS with W modifier' },
 
     // 4-letter structural compounds
     { id: 'lig-nshw', umweroGlyph: 'HHHKW', latinEquivalent: 'NSHW', type: 'LIGATURE', difficulty: 4, strokeCount: 5, order: 110, symbolism: 'NSH + W fusion', historicalNote: 'Nshkwa - NSH with W modifier' },
-    
+
 
     // 5-letter structural compounds
     { id: 'lig-nshyw', umweroGlyph: 'QQKW', latinEquivalent: 'NSHYW', type: 'LIGATURE', difficulty: 5, strokeCount: 5, order: 120, symbolism: 'NSH + Y + W fusion', historicalNote: 'Nshywa - most complex compound' },
-    
+
   ];
 
   // SPECIAL CHARACTERS
@@ -317,6 +448,172 @@ async function main() {
   console.log(`✅ ${allChars.length} characters (${vowels.length} vowels, ${baseConsonants.length + compoundConsonants.length} consonants, ${trueLigatures.length} ligatures, ${specials.length} special)\n`);
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // LEARNING STAGES — 8 STAGES FOR ADAPTIVE LEARNING SYSTEM
+  // ═══════════════════════════════════════════════════════════════════════════
+  console.log('🎯 Learning Stages...');
+
+  const learningStages = [
+    {
+      name: 'RECOGNITION',
+      displayName: 'Recognition',
+      description: 'Visual identification of the character among similar characters',
+      order: 1,
+      masteryThreshold: 80,
+      minAttempts: 3,
+      requiredAccuracy: 0.8,
+      estimatedMinutes: 3,
+      interactionType: 'click',
+      validationRules: {
+        type: 'selection',
+        minCorrect: 3,
+        totalQuestions: 5
+      },
+      isActive: true
+    },
+    {
+      name: 'IDENTIFICATION',
+      displayName: 'Identification',
+      description: 'Multiple choice selection and character matching exercises',
+      order: 2,
+      masteryThreshold: 80,
+      minAttempts: 3,
+      requiredAccuracy: 0.8,
+      estimatedMinutes: 3,
+      interactionType: 'drag',
+      validationRules: {
+        type: 'matching',
+        minCorrect: 4,
+        totalQuestions: 5
+      },
+      isActive: true
+    },
+    {
+      name: 'TRACING',
+      displayName: 'Tracing',
+      description: 'Guided tracing over reference character to learn stroke order',
+      order: 3,
+      masteryThreshold: 85,
+      minAttempts: 5,
+      requiredAccuracy: 0.85,
+      estimatedMinutes: 4,
+      interactionType: 'draw',
+      validationRules: {
+        type: 'ocr',
+        minScore: 85,
+        requireStrokeOrder: true
+      },
+      isActive: true
+    },
+    {
+      name: 'GUIDED_WRITING',
+      displayName: 'Guided Writing',
+      description: 'Writing with stroke hints and directional guidance',
+      order: 4,
+      masteryThreshold: 85,
+      minAttempts: 5,
+      requiredAccuracy: 0.85,
+      estimatedMinutes: 5,
+      interactionType: 'draw',
+      validationRules: {
+        type: 'ocr',
+        minScore: 85,
+        requireStrokeOrder: true,
+        showHints: true
+      },
+      isActive: true
+    },
+    {
+      name: 'INDEPENDENT_WRITING',
+      displayName: 'Independent Writing',
+      description: 'Freehand writing without guidance or hints',
+      order: 5,
+      masteryThreshold: 90,
+      minAttempts: 8,
+      requiredAccuracy: 0.9,
+      estimatedMinutes: 6,
+      interactionType: 'draw',
+      validationRules: {
+        type: 'ocr',
+        minScore: 90,
+        requireStrokeOrder: true,
+        showHints: false
+      },
+      isActive: true
+    },
+    {
+      name: 'WORD_FORMATION',
+      displayName: 'Word Formation',
+      description: 'Using the character in word context and formation',
+      order: 6,
+      masteryThreshold: 85,
+      minAttempts: 5,
+      requiredAccuracy: 0.85,
+      estimatedMinutes: 5,
+      interactionType: 'text',
+      validationRules: {
+        type: 'word_completion',
+        minCorrect: 4,
+        totalWords: 5
+      },
+      isActive: true
+    },
+    {
+      name: 'SENTENCE_FORMATION',
+      displayName: 'Sentence Formation',
+      description: 'Using the character in sentence context and construction',
+      order: 7,
+      masteryThreshold: 85,
+      minAttempts: 5,
+      requiredAccuracy: 0.85,
+      estimatedMinutes: 6,
+      interactionType: 'text',
+      validationRules: {
+        type: 'sentence_completion',
+        minCorrect: 3,
+        totalSentences: 4
+      },
+      isActive: true
+    },
+    {
+      name: 'CULTURAL_APPLICATION',
+      displayName: 'Cultural Application',
+      description: 'Exploring cultural context, meanings, and traditional usage',
+      order: 8,
+      masteryThreshold: 75,
+      minAttempts: 3,
+      requiredAccuracy: 0.75,
+      estimatedMinutes: 4,
+      interactionType: 'click',
+      validationRules: {
+        type: 'engagement',
+        minInteractions: 3,
+        requireReflection: true
+      },
+      isActive: true
+    }
+  ];
+
+  // Only seed learning stages if the table exists
+  try {
+    for (const stage of learningStages) {
+      await prisma.learningStage.upsert({
+        where: { name: stage.name },
+        update: stage,
+        create: stage
+      });
+    }
+    console.log(`✅ ${learningStages.length} learning stages\n`);
+  } catch (error: any) {
+    if (error.message?.includes('does not exist') || error.code === 'P2021') {
+      console.log('⚠️  LearningStage table does not exist yet. Skipping learning stages seed.\n');
+      console.log('   Run task 1 (Create Prisma schema extensions) first to create the table.\n');
+    } else {
+      console.error('❌ Error seeding learning stages:', error.message);
+      throw error;
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // LESSONS — INDIVIDUAL LESSONS FOR EVERY CHARACTER
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('📚 Lessons...');
@@ -335,8 +632,8 @@ async function main() {
       estimatedTime: 8,
       characterId: v.id,
       code: `VOWEL-${v.latinEquivalent}`,
-      content: JSON.stringify({ 
-        vowel: v.latinEquivalent.toLowerCase(), 
+      content: JSON.stringify({
+        vowel: v.latinEquivalent.toLowerCase(),
         glyph: getUmweroDisplayChar(v.latinEquivalent), // Use UMWERO_MAP for display
         symbol: v.symbolism,
         examples: getExampleWords(v.latinEquivalent, 'vowel')
@@ -357,8 +654,8 @@ async function main() {
       estimatedTime: 10,
       characterId: c.id,
       code: `CONS-${c.latinEquivalent}`,
-      content: JSON.stringify({ 
-        consonant: c.latinEquivalent.toLowerCase(), 
+      content: JSON.stringify({
+        consonant: c.latinEquivalent.toLowerCase(),
         glyph: getUmweroDisplayChar(c.latinEquivalent), // Use UMWERO_MAP for display
         symbol: c.symbolism,
         examples: getExampleWords(c.latinEquivalent, 'consonant')
@@ -368,7 +665,7 @@ async function main() {
 
     // Individual compound consonant lessons
     ...compoundConsonants.map((c, i) => ({
-      id: `lesson-consonant-${c.latinEquivalent.toLowerCase()}`,
+      id: `lesson-consonant-${getCharacterSlug(c.id)}`,
       title: `Consonant ${c.latinEquivalent}`,
       description: `Learn the consonant ${c.latinEquivalent} - ${c.symbolism}`,
       module: 'INTERMEDIATE' as const,
@@ -378,9 +675,9 @@ async function main() {
       difficulty: c.difficulty,
       estimatedTime: 12,
       characterId: c.id,
-      code: `CONS-${c.latinEquivalent}`,
-      content: JSON.stringify({ 
-        consonant: c.latinEquivalent.toLowerCase(), 
+      code: `CONS-${getCharacterCodeSuffix(c.id)}`,
+      content: JSON.stringify({
+        consonant: c.latinEquivalent.toLowerCase(),
         glyph: getUmweroDisplayChar(c.latinEquivalent), // Use UMWERO_MAP for display
         symbol: c.symbolism,
         examples: getExampleWords(c.latinEquivalent, 'consonant')
@@ -401,9 +698,9 @@ async function main() {
       estimatedTime: l.difficulty * 5,
       characterId: l.id,
       code: `LIG-${l.latinEquivalent}`,
-      content: JSON.stringify({ 
-        ligature: l.latinEquivalent.toLowerCase(), 
-        glyph: l.umweroGlyph, 
+      content: JSON.stringify({
+        ligature: l.latinEquivalent.toLowerCase(),
+        glyph: l.umweroGlyph,
         symbol: l.symbolism,
         components: l.latinEquivalent.match(/.{1,2}/g) || [l.latinEquivalent] // Split into component parts
       }),
@@ -470,42 +767,71 @@ async function main() {
   console.log(`✅ ${achievements.length} achievements\n`);
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // USERS
+  // USERS - Use upsert to prevent duplicates
   // ═══════════════════════════════════════════════════════════════════════════
   console.log('👥 Users...');
-  const users = [
-    { email: '37nzela@gmail.com', username: 'kwizera', password: 'Mugix260', fullName: 'Kwizera Mugisha', role: 'ADMIN', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Creator of Umwero alphabet.', emailVerified: true, provider: 'EMAIL' },
-    { email: 'demo@uruziga.com', username: 'demo', password: 'demo123', fullName: 'Demo Student', role: 'USER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Demo account.', emailVerified: true, provider: 'EMAIL' },
-    { email: 'teacher@uruziga.com', username: 'teacher', password: 'teach123', fullName: 'Umwero Teacher', role: 'TEACHER', country: 'Rwanda', countryCode: 'RW', preferredLanguage: 'en', bio: 'Teacher account.', emailVerified: true, provider: 'EMAIL' }
-  ];
+  const users: Array<{
+    email: string;
+    username: string;
+    fullName: string;
+    password: string;
+    role: string;
+    country: string;
+    countryCode: string;
+    preferredLanguage: string;
+    bio: string;
+    emailVerified: boolean;
+    provider?: string;
+  }> = [];
+
+  let usersCreated = 0;
   for (const u of users) {
-    const hashed = await bcrypt.hash(u.password, 10);
-    await prisma.user.create({
-      data: {
-        email: u.email,
-        username: u.username,
-        password: hashed,
-        fullName: u.fullName,
-        role: u.role as any,
-        country: u.country,
-        countryCode: u.countryCode,
-        preferredLanguage: u.preferredLanguage,
-        bio: u.bio,
-        emailVerified: u.emailVerified,
-        provider: u.provider as any
-      }
-    });
+    try {
+      const hashed = await bcrypt.hash(u.password, 10);
+      await prisma.user.upsert({
+        where: { email: u.email },
+        update: {
+          username: u.username,
+          fullName: u.fullName,
+          role: u.role as any,
+          country: u.country,
+          countryCode: u.countryCode,
+          preferredLanguage: u.preferredLanguage,
+          bio: u.bio,
+          emailVerified: u.emailVerified,
+          provider: u.provider as any
+        },
+        create: {
+          email: u.email,
+          username: u.username,
+          password: hashed,
+          fullName: u.fullName,
+          role: u.role as any,
+          country: u.country,
+          countryCode: u.countryCode,
+          preferredLanguage: u.preferredLanguage,
+          bio: u.bio,
+          emailVerified: u.emailVerified,
+          provider: u.provider as any
+        }
+      });
+      usersCreated++;
+      console.log(`  ✓ ${u.email}`);
+    } catch (e: any) {
+      console.error(`  ✗ Failed to create user ${u.email}:`, e.message);
+    }
   }
-  console.log(`✅ ${users.length} users\n`);
+  console.log(`✅ ${usersCreated}/${users.length} users\n`);
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('🎉 ORTHOGRAPHICALLY CORRECT SEED COMPLETE');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`  🌐 Languages:    ${languages.length}`);
-  console.log(`  ✏️  Characters:   ${allChars.length}`);
-  console.log(`  📚 Lessons:      ${allLessons.length} (ALL INDIVIDUAL)`);
-  console.log(`  🏆 Achievements: ${achievements.length}`);
-  console.log(`  👥 Users:        ${users.length}`);
+  console.log(`  🌐 Languages:       ${languages.length}`);
+  console.log(`  ✏️  Characters:      ${allChars.length}`);
+  console.log(`  📚 Lessons:         ${allLessons.length} (ALL INDIVIDUAL)`);
+  console.log(`  🎯 Learning Stages: 8`);
+  console.log(`  🏆 Achievements:    ${achievements.length}`);
+  console.log(`  👥 Users:           ${users.length}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('');
   console.log('✅ STRUCTURAL INTEGRITY: Official UMWERO_MAP only');

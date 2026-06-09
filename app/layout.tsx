@@ -1,33 +1,32 @@
 // app/layout.tsx - UPDATED VERSION
 import "../styles/globals.css"
 import "../styles/umwero-font.css"
-import { Inter } from 'next/font/google'
 import { AuthProvider } from "./contexts/AuthContext"
 import { LanguageProvider } from "./contexts/LanguageContext"
 import { CartProvider } from "./contexts/CartContext"
 import { UmweroWrapper } from "../components/UmweroWrapper"
 import LayoutContent from "../components/LayoutContent"
-
-const inter = Inter({ subsets: ["latin"] })
+import { kbSeo } from "../lib/umwero-knowledge-base"
+import { warnAboutRuntimeConfig } from "../lib/runtime-env"
 
 export const metadata = {
-  title: "Umwero Learning Platform - Preserve Kinyarwanda Culture",
-  description: "Learn the Umwero alphabet, a revolutionary African script created by Kwizera Mugisha to decolonize and preserve Kinyarwanda sounds. Join the cultural renaissance.",
-  keywords: "Umwero, Kinyarwanda, African script, cultural preservation, language learning, Rwanda, decolonization",
+  title: kbSeo.siteTitle,
+  description: kbSeo.siteDescription,
+  keywords: "Umwero, Kinyarwanda, Uruziga, Rwandan culture, linguistic heritage, writing system",
   authors: [{ name: "Kwizera Mugisha" }],
   creator: "Kwizera Mugisha",
-  publisher: "Umwero Movement",
+  publisher: "Uruziga",
   openGraph: {
-    title: "Umwero Learning Platform",
-    description: "Learn the revolutionary Umwero alphabet and preserve Kinyarwanda culture",
+    title: kbSeo.siteTitle,
+    description: kbSeo.siteDescription,
     type: "website",
     locale: "en_US",
     alternateLocale: ["rw_RW"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Umwero Learning Platform",
-    description: "Learn the revolutionary Umwero alphabet and preserve Kinyarwanda culture",
+    title: kbSeo.siteTitle,
+    description: kbSeo.siteDescription,
     creator: "@Mugisha1837",
   },
   robots: {
@@ -48,6 +47,8 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  warnAboutRuntimeConfig()
+
   return (
     <html lang="en">
       <head>
@@ -60,7 +61,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className={`${inter.className} bg-[#FFFFFF]`}>
+      <body className="bg-[#FFFFFF]">
         <AuthProvider>
           <LanguageProvider>
             <CartProvider>

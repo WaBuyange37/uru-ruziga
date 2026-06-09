@@ -1,25 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verify } from 'jsonwebtoken'
+import { resolveStoredImageUrl } from '@/lib/image-url'
+import { getAuthenticatedUserId } from '@/lib/auth-session'
 
 export async function GET(request: NextRequest) {
   try {
     // Verify authentication
-    const token = request.headers.get('authorization')?.replace('Bearer ', '')
-    if (!token) {
+    const userId = await getAuthenticatedUserId(request)
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    let userId: string
-    try {
-      const decoded = verify(token, process.env.JWT_SECRET!) as { userId: string }
-      userId = decoded.userId
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
         { status: 401 }
       )
     }
@@ -83,8 +73,16 @@ export async function GET(request: NextRequest) {
         (earlyScores.reduce((a, b) => a + b, 0) / earlyScores.length)
       : 0
 
+    const normalizedAttempts = await Promise.all(attempts.map(async (attempt) => ({
+      ...attempt,
+      drawingData: await resolveStoredImageUrl(attempt.drawingData, {
+        source: `userAttempt:${attempt.id}.drawingData`,
+        expiresIn: 3600,
+      }),
+    })))
+
     return NextResponse.json({
-      attempts,
+      attempts: normalizedAttempts,
       stats: {
         ...stats,
         trend: Math.round(trend)

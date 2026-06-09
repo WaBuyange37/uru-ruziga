@@ -3,10 +3,24 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const rawSupabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServiceRoleKey =
+  rawSupabaseServiceRoleKey && rawSupabaseServiceRoleKey !== 'your-supabase-service-role-key'
+    ? rawSupabaseServiceRoleKey
+    : undefined;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseServiceRoleKey || supabaseAnonKey);
+
+export const SUPABASE_BUCKETS = {
+  userDrawings: 'user-drawings',
+  characterImages: 'character-images',
+  profilePictures: 'profile-pictures',
+  audioFiles: 'audio-files',
+  videoFiles: 'video-files',
+  communityPosts: 'community-posts',
+} as const;
 
 // Upload file to Supabase Storage
 export async function uploadFile(
@@ -25,14 +39,24 @@ export async function uploadFile(
       })
 
     if (error) {
-      console.error('❌ Upload failed:', error)
+      console.error('Supabase Storage upload failed:', {
+        bucket,
+        path,
+        message: error.message,
+        error,
+      })
       throw error
     }
 
-    console.log('✅ File uploaded:', path)
+    console.log('Supabase Storage upload succeeded:', { bucket, path })
     return data
   } catch (error) {
-    console.error('❌ Upload error:', error)
+    console.error('Supabase Storage upload error:', {
+      bucket,
+      path,
+      message: error instanceof Error ? error.message : 'Unknown upload error',
+      error,
+    })
     throw error
   }
 }
@@ -51,7 +75,7 @@ export async function uploadCharacterGlyph(
   character: string, 
   imageData: Buffer
 ) {
-  const bucket = 'characters'
+  const bucket = SUPABASE_BUCKETS.characterImages
   const path = `${character}.png`
   
   await uploadFile(imageData, bucket, path, 'image/png')
@@ -64,7 +88,7 @@ export async function uploadUserDrawing(
   lessonId: string, 
   drawingData: Buffer
 ) {
-  const bucket = 'user-drawings'
+  const bucket = SUPABASE_BUCKETS.userDrawings
   const timestamp = Date.now()
   const path = `${userId}/${lessonId}/${timestamp}.png`
   
@@ -77,7 +101,7 @@ export async function uploadUserAvatar(
   userId: string, 
   avatarData: Buffer
 ) {
-  const bucket = 'avatars'
+  const bucket = SUPABASE_BUCKETS.profilePictures
   const path = `${userId}.png`
   
   await uploadFile(avatarData, bucket, path, 'image/png')
@@ -89,7 +113,7 @@ export async function uploadAudioFile(
   character: string, 
   audioData: Buffer
 ) {
-  const bucket = 'audio'
+  const bucket = SUPABASE_BUCKETS.audioFiles
   const path = `${character}.mp3`
   
   await uploadFile(audioData, bucket, path, 'audio/mpeg')
@@ -103,9 +127,14 @@ export async function deleteFile(bucket: string, path: string) {
     .remove([path])
 
   if (error) {
-    console.error('❌ Delete failed:', error)
+    console.error('Supabase Storage delete failed:', {
+      bucket,
+      path,
+      message: error.message,
+      error,
+    })
     throw error
   }
 
-  console.log('✅ File deleted:', path)
+  console.log('Supabase Storage delete succeeded:', { bucket, path })
 }

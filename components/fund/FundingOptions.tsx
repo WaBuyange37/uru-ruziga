@@ -5,7 +5,7 @@ import { useTranslation } from "../../hooks/useTranslation"
 import { ContactModal } from "@/components/fund/ContactModal"
 import { DonateModal } from "@/components/fund/DonateModal"
 import { SponsorModal } from "@/components/fund/SponsorModal"
-import { DonationTiers } from "@/components/fund/DonationTiers"
+import { DonationTiers } from "@/components/fund/DonationTier"
 
 export function FundingOptions() {
   const { t } = useTranslation()

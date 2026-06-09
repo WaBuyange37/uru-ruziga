@@ -341,11 +341,11 @@ export class UmweroHandwritingEvaluator {
     breakdown: { shape: number; stroke: number; proportion: number; alignment: number }
   ): { message: string; tips: string[] } {
     const culturalMessages = [
-      "Every stroke in Umwero carries the wisdom of our ancestors. Keep practicing!",
-      "Kwizera Mugisha created Umwero to preserve our beautiful Kinyarwanda language.",
-      "Your dedication to learning Umwero strengthens our cultural heritage.",
-      "In Umwero, each character tells a story of Rwandan identity.",
-      "You are part of the cultural renaissance through Umwero writing!"
+      "Umwero was created by Kwizera Mugisha for Kinyarwanda. Keep practicing.",
+      "Umwero connects Kinyarwanda writing with Rwandan cultural identity.",
+      "Your practice helps you learn a writing system rooted in Kinyarwanda.",
+      "Umwero brings sound, shape, and cultural meaning into written form.",
+      "Keep learning Umwero one character at a time."
     ]
 
     const randomMessage = culturalMessages[Math.floor(Math.random() * culturalMessages.length)]

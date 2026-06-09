@@ -103,6 +103,14 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
     return /\.(mp4|webm|mov)$/i.test(url)
   }
 
+  const logImageError = (source: string, url: string) => {
+    console.error('[image-load] Community image failed', {
+      source,
+      url,
+      postId: post.id,
+    })
+  }
+
   return (
     <Card className="border-b border-gray-200 rounded-none shadow-none hover:bg-gray-50/50 transition-colors">
       <CardContent className="p-3 sm:p-4 md:p-6">
@@ -192,6 +200,7 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                     width={600}
                     height={400}
                     className="w-full h-auto max-h-48 sm:max-h-64 md:max-h-96 object-cover"
+                    onError={() => logImageError('community.mediaUrls[0]', post.mediaUrls[0])}
                   />
                 ) : isVideo(post.mediaUrls[0]) ? (
                   <video
@@ -220,6 +229,7 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
                         width={300}
                         height={200}
                         className="w-full h-20 sm:h-24 md:h-32 object-cover"
+                        onError={() => logImageError(`community.mediaUrls[${index}]`, url)}
                       />
                     ) : isVideo(url) ? (
                       <video
@@ -254,6 +264,7 @@ export function CommunityPostCard({ post }: CommunityPostCardProps) {
               width={600}
               height={400}
               className="w-full h-auto max-h-48 sm:max-h-64 md:max-h-96 object-cover"
+              onError={() => logImageError('community.imageUrl', post.imageUrl!)}
             />
           </div>
         )}
