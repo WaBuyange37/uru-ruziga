@@ -8,8 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { RefreshCw, ArrowRight, ArrowLeft, Lightbulb, CheckCircle, Circle, Send } from "lucide-react"
-import { useAuth } from "../../app/contexts/AuthContext"
 import { lessonIdToCharacterId } from "@/lib/character-mapping"
+
+const SAVE_PROGRESS_SIGN_IN_MESSAGE = 'Please sign in to save your progress.'
 
 export interface VowelData {
   vowel: string
@@ -88,8 +89,6 @@ export function CompleteVowelLesson({
   const [submissionError, setSubmissionError] = useState<string>("")
   const [isChecking, setIsChecking] = useState(false)
   const [canvasSize, setCanvasSize] = useState({ width: 400, height: 400 })
-  const { user } = useAuth()
-
   // Initialize canvas with responsive sizing
   useEffect(() => {
     const updateCanvasSize = () => {
@@ -255,13 +254,12 @@ export function CompleteVowelLesson({
     setUserDrawingImage(imageData)
 
     try {
-      if (!user) {
-        throw new Error('Please sign in before submitting your writing attempt.')
-      }
-
       const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Your session has expired. Please sign in again.')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
       }
 
       const strokes = [...strokesRef.current]
@@ -287,10 +285,8 @@ export function CompleteVowelLesson({
 
       const response = await fetch('/api/learning/attempt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           characterId: resolvedCharacterId,
           lessonId,
@@ -319,7 +315,11 @@ export function CompleteVowelLesson({
 
       const result = await response.json() as LearningAttemptResponse
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Writing attempt could not be submitted.')
+        throw new Error(
+          response.status === 401
+            ? SAVE_PROGRESS_SIGN_IN_MESSAGE
+            : result.error || 'Writing attempt could not be submitted.'
+        )
       }
       if (result.evaluation?.score === null || result.evaluation?.score === undefined) {
         throw new Error(
@@ -334,11 +334,14 @@ export function CompleteVowelLesson({
       setShowComparison(true)
 
     } catch (error) {
-      console.error('Learning attempt submission error:', error)
+      const message = error instanceof Error ? error.message : 'Writing attempt could not be submitted.'
+      if (message !== SAVE_PROGRESS_SIGN_IN_MESSAGE) {
+        console.error('Learning attempt submission error:', error)
+      }
       setOcrScore(null)
       setOcrFeedback("")
       setPracticeAreas([])
-      setSubmissionError(error instanceof Error ? error.message : 'Writing attempt could not be submitted.')
+      setSubmissionError(message)
     } finally {
       setIsChecking(false)
     }

@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Verify either the local bearer token or the server httpOnly cookie.
         const response = await fetch('/api/auth/verify', {
           headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-          credentials: 'same-origin',
+          credentials: 'include',
         })
 
         if (response.ok) {
@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (identifier: string, password: string) => {
     const response = await fetch('/api/auth/login', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -113,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     fetch('/api/auth/logout', {
       method: 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
     }).catch((error) => {
       console.error('Logout request failed:', error)
     })

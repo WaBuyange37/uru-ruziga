@@ -1,6 +1,7 @@
 // app/api/auth/register/route.ts
 // STANDARD REGISTRATION: fullName, username, email (optional), password
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
@@ -73,6 +74,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.create({
       data: {
         fullName: fullName.trim(),
+        name: fullName.trim(),
         username: username.toLowerCase(),
         email: email.toLowerCase().trim(),
         mobileNumber: mobileNumber?.trim() || null,
@@ -116,6 +118,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Registration error:', error)
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      const target = Array.isArray(error.meta?.target) ? error.meta.target.join(', ') : 'account field'
+      return NextResponse.json(
+        { error: `An account with that ${target} already exists.` },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json(
       { error: 'Registration failed. Please try again.' },
       { status: 500 }
