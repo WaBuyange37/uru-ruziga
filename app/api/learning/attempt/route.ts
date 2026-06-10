@@ -3,7 +3,7 @@ import { Prisma, StepType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getFileUrl, STORAGE_BUCKETS, uploadFile } from '@/lib/storage';
 import { verifyToken } from '@/lib/jwt';
-import { getAuthTokenFromRequest } from '@/lib/auth-session';
+import { getAuthTokenCandidatesFromRequest } from '@/lib/auth-session';
 import { buildJourneyPhaseStates } from '@/lib/learning-journey';
 import { resolveUmweroFontInput } from '@/lib/umwero-font-input';
 
@@ -54,6 +54,10 @@ type AuthPayload = {
   userId?: string;
 };
 
+type AuthenticatedUserResolution =
+  | { ok: true; userId: string }
+  | { ok: false; status: number; error: string; code: 'NO_AUTH' | 'INVALID_AUTH' | 'STALE_AUTH' };
+
 type EvaluationPayload = {
   score: number | null;
   confidence: number;
@@ -100,16 +104,53 @@ class LearningAttemptPipelineError extends Error {
   }
 }
 
-function getBearerToken(request: NextRequest): string | null {
-  return getAuthTokenFromRequest(request);
-}
+async function resolveAuthenticatedUserId(request: NextRequest): Promise<AuthenticatedUserResolution> {
+  const tokens = getAuthTokenCandidatesFromRequest(request);
+  if (tokens.length === 0) {
+    return {
+      ok: false,
+      status: 401,
+      error: 'Please sign in to save your progress.',
+      code: 'NO_AUTH'
+    };
+  }
 
-async function requireUserId(request: NextRequest): Promise<string | null> {
-  const token = getBearerToken(request);
-  if (!token) return null;
+  let validTokenUserMissing = false;
+  for (const token of tokens) {
+    const decoded = (await verifyToken(token)) as AuthPayload | null;
+    if (!decoded?.userId) continue;
 
-  const decoded = (await verifyToken(token)) as AuthPayload | null;
-  return decoded?.userId ?? null;
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true }
+    });
+
+    if (user) {
+      return { ok: true, userId: user.id };
+    }
+
+    validTokenUserMissing = true;
+  }
+
+  if (validTokenUserMissing) {
+    console.warn('[auth diagnostic] valid JWT referenced a missing user for learning attempt', {
+      endpoint: '/api/learning/attempt',
+      tokenCandidates: tokens.length
+    });
+    return {
+      ok: false,
+      status: 401,
+      error: 'Please sign in to save your progress.',
+      code: 'STALE_AUTH'
+    };
+  }
+
+  return {
+    ok: false,
+    status: 401,
+    error: 'Please sign in to save your progress.',
+    code: 'INVALID_AUTH'
+  };
 }
 
 function dataUrlToBuffer(dataUrl: string): { buffer: Buffer; contentType: string } {
@@ -550,10 +591,18 @@ export async function POST(request: NextRequest) {
       ocrServiceCalled: false
     });
 
-    const userId = await requireUserId(request);
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const auth = await resolveAuthenticatedUserId(request);
+    if (!auth.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: auth.error,
+          code: auth.code
+        },
+        { status: auth.status }
+      );
     }
+    const userId = auth.userId;
 
     const body = (await request.json()) as LearningAttemptRequest;
 
@@ -571,9 +620,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'At least one stroke is required' }, { status: 400 });
     }
 
-    const [user, character] = await Promise.all([
-      prisma.user.findUnique({ where: { id: userId }, select: { id: true } }),
-      prisma.character.findUnique({
+    const character = await prisma.character.findUnique({
         where: { id: body.characterId },
         select: {
           id: true,
@@ -585,12 +632,7 @@ export async function POST(request: NextRequest) {
           glyphImageUrl: true,
           isActive: true
         }
-      })
-    ]);
-
-    if (!user) {
-      return NextResponse.json({ error: 'Authenticated user not found' }, { status: 404 });
-    }
+      });
 
     if (!character?.isActive) {
       return NextResponse.json({ error: 'Character not found' }, { status: 404 });

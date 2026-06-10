@@ -9,8 +9,11 @@ import { PhotoUploadModal } from './PhotoUploadModal'
 import { celebrateCharacterLearned } from '@/lib/character-progression'
 import { emitProgressUpdate } from '@/lib/progress-events'
 import { lessonIdToCharacterId } from '@/lib/character-mapping'
+import { useAuth } from '@/app/contexts/AuthContext'
 import Image from 'next/image'
 import type { PracticeMode } from '@/hooks/useLessonState'
+
+const SAVE_PROGRESS_SIGN_IN_MESSAGE = 'Please sign in to save your progress.'
 
 interface PracticePanelProps {
   lesson: any
@@ -27,6 +30,7 @@ interface PracticePanelProps {
 }
 
 export function PracticePanel({ lesson, character, practiceMode, onModeChange }: PracticePanelProps) {
+  const { isAuthenticated, loading: authLoading } = useAuth()
   const [showReference, setShowReference] = useState(true)
   const [evaluationResult, setEvaluationResult] = useState<any>(null)
   const [showPhotoUpload, setShowPhotoUpload] = useState(false)
@@ -51,22 +55,36 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
     const drawingData = exportDrawingData()
     if (!drawingData) return
 
+    if (authLoading) {
+      setSubmissionError('Checking your sign-in status. Please try again in a moment.')
+      return
+    }
+
+    const token = localStorage.getItem('token')
+    if (!isAuthenticated && !token) {
+      setEvaluationResult(null)
+      setCurrentAttemptId(null)
+      setSubmissionError(SAVE_PROGRESS_SIGN_IN_MESSAGE)
+      onModeChange('drawing')
+      return
+    }
+
     onModeChange('evaluating')
     setSubmissionError(null)
 
     try {
-      const token = localStorage.getItem('token')
-      if (!token) {
-        throw new Error('Please sign in before submitting your writing attempt.')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
       }
 
       const resolvedCharacterId = lessonIdToCharacterId(character.id || lesson.id)
       const response = await fetch('/api/learning/attempt', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        credentials: 'include',
+        headers,
         body: JSON.stringify({
           characterId: resolvedCharacterId,
           lessonId: lesson.id,
@@ -81,9 +99,13 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
         }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error(data.error || 'Python OCR evaluation failed.')
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? SAVE_PROGRESS_SIGN_IN_MESSAGE
+            : data.error || 'Python OCR evaluation failed.'
+        )
       }
 
       if (data.success && data.evaluation?.score !== undefined && data.attempt?.saved) {
@@ -107,9 +129,13 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
         throw new Error('Python OCR did not return a saved evaluation.')
       }
     } catch (error) {
-      console.error('Python OCR submission error:', error)
+      const message = error instanceof Error ? error.message : 'Python OCR evaluation failed.'
+      if (message !== SAVE_PROGRESS_SIGN_IN_MESSAGE) {
+        console.error('Python OCR submission error:', error)
+      }
       setEvaluationResult(null)
-      setSubmissionError(error instanceof Error ? error.message : 'Python OCR evaluation failed.')
+      setCurrentAttemptId(null)
+      setSubmissionError(message)
       onModeChange('drawing')
     }
   }
@@ -172,7 +198,10 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
 
   const handlePhotoUpload = async (imageFile: File) => {
     const token = localStorage.getItem('token')
-    if (!token) throw new Error('Not authenticated')
+    const headers: HeadersInit = {}
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
 
     const formData = new FormData()
     formData.append('image', imageFile)
@@ -185,14 +214,17 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
 
     const response = await fetch('/api/drawings/upload-photo', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
+      credentials: 'include',
+      headers,
       body: formData
     })
 
     if (!response.ok) {
-      throw new Error('Upload failed')
+      throw new Error(
+        response.status === 401
+          ? SAVE_PROGRESS_SIGN_IN_MESSAGE
+          : 'Upload failed'
+      )
     }
 
     return response.json()
@@ -279,12 +311,12 @@ export function PracticePanel({ lesson, character, practiceMode, onModeChange }:
           {practiceMode !== 'evaluating' && practiceMode !== 'complete' && (
             <Button
               onClick={handleEvaluate}
-              disabled={strokes.length === 0}
+              disabled={strokes.length === 0 || authLoading}
               className="w-full gap-2 bg-[#8B4513] hover:bg-[#A0522D]"
               size="lg"
             >
               <CheckCircle2 className="h-5 w-5" />
-              Submit writing
+              {authLoading ? 'Checking session...' : 'Submit writing'}
             </Button>
           )}
 

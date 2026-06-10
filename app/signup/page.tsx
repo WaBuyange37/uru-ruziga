@@ -13,7 +13,7 @@ import { CircleIcon, UserPlus, Eye, EyeOff, CheckCircle2 } from 'lucide-react'
 function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { register, isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [formData, setFormData] = useState({
     fullName: '',
     username: '',
@@ -63,8 +63,33 @@ function SignupForm() {
     setLoading(true)
 
     try {
-      await register(formData.fullName, formData.username, formData.email, formData.password)
-      // Redirect after successful registration
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          fullName: formData.fullName.trim(),
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || data.message || 'Registration failed. Please try again.')
+      }
+
+      if (!data.token || !data.user) {
+        throw new Error('Registration response was incomplete. Please try again.')
+      }
+
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('user', JSON.stringify(data.user))
+
       const redirect = searchParams?.get('redirect') || '/'
       router.push(redirect)
     } catch (err: any) {

@@ -17,20 +17,41 @@ export function createAuthToken(payload: AuthTokenPayload) {
   return jwt.sign(payload, getJwtSecret(), { expiresIn: '7d' })
 }
 
-export function getAuthTokenFromRequest(request: NextRequest) {
+function getBearerAuthTokenFromRequest(request: NextRequest) {
   const authorization = request.headers.get('authorization')
   if (authorization?.startsWith('Bearer ')) {
     return authorization.slice('Bearer '.length)
   }
 
+  return null
+}
+
+function getCookieAuthTokenFromRequest(request: NextRequest) {
   return request.cookies.get(AUTH_COOKIE_NAME)?.value ?? null
 }
 
-export async function getAuthPayload(request: NextRequest) {
-  const token = getAuthTokenFromRequest(request)
-  if (!token) return null
+export function getAuthTokenCandidatesFromRequest(request: NextRequest) {
+  const tokens = [
+    getCookieAuthTokenFromRequest(request),
+    getBearerAuthTokenFromRequest(request),
+  ].filter((token): token is string => Boolean(token))
 
-  return (await verifyToken(token)) as AuthTokenPayload | null
+  return Array.from(new Set(tokens))
+}
+
+export function getAuthTokenFromRequest(request: NextRequest) {
+  return getAuthTokenCandidatesFromRequest(request)[0] ?? null
+}
+
+export async function getAuthPayload(request: NextRequest) {
+  const tokens = getAuthTokenCandidatesFromRequest(request)
+
+  for (const token of tokens) {
+    const payload = (await verifyToken(token)) as AuthTokenPayload | null
+    if (payload?.userId) return payload
+  }
+
+  return null
 }
 
 export async function getAuthenticatedUserId(request: NextRequest) {
